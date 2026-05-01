@@ -520,6 +520,88 @@
     .naver-stat-value { font-size: 1.2rem; font-weight: 800; color: #22543d; }
     .naver-stat-sub   { font-size: 0.7rem; color: #a0aec0; margin-top: 2px; }
 
+    /* ── 키워드마스터 ── */
+    textarea {
+      width: 100%;
+      padding: 11px 15px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      color: #2d3748;
+      transition: border-color 0.2s;
+      outline: none;
+      resize: vertical;
+      font-family: inherit;
+      min-height: 130px;
+      line-height: 1.6;
+    }
+    textarea:focus { border-color: #2b6cb0; }
+
+    .stat-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .stat-box {
+      background: #f7fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 14px 10px;
+      text-align: center;
+    }
+    .stat-box-label { font-size: 0.72rem; color: #718096; margin-bottom: 5px; font-weight: 600; }
+    .stat-box-value { font-size: 1.3rem; font-weight: 800; color: #1a365d; }
+    .stat-box-sub   { font-size: 0.68rem; color: #a0aec0; margin-top: 2px; }
+
+    .morpheme-table { width: 100%; border-collapse: collapse; }
+    .morpheme-table th, .morpheme-table td {
+      padding: 9px 12px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 0.83rem;
+    }
+    .morpheme-table th { background: #f7fafc; font-weight: 700; color: #4a5568; font-size: 0.78rem; }
+    .morpheme-table tr:last-child td { border-bottom: none; }
+
+    .sentiment-bar { height: 8px; border-radius: 4px; background: #e2e8f0; margin: 8px 0; overflow: hidden; }
+    .sentiment-fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
+    .sentiment-pos { background: #48bb78; }
+    .sentiment-neg { background: #fc8181; }
+    .sentiment-neu { background: #a0aec0; }
+
+    .realtime-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+    .realtime-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 15px;
+      background: #f7fafc;
+      border-radius: 9px;
+      border: 1.5px solid #e2e8f0;
+    }
+    .realtime-rank { font-size: 1rem; font-weight: 800; color: #1a365d; min-width: 28px; }
+    .realtime-keyword { font-size: 0.92rem; font-weight: 600; flex: 1; }
+    .realtime-trend { font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+    .trend-up   { background: #fed7d7; color: #c53030; }
+    .trend-new  { background: #fefcbf; color: #744210; }
+    .trend-keep { background: #e2e8f0; color: #718096; }
+
+    .category-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+    .category-btn {
+      padding: 8px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 20px;
+      background: white;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #718096;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .category-btn.active { border-color: #2b6cb0; background: #ebf4ff; color: #2b6cb0; }
+    .category-btn:hover  { border-color: #2b6cb0; }
+
     /* ── 반응형 ── */
     @media (max-width: 700px) {
       .sidebar { width: 52px; min-width: 52px; }
@@ -563,6 +645,20 @@
     </div>
     <div class="menu-item" data-page="keyword-recommend" onclick="showPage('keyword-recommend')">
       <span class="menu-icon">💡</span><span>키워드 추천</span>
+    </div>
+
+    <div class="sidebar-section" style="margin-top:10px;">키워드마스터</div>
+    <div class="menu-item" data-page="km-search" onclick="showPage('km-search')">
+      <span class="menu-icon">🔍</span><span>검색량 조회</span>
+    </div>
+    <div class="menu-item" data-page="km-morpheme" onclick="showPage('km-morpheme')">
+      <span class="menu-icon">🔤</span><span>형태소 분석</span>
+    </div>
+    <div class="menu-item" data-page="km-seller" onclick="showPage('km-seller')">
+      <span class="menu-icon">🛒</span><span>셀러마스터</span>
+    </div>
+    <div class="menu-item" data-page="km-realtime" onclick="showPage('km-realtime')">
+      <span class="menu-icon">📡</span><span>실시간 검색어</span>
     </div>
   </nav>
 
@@ -763,6 +859,121 @@
         <div class="card">
           <div class="card-title">📝 글 구성 팁</div>
           <ol class="structure-list" id="rec-structure"></ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- ⑦ 키워드마스터 - 검색량 조회 -->
+    <div id="page-km-search" class="page">
+      <div class="page-title">🔍 검색량 조회</div>
+      <div class="page-desc">최근 30일 검색량을 빠르게 확인합니다. PC·모바일 검색량, 경쟁 포스트 수, 트렌드 점수를 제공합니다.</div>
+      <div class="card">
+        <label>조회할 키워드</label>
+        <input type="text" id="km-search-keyword" placeholder="예: 아파트 전세, 금리 인상, ETF" />
+        <button class="btn-run" onclick="runKmSearch()">🔍 검색량 조회</button>
+      </div>
+      <div class="error-box" id="km-search-error"></div>
+      <div class="loading" id="km-search-loading"><div class="spinner"></div><p>조회 중...</p></div>
+      <div class="result-section" id="km-search-result">
+        <div class="card">
+          <div class="card-title">📊 검색량 현황</div>
+          <div id="km-search-stats" class="stat-row"></div>
+          <div id="km-search-badge" class="badge-row" style="margin-bottom:12px;"></div>
+          <div id="km-search-naver-link"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">🔗 연관 키워드</div>
+          <p style="font-size:0.8rem;color:#718096;margin-bottom:12px;">클릭하면 바로 재조회합니다</p>
+          <div class="tag-cloud" id="km-search-related"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">💡 분석 및 전략</div>
+          <div class="strategy-summary" id="km-search-analysis"></div>
+          <ul class="tips-list" style="margin-top:12px;" id="km-search-tips"></ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ⑧ 키워드마스터 - 형태소 분석 -->
+    <div id="page-km-morpheme" class="page">
+      <div class="page-title">🔤 형태소 분석기</div>
+      <div class="page-desc">텍스트를 형태소로 분석하고 키워드 빈도수와 감정을 파악합니다. 블로그 글, 댓글, 상품 설명 등 어떤 텍스트도 가능합니다.</div>
+      <div class="card">
+        <label>분석할 텍스트</label>
+        <textarea id="km-morpheme-text" placeholder="분석할 텍스트를 입력하세요."></textarea>
+        <button class="btn-run" onclick="runKmMorpheme()">🔤 형태소 분석</button>
+      </div>
+      <div class="error-box" id="km-morpheme-error"></div>
+      <div class="loading" id="km-morpheme-loading"><div class="spinner"></div><p>분석 중...</p></div>
+      <div class="result-section" id="km-morpheme-result">
+        <div class="card">
+          <div class="card-title">😊 감정 분석</div>
+          <div id="km-morpheme-sentiment"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">🏆 주요 키워드 (빈도 높은 순)</div>
+          <div class="tag-cloud" id="km-morpheme-keywords"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">📊 형태소 분석 결과</div>
+          <table class="morpheme-table">
+            <thead><tr><th>단어</th><th>품사</th><th>빈도</th></tr></thead>
+            <tbody id="km-morpheme-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ⑨ 키워드마스터 - 셀러마스터 -->
+    <div id="page-km-seller" class="page">
+      <div class="page-title">🛒 셀러마스터</div>
+      <div class="page-desc">상품 키워드의 네이버 쇼핑 상품수와 경쟁도를 분석합니다. 온라인 셀러를 위한 시장 진입 전략을 제공합니다.</div>
+      <div class="card">
+        <label>상품 키워드</label>
+        <input type="text" id="km-seller-keyword" placeholder="예: 무선 이어폰, 공기청정기, 요가매트" />
+        <button class="btn-run" onclick="runKmSeller()">🛒 상품수 확인</button>
+      </div>
+      <div class="error-box" id="km-seller-error"></div>
+      <div class="loading" id="km-seller-loading"><div class="spinner"></div><p>조회 중...</p></div>
+      <div class="result-section" id="km-seller-result">
+        <div class="card">
+          <div class="card-title">📦 상품 현황</div>
+          <div id="km-seller-stats"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">💡 셀러 전략</div>
+          <div class="strategy-summary" id="km-seller-analysis"></div>
+          <ul class="tips-list" style="margin-top:12px;" id="km-seller-tips"></ul>
+        </div>
+        <div class="card">
+          <div class="card-title">🔗 관련 상품 키워드</div>
+          <div class="tag-cloud" id="km-seller-related"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ⑩ 키워드마스터 - 실시간 검색어 -->
+    <div id="page-km-realtime" class="page">
+      <div class="page-title">📡 실시간 검색어</div>
+      <div class="page-desc">현재 이슈가 되는 키워드를 분야별로 확인합니다. (AI 트렌드 분석)</div>
+      <div class="card">
+        <label>분야 선택</label>
+        <div class="category-group">
+          <button class="category-btn active" data-cat="부동산">🏠 부동산</button>
+          <button class="category-btn" data-cat="금융/경제">💰 금융/경제</button>
+          <button class="category-btn" data-cat="재테크/투자">📈 재테크/투자</button>
+          <button class="category-btn" data-cat="뉴스/이슈">📰 뉴스/이슈</button>
+          <button class="category-btn" data-cat="전체">🌐 전체</button>
+        </div>
+        <button class="btn-run" onclick="runKmRealtime()">📡 검색어 불러오기</button>
+      </div>
+      <div class="error-box" id="km-realtime-error"></div>
+      <div class="loading" id="km-realtime-loading"><div class="spinner"></div><p>트렌드 분석 중...</p></div>
+      <div class="result-section" id="km-realtime-result">
+        <div class="card">
+          <div class="card-title">🔥 실시간 인기 검색어</div>
+          <div class="info-box" id="km-realtime-summary"></div>
+          <ul class="realtime-list" id="km-realtime-list"></ul>
         </div>
       </div>
     </div>
@@ -1164,6 +1375,190 @@
       btn.textContent = '✓ 복사됨';
       setTimeout(() => btn.textContent = '복사', 1500);
     });
+  }
+
+  /* ── 키워드마스터 카테고리 버튼 ── */
+  let kmRealtimeCat = '부동산';
+  document.querySelectorAll('.category-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      kmRealtimeCat = btn.dataset.cat;
+    });
+  });
+
+  /* ── ⑦ 검색량 조회 ── */
+  async function runKmSearch() {
+    const kw = document.getElementById('km-search-keyword').value.trim();
+    if (!kw) { alert('키워드를 입력해주세요.'); return; }
+    const card = document.querySelector('#page-km-search .card');
+    disableBtn(card, true);
+    showLoading('km-search', true);
+    showResult('km-search', false);
+    showError('km-search', '');
+    try {
+      const data = await callAPI({ mode: 'km-search', keyword: kw });
+      renderKmSearch(data, kw);
+      showResult('km-search', true);
+    } catch(e) { showError('km-search', e.message); }
+    finally { disableBtn(card, false); showLoading('km-search', false); }
+  }
+
+  function renderKmSearch(data, kw) {
+    const raw = data.rawData || {};
+    const hasVol = raw.pc !== null && raw.pc !== undefined;
+    document.getElementById('km-search-stats').innerHTML = `
+      ${hasVol ? `
+        <div class="stat-box"><div class="stat-box-label">PC 검색량</div><div class="stat-box-value">${(raw.pc||0).toLocaleString()}</div><div class="stat-box-sub">최근 30일</div></div>
+        <div class="stat-box"><div class="stat-box-label">모바일 검색량</div><div class="stat-box-value">${(raw.mobile||0).toLocaleString()}</div><div class="stat-box-sub">최근 30일</div></div>
+        <div class="stat-box" style="border-color:#2b6cb0;"><div class="stat-box-label">총 검색량</div><div class="stat-box-value" style="color:#2b6cb0;">${(raw.monthlySearch||0).toLocaleString()}</div><div class="stat-box-sub">PC + 모바일</div></div>
+      ` : `<div class="info-box" style="grid-column:1/-1;">🤖 네이버 광고 API 미연결 — 검색량은 AI 추정값입니다.</div>`}
+      ${raw.blogCount != null ? `<div class="stat-box"><div class="stat-box-label">경쟁 포스트 수</div><div class="stat-box-value">${raw.blogCount.toLocaleString()}</div><div class="stat-box-sub">네이버 블로그</div></div>` : ''}
+      ${raw.trendAvg != null ? `<div class="stat-box"><div class="stat-box-label">트렌드 점수</div><div class="stat-box-value">${raw.trendAvg}</div><div class="stat-box-sub">최근 3개월 평균</div></div>` : ''}
+    `;
+    document.getElementById('km-search-badge').innerHTML = `
+      <span class="badge ${volClass(data.searchVolume)}">검색량 ${data.searchVolume||'-'}</span>
+      <span class="badge ${compClass(data.competition)}">경쟁도 ${data.competition||'-'}</span>
+    `;
+    document.getElementById('km-search-naver-link').innerHTML = `
+      <a href="https://search.naver.com/search.naver?query=${encodeURIComponent(kw)}" target="_blank" class="check-link check-link-naver" style="display:inline-flex;margin-top:10px;">🟢 네이버에서 실제 결과 보기</a>
+    `;
+    document.getElementById('km-search-related').innerHTML = (data.relatedKeywords||[]).map(k =>
+      `<span class="tag" onclick="setKmSearch('${k.replace(/'/g,"\\'")}')"> ${k}</span>`).join('');
+    document.getElementById('km-search-analysis').textContent = data.analysis || '';
+    document.getElementById('km-search-tips').innerHTML = (data.tips||[]).map(t=>`<li>${t}</li>`).join('');
+  }
+
+  function setKmSearch(kw) {
+    document.getElementById('km-search-keyword').value = kw;
+    showPage('km-search');
+    runKmSearch();
+  }
+
+  /* ── ⑧ 형태소 분석 ── */
+  async function runKmMorpheme() {
+    const text = document.getElementById('km-morpheme-text').value.trim();
+    if (!text) { alert('분석할 텍스트를 입력해주세요.'); return; }
+    const card = document.querySelector('#page-km-morpheme .card');
+    disableBtn(card, true);
+    showLoading('km-morpheme', true);
+    showResult('km-morpheme', false);
+    showError('km-morpheme', '');
+    try {
+      const data = await callAPI({ mode: 'km-morpheme', keyword: text });
+      renderKmMorpheme(data);
+      showResult('km-morpheme', true);
+    } catch(e) { showError('km-morpheme', e.message); }
+    finally { disableBtn(card, false); showLoading('km-morpheme', false); }
+  }
+
+  function renderKmMorpheme(data) {
+    const sentMap = {
+      '긍정': { cls:'pos', label:'긍정적 😊', color:'#48bb78' },
+      '부정': { cls:'neg', label:'부정적 😔', color:'#fc8181' },
+      '중립': { cls:'neu', label:'중립적 😐', color:'#a0aec0' }
+    };
+    const s = sentMap[data.sentiment] || sentMap['중립'];
+    const score = Math.round((data.sentimentScore||0.5)*100);
+    document.getElementById('km-morpheme-sentiment').innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+        <span class="badge" style="background:${s.color}22;color:${s.color};border:1.5px solid ${s.color}44;font-size:0.9rem;padding:6px 14px;">${s.label}</span>
+        <span style="font-size:0.85rem;color:#718096;">${score}% 확신도</span>
+      </div>
+      <div class="sentiment-bar"><div class="sentiment-fill sentiment-${s.cls}" style="width:${score}%"></div></div>
+      <div style="font-size:0.85rem;color:#4a5568;margin-top:10px;line-height:1.6;">${data.sentimentDetail||''}</div>
+    `;
+    document.getElementById('km-morpheme-keywords').innerHTML = (data.topKeywords||[]).map((k,i)=>
+      `<span class="tag" style="font-size:${i<3?'0.95rem':'0.82rem'};font-weight:${i<3?'700':'500'};">${k}</span>`).join('');
+    document.getElementById('km-morpheme-table').innerHTML = (data.morphemes||[]).map(m=>`
+      <tr>
+        <td style="font-weight:600;">${m.word}</td>
+        <td><span class="badge" style="background:#ebf4ff;color:#2b6cb0;">${m.pos}</span></td>
+        <td style="font-weight:700;color:#1a365d;">${m.count}회</td>
+      </tr>`).join('');
+  }
+
+  /* ── ⑨ 셀러마스터 ── */
+  async function runKmSeller() {
+    const kw = document.getElementById('km-seller-keyword').value.trim();
+    if (!kw) { alert('상품 키워드를 입력해주세요.'); return; }
+    const card = document.querySelector('#page-km-seller .card');
+    disableBtn(card, true);
+    showLoading('km-seller', true);
+    showResult('km-seller', false);
+    showError('km-seller', '');
+    try {
+      const data = await callAPI({ mode: 'km-seller', keyword: kw });
+      renderKmSeller(data);
+      showResult('km-seller', true);
+    } catch(e) { showError('km-seller', e.message); }
+    finally { disableBtn(card, false); showLoading('km-seller', false); }
+  }
+
+  function renderKmSeller(data) {
+    const pr = data.priceRange || {};
+    document.getElementById('km-seller-stats').innerHTML = `
+      <div class="stat-row">
+        ${data.productCount != null ? `
+          <div class="stat-box" style="border-color:#2b6cb0;">
+            <div class="stat-box-label">네이버 쇼핑 상품수</div>
+            <div class="stat-box-value" style="color:#2b6cb0;">${data.productCount.toLocaleString()}</div>
+            <div class="stat-box-sub">실제 데이터</div>
+          </div>` : `<div class="info-box" style="grid-column:1/-1;">🤖 AI 추정값입니다.</div>`}
+        <div class="stat-box">
+          <div class="stat-box-label">경쟁도</div>
+          <div class="stat-box-value" style="font-size:1.1rem;">${data.competition||'-'}</div>
+          <div class="stat-box-sub">판매 경쟁 수준</div>
+        </div>
+        ${pr.avg ? `<div class="stat-box"><div class="stat-box-label">평균 예상가</div><div class="stat-box-value" style="font-size:1rem;">${pr.avg.toLocaleString()}원</div><div class="stat-box-sub">${(pr.min||0).toLocaleString()}~${(pr.max||0).toLocaleString()}원</div></div>` : ''}
+      </div>
+    `;
+    document.getElementById('km-seller-analysis').textContent = data.analysis || '';
+    document.getElementById('km-seller-tips').innerHTML = (data.sellerTips||[]).map(t=>`<li>${t}</li>`).join('');
+    document.getElementById('km-seller-related').innerHTML = (data.relatedProducts||[]).map(k=>
+      `<span class="tag" onclick="setKmSeller('${k.replace(/'/g,"\\'")}')"> ${k}</span>`).join('');
+  }
+
+  function setKmSeller(kw) {
+    document.getElementById('km-seller-keyword').value = kw;
+    showPage('km-seller');
+    runKmSeller();
+  }
+
+  /* ── ⑩ 실시간 검색어 ── */
+  async function runKmRealtime() {
+    const card = document.querySelector('#page-km-realtime .card');
+    disableBtn(card, true);
+    showLoading('km-realtime', true);
+    showResult('km-realtime', false);
+    showError('km-realtime', '');
+    try {
+      const data = await callAPI({ mode: 'km-realtime', topic: kmRealtimeCat });
+      renderKmRealtime(data);
+      showResult('km-realtime', true);
+    } catch(e) { showError('km-realtime', e.message); }
+    finally { disableBtn(card, false); showLoading('km-realtime', false); }
+  }
+
+  function renderKmRealtime(data) {
+    document.getElementById('km-realtime-summary').textContent = data.summary || '';
+    const trendMap = {
+      '상승': { cls:'trend-up',   label:'▲ 상승' },
+      '신규': { cls:'trend-new',  label:'🆕 신규' },
+      '유지': { cls:'trend-keep', label:'→ 유지' }
+    };
+    document.getElementById('km-realtime-list').innerHTML = (data.keywords||[]).map(k => {
+      const t = trendMap[k.trend] || trendMap['유지'];
+      return `
+        <li class="realtime-item">
+          <span class="realtime-rank">${k.rank}</span>
+          <div style="flex:1;">
+            <div class="realtime-keyword">${k.keyword}</div>
+            ${k.desc ? `<div style="font-size:0.76rem;color:#a0aec0;margin-top:2px;">${k.category} · ${k.desc}</div>` : ''}
+          </div>
+          <span class="realtime-trend ${t.cls}">${t.label}</span>
+        </li>`;
+    }).join('');
   }
 </script>
 

@@ -73,6 +73,20 @@ async function naverSearchVolume(keyword, apiKey, secretKey, customerId) {
   } catch { return null; }
 }
 
+// 네이버 쇼핑 검색 (상품수)
+async function naverShoppingSearch(query, cid, csec) {
+  if (!cid || !csec) return null;
+  try {
+    const res = await fetch(
+      `https://openapi.naver.com/v1/search/shop.json?query=${encodeURIComponent(query)}&display=1`,
+      { headers: { 'X-Naver-Client-Id': cid, 'X-Naver-Client-Secret': csec } }
+    );
+    if (!res.ok) return null;
+    const d = await res.json();
+    return d.total ?? null;
+  } catch { return null; }
+}
+
 // 수치 → 레벨 변환
 function compLevel(total) {
   if (total === null || total === undefined) return null;
@@ -310,6 +324,63 @@ Level 10: 최고 권위 (2000개+, 어떤 키워드도 노출)
 {"estimatedLevel":0,"levelReason":"","summary":"","points":[""]}
 estimatedLevel은 0~10 정수, levelReason은 1문장, points는 4가지 핵심 체크포인트.`,
         `블로그: ${blogUrl}`
+      );
+    }
+
+    // ⑦ 키워드마스터 - 검색량 조회
+    else if (mode === 'km-search') {
+      const [blogCount, trend] = await Promise.all([
+        hasNaver ? naverBlogSearch(keyword, NAVER_CID, NAVER_CSEC) : Promise.resolve(null),
+        hasNaver ? naverDataLab(keyword, NAVER_CID, NAVER_CSEC)    : Promise.resolve(null)
+      ]);
+      const vol = hasAds ? await naverSearchVolume(keyword, AD_KEY, AD_SECRET, AD_CUSTOMER) : null;
+
+      result = await claude(CLAUDE_KEY,
+        `한국 블로그 SEO 전문가. 순수 JSON만 반환.
+{"searchVolume":"높음|중간|낮음","competition":"높음|중간|낮음","relatedKeywords":[""],"analysis":"","tips":[""]}
+relatedKeywords 10개, tips 4개.`,
+        `키워드: ${keyword}\n블로그수: ${blogCount ?? '없음'}\n트렌드: ${trend?.avg ?? '없음'}\n월검색량: ${vol?.total ?? '없음'} (PC ${vol?.pc ?? '-'}, 모바일 ${vol?.mobile ?? '-'})`
+      );
+      result.rawData = {
+        blogCount,
+        trendAvg: trend?.avg ?? null,
+        monthlySearch: vol?.total ?? null,
+        pc: vol?.pc ?? null,
+        mobile: vol?.mobile ?? null
+      };
+    }
+
+    // ⑧ 키워드마스터 - 형태소 분석
+    else if (mode === 'km-morpheme') {
+      result = await claude(CLAUDE_KEY,
+        `한국어 형태소 분석 전문가. 순수 JSON만 반환.
+{"morphemes":[{"word":"","pos":"명사|동사|형용사|부사","count":0}],"topKeywords":[""],"sentiment":"긍정|부정|중립","sentimentScore":0.0,"sentimentDetail":"","summary":""}
+morphemes는 의미있는 단어 위주 최대 30개 빈도순. topKeywords 10개.`,
+        `분석할 텍스트:\n${keyword}`,
+        3000
+      );
+    }
+
+    // ⑨ 키워드마스터 - 셀러마스터
+    else if (mode === 'km-seller') {
+      const productCount = hasNaver ? await naverShoppingSearch(keyword, NAVER_CID, NAVER_CSEC) : null;
+      result = await claude(CLAUDE_KEY,
+        `한국 온라인 쇼핑 셀러 전문가. 순수 JSON만 반환.
+{"competition":"높음|중간|낮음","priceRange":{"min":0,"max":0,"avg":0},"sellerTips":[""],"relatedProducts":[""],"analysis":""}
+sellerTips 5개, relatedProducts 5개.`,
+        `상품 키워드: ${keyword}\n네이버 쇼핑 상품수: ${productCount !== null ? productCount.toLocaleString() + '개' : '알 수 없음'}`
+      );
+      result.productCount = productCount;
+    }
+
+    // ⑩ 키워드마스터 - 실시간 검색어
+    else if (mode === 'km-realtime') {
+      const today = new Date().toISOString().slice(0, 10);
+      result = await claude(CLAUDE_KEY,
+        `한국 트렌드 분석 전문가. 순수 JSON만 반환.
+{"keywords":[{"rank":1,"keyword":"","category":"","trend":"상승|신규|유지","desc":""}],"summary":""}
+keywords 20개. 오늘 날짜 기준 해당 분야 이슈 키워드.`,
+        `분야: ${topic || '전체'}\n날짜: ${today}`
       );
     }
 
