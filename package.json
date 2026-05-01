@@ -1,0 +1,8 @@
+{
+  "name": "keyword-tool",
+  "version": "1.0.0",
+  "description": "블로그 SEO 키워드 분석기",
+  "engines": {
+    "node": ">=18"
+  }
+}
