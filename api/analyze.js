@@ -73,6 +73,20 @@ async function naverSearchVolume(keyword, apiKey, secretKey, customerId) {
   } catch { return null; }
 }
 
+// 네이버 뉴스 검색 (실시간 뉴스)
+async function naverNewsSearch(query, cid, csec) {
+  if (!cid || !csec) return null;
+  try {
+    const res = await fetch(
+      `https://openapi.naver.com/v1/search/news.json?query=${encodeURIComponent(query)}&display=15&sort=date`,
+      { headers: { 'X-Naver-Client-Id': cid, 'X-Naver-Client-Secret': csec } }
+    );
+    if (!res.ok) return null;
+    const d = await res.json();
+    return d.items ?? null;
+  } catch { return null; }
+}
+
 // 네이버 쇼핑 검색 (상품수)
 async function naverShoppingSearch(query, cid, csec) {
   if (!cid || !csec) return null;
@@ -376,12 +390,41 @@ sellerTips 5개, relatedProducts 5개.`,
     // ⑩ 키워드마스터 - 실시간 검색어
     else if (mode === 'km-realtime') {
       const today = new Date().toISOString().slice(0, 10);
-      result = await claude(CLAUDE_KEY,
-        `한국 트렌드 분석 전문가. 순수 JSON만 반환.
+      const categoryQuery = {
+        '부동산':    '부동산 아파트 전세',
+        '금융/경제': '경제 금융 주식',
+        '재테크/투자': '재테크 투자 ETF',
+        '뉴스/이슈': '이슈 사건 사고',
+        '전체':      '주요뉴스 이슈'
+      }[topic] || '주요뉴스';
+
+      const newsItems = hasNaver
+        ? await naverNewsSearch(categoryQuery, NAVER_CID, NAVER_CSEC)
+        : null;
+
+      if (newsItems && newsItems.length > 0) {
+        const strip = s => (s || '').replace(/<[^>]*>/g, '').trim();
+        const newsTitles = newsItems.slice(0, 12).map((item, i) =>
+          `${i+1}. 제목: ${strip(item.title)} / 요약: ${strip(item.description).slice(0, 60)}`
+        ).join('\n');
+
+        result = await claude(CLAUDE_KEY,
+          `한국 뉴스 트렌드 분석가. 순수 JSON만 반환.
+{"keywords":[{"rank":1,"keyword":"핵심검색어(5글자이내)","category":"분야","trend":"상승|신규|유지","desc":"뉴스한줄요약(25자이내)","headline":"원본뉴스제목그대로"}],"summary":"오늘트렌드한줄요약"}
+각 뉴스에서 핵심 검색 키워드 추출 + 한줄 요약. keywords 10개.`,
+          `분야: ${topic}\n날짜: ${today}\n\n최신 뉴스:\n${newsTitles}`
+        );
+        result._hasRealNews = true;
+      } else {
+        result = await claude(CLAUDE_KEY,
+          `한국 트렌드 분석 전문가. 순수 JSON만 반환.
 {"keywords":[{"rank":1,"keyword":"","category":"","trend":"상승|신규|유지","desc":""}],"summary":""}
-keywords 20개. 오늘 날짜 기준 해당 분야 이슈 키워드.`,
-        `분야: ${topic || '전체'}\n날짜: ${today}`
-      );
+keywords 10개. 오늘 날짜 기준 해당 분야 이슈 키워드.`,
+          `분야: ${topic || '전체'}\n날짜: ${today}`
+        );
+        result._hasRealNews = false;
+      }
+      result.updatedAt = new Date().toLocaleString('ko-KR', { hour12: false });
     }
 
     else {

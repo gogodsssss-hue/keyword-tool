@@ -1541,22 +1541,35 @@
   }
 
   function renderKmRealtime(data) {
-    document.getElementById('km-realtime-summary').textContent = data.summary || '';
     const trendMap = {
       '상승': { cls:'trend-up',   label:'▲ 상승' },
       '신규': { cls:'trend-new',  label:'🆕 신규' },
       '유지': { cls:'trend-keep', label:'→ 유지' }
     };
+
+    const sourceBadge = data._hasRealNews
+      ? `<span style="display:inline-block;background:#c6f6d5;color:#22543d;border:1.5px solid #9ae6b4;border-radius:20px;padding:2px 10px;font-size:0.75rem;font-weight:700;">🟢 네이버 실뉴스 반영</span>`
+      : `<span style="display:inline-block;background:#fef3c7;color:#92400e;border:1.5px solid #f6e05e;border-radius:20px;padding:2px 10px;font-size:0.75rem;font-weight:700;">🤖 AI 추정</span>`;
+
+    document.getElementById('km-realtime-summary').innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px;">
+        ${sourceBadge}
+        ${data.updatedAt ? `<span style="font-size:0.75rem;color:#a0aec0;">마지막 업데이트: ${data.updatedAt}</span>` : ''}
+      </div>
+      <div style="font-size:0.85rem;color:#744210;">${data.summary || ''}</div>
+    `;
+
     document.getElementById('km-realtime-list').innerHTML = (data.keywords||[]).map(k => {
       const t = trendMap[k.trend] || trendMap['유지'];
       return `
-        <li class="realtime-item">
-          <span class="realtime-rank">${k.rank}</span>
-          <div style="flex:1;">
-            <div class="realtime-keyword">${k.keyword}</div>
-            ${k.desc ? `<div style="font-size:0.76rem;color:#a0aec0;margin-top:2px;">${k.category} · ${k.desc}</div>` : ''}
+        <li class="realtime-item" style="flex-direction:column;align-items:flex-start;gap:5px;">
+          <div style="display:flex;align-items:center;gap:10px;width:100%;">
+            <span class="realtime-rank">${k.rank}</span>
+            <span class="realtime-keyword" style="flex:1;">${k.keyword}</span>
+            <span class="realtime-trend ${t.cls}">${t.label}</span>
           </div>
-          <span class="realtime-trend ${t.cls}">${t.label}</span>
+          ${k.headline ? `<div style="font-size:0.8rem;color:#4a5568;padding-left:38px;line-height:1.5;">${k.headline}</div>` : ''}
+          ${k.desc ? `<div style="font-size:0.73rem;color:#a0aec0;padding-left:38px;">${k.category} · ${k.desc}</div>` : ''}
         </li>`;
     }).join('');
   }
