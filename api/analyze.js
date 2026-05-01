@@ -427,6 +427,53 @@ keywords 10개. 오늘 날짜 기준 해당 분야 이슈 키워드.`,
       result.updatedAt = new Date().toLocaleString('ko-KR', { hour12: false });
     }
 
+    // ⑪ 유튜브 분석기
+    else if (mode === 'youtube-analyze') {
+      result = await claude(CLAUDE_KEY,
+        `한국 유튜브 SEO 전문가. 부동산·금융·경제 특화. 순수 JSON만 반환.
+{
+  "channelAnalysis": {"level":"신규|성장|중급|전문가|파워채널","reason":"채널 수준 분석 1~2문장"},
+  "keywordAnalysis": {"searchVolume":"높음|중간|낮음","competition":"높음|중간|낮음","trending":"상승|유지|하락"},
+  "titleSuggestions": ["제목1","제목2","제목3"],
+  "recommendedTags": ["태그1","태그2","태그3","태그4","태그5","태그6","태그7","태그8","태그9","태그10"],
+  "thumbnailTips": ["썸네일팁1","썸네일팁2","썸네일팁3"],
+  "growthStrategy": ["전략1","전략2","전략3","전략4","전략5"],
+  "summary": "종합 분석 2~3문장"
+}
+titleSuggestions는 유튜브 알고리즘 최적화 제목. recommendedTags 10개.`,
+        `분석 대상: ${keyword}\n채널 분야: ${topic || '부동산/금융/경제'}`
+      );
+    }
+
+    // ⑫ 블로그 매트릭스
+    else if (mode === 'blog-matrix') {
+      const [blogCount, trend] = await Promise.all([
+        hasNaver ? naverBlogSearch(keyword, NAVER_CID, NAVER_CSEC) : Promise.resolve(null),
+        hasNaver ? naverDataLab(keyword, NAVER_CID, NAVER_CSEC)    : Promise.resolve(null)
+      ]);
+      const vol = hasAds ? await naverSearchVolume(keyword, AD_KEY, AD_SECRET, AD_CUSTOMER) : null;
+
+      result = await claude(CLAUDE_KEY,
+        `한국 블로그 SEO 전문가. 종합 매트릭스 분석. 순수 JSON만 반환.
+{
+  "blogLevel": {"level":0,"reason":"레벨 근거 1문장"},
+  "keywordStatus": {"searchVolume":"높음|중간|낮음","competition":"높음|중간|낮음","opportunity":"높음|중간|낮음"},
+  "goldenKeywords": [{"keyword":"","score":"★~★★★★★","reason":""}],
+  "competitionMatrix": [{"competitor":"경쟁유형","strength":"강점","weakness":"약점"}],
+  "contentPlan": ["콘텐츠계획1","콘텐츠계획2","콘텐츠계획3"],
+  "quickWins": ["빠른성과전략1","빠른성과전략2","빠른성과전략3"],
+  "summary": "종합 분석 2~3문장"
+}
+goldenKeywords 3개, competitionMatrix 3개, contentPlan 4개, quickWins 4개.`,
+        `블로그: ${blogUrl}\n키워드: ${keyword}\n플랫폼: ${platform||'둘 다'}\n블로그수: ${blogCount ?? '없음'}\n트렌드: ${trend?.avg ?? '없음'}\n월검색량: ${vol?.total ?? '없음'}`
+      );
+      result.rawData = {
+        blogCount,
+        trendAvg: trend?.avg ?? null,
+        monthlySearch: vol?.total ?? null
+      };
+    }
+
     else {
       return res.status(400).json({ error: '지원하지 않는 모드입니다.' });
     }

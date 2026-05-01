@@ -602,6 +602,61 @@
     .category-btn.active { border-color: #2b6cb0; background: #ebf4ff; color: #2b6cb0; }
     .category-btn:hover  { border-color: #2b6cb0; }
 
+    /* ── 유튜브 분석기 ── */
+    .yt-level-badge {
+      display: inline-block;
+      padding: 6px 18px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 800;
+      color: white;
+      background: #ff0000;
+      margin-bottom: 10px;
+    }
+
+    /* ── 블로그 매트릭스 ── */
+    .matrix-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 600px) { .matrix-grid { grid-template-columns: 1fr; } }
+
+    .matrix-card {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      border: 1.5px solid #e2e8f0;
+    }
+    .matrix-card-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #718096;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .matrix-big-value {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #1a365d;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .matrix-sub { font-size: 0.8rem; color: #a0aec0; }
+
+    .competition-table { width: 100%; border-collapse: collapse; }
+    .competition-table th, .competition-table td {
+      padding: 9px 12px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 0.83rem;
+    }
+    .competition-table th { background: #f7fafc; font-weight: 700; color: #4a5568; font-size: 0.78rem; }
+    .competition-table tr:last-child td { border-bottom: none; }
+
     /* ── 반응형 ── */
     @media (max-width: 700px) {
       .sidebar { width: 52px; min-width: 52px; }
@@ -659,6 +714,14 @@
     </div>
     <div class="menu-item" data-page="km-realtime" onclick="showPage('km-realtime')">
       <span class="menu-icon">📡</span><span>실시간 검색어</span>
+    </div>
+
+    <div class="sidebar-section" style="margin-top:10px;">추가 도구</div>
+    <div class="menu-item" data-page="youtube" onclick="showPage('youtube')">
+      <span class="menu-icon">▶️</span><span>유튜브 분석기</span>
+    </div>
+    <div class="menu-item" data-page="blog-matrix" onclick="showPage('blog-matrix')">
+      <span class="menu-icon">🔲</span><span>블로그 매트릭스</span>
     </div>
   </nav>
 
@@ -863,6 +926,93 @@
       </div>
     </div>
 
+    <!-- ⑪ 유튜브 분석기 -->
+    <div id="page-youtube" class="page">
+      <div class="page-title">▶️ 유튜브 분석기</div>
+      <div class="page-desc">유튜브 채널·영상 키워드를 분석하고 제목·태그·썸네일·성장 전략을 제공합니다.</div>
+      <div class="card">
+        <label>분석할 주제 또는 유튜브 URL</label>
+        <input type="text" id="yt-keyword" placeholder="예: 부동산 투자, 금리 인상, https://youtube.com/watch?v=..." />
+        <label style="margin-top:14px;">채널 분야 (선택)</label>
+        <input type="text" id="yt-topic" placeholder="예: 부동산, 경제, 재테크, 일상 브이로그" />
+        <button class="btn-run" onclick="runYoutube()">▶️ 유튜브 분석</button>
+      </div>
+      <div class="error-box" id="youtube-error"></div>
+      <div class="loading" id="youtube-loading"><div class="spinner"></div><p>분석 중...</p></div>
+      <div class="result-section" id="youtube-result">
+        <div class="card">
+          <div class="card-title">📊 키워드 분석</div>
+          <div id="yt-keyword-analysis"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">✍️ 추천 제목 (유튜브 최적화)</div>
+          <ul class="title-list" id="yt-titles"></ul>
+        </div>
+        <div class="card">
+          <div class="card-title"># 추천 태그</div>
+          <div class="tag-cloud" id="yt-tags"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">🖼️ 썸네일 팁</div>
+          <ul class="tips-list" id="yt-thumbnail"></ul>
+        </div>
+        <div class="card">
+          <div class="card-title">📈 성장 전략</div>
+          <div class="strategy-summary" id="yt-summary"></div>
+          <ul class="tips-list" style="margin-top:12px;" id="yt-strategy"></ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ⑫ 블로그 매트릭스 -->
+    <div id="page-blog-matrix" class="page">
+      <div class="page-title">🔲 블로그 매트릭스</div>
+      <div class="page-desc">지수·키워드·경쟁 분석까지 한 번에 해결하는 종합 분석 도구입니다.</div>
+      <div class="card">
+        <label>블로그 주소</label>
+        <input type="text" id="matrix-url" placeholder="예: blog.naver.com/myid  또는  myid.tistory.com" />
+        <label style="margin-top:14px;">주요 키워드</label>
+        <input type="text" id="matrix-keyword" placeholder="예: 아파트 전세, 금리 인상, ETF 투자" />
+        <div style="margin-top:14px;">
+          <label>플랫폼</label>
+          <div class="platform-group">
+            <button class="platform-btn active" data-group="matrix" data-val="둘 다">둘 다</button>
+            <button class="platform-btn" data-group="matrix" data-val="네이버 블로그">네이버</button>
+            <button class="platform-btn" data-group="matrix" data-val="티스토리">티스토리</button>
+          </div>
+        </div>
+        <button class="btn-run" onclick="runBlogMatrix()">🔲 통합 분석</button>
+      </div>
+      <div class="error-box" id="matrix-error"></div>
+      <div class="loading" id="matrix-loading"><div class="spinner"></div><p>매트릭스 분석 중...</p></div>
+      <div class="result-section" id="matrix-result">
+        <div class="matrix-grid">
+          <div class="matrix-card" id="matrix-level-card"></div>
+          <div class="matrix-card" id="matrix-keyword-card"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">🥇 황금 키워드 TOP 3</div>
+          <div class="keyword-grid" id="matrix-golden"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">⚔️ 경쟁 매트릭스</div>
+          <table class="competition-table">
+            <thead><tr><th>경쟁 유형</th><th>강점</th><th>약점</th></tr></thead>
+            <tbody id="matrix-competition"></tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-title">📅 콘텐츠 계획</div>
+          <ul class="tips-list" id="matrix-content"></ul>
+        </div>
+        <div class="card">
+          <div class="card-title">⚡ 빠른 성과 전략</div>
+          <div class="strategy-summary" id="matrix-summary"></div>
+          <ul class="tips-list" style="margin-top:12px;" id="matrix-quickwins"></ul>
+        </div>
+      </div>
+    </div>
+
     <!-- ⑦ 키워드마스터 - 검색량 조회 -->
     <div id="page-km-search" class="page">
       <div class="page-title">🔍 검색량 조회</div>
@@ -983,7 +1133,7 @@
 
 <script>
   /* ── 플랫폼 버튼 ── */
-  const platformState = { kidx: '둘 다', gold: '둘 다', rec: '둘 다' };
+  const platformState = { kidx: '둘 다', gold: '둘 다', rec: '둘 다', matrix: '둘 다' };
 
   document.querySelectorAll('.platform-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1375,6 +1525,103 @@
       btn.textContent = '✓ 복사됨';
       setTimeout(() => btn.textContent = '복사', 1500);
     });
+  }
+
+  /* ── ⑪ 유튜브 분석기 ── */
+  async function runYoutube() {
+    const kw    = document.getElementById('yt-keyword').value.trim();
+    const topic = document.getElementById('yt-topic').value.trim();
+    if (!kw) { alert('주제 또는 URL을 입력해주세요.'); return; }
+    const card = document.querySelector('#page-youtube .card');
+    disableBtn(card, true);
+    showLoading('youtube', true);
+    showResult('youtube', false);
+    showError('youtube', '');
+    try {
+      const data = await callAPI({ mode: 'youtube-analyze', keyword: kw, topic });
+      renderYoutube(data);
+      showResult('youtube', true);
+    } catch(e) { showError('youtube', e.message); }
+    finally { disableBtn(card, false); showLoading('youtube', false); }
+  }
+
+  function renderYoutube(data) {
+    const ka = data.keywordAnalysis || {};
+    document.getElementById('yt-keyword-analysis').innerHTML = `
+      <div class="badge-row" style="margin-bottom:12px;">
+        <span class="badge ${volClass(ka.searchVolume)}">검색량 ${ka.searchVolume||'-'}</span>
+        <span class="badge ${compClass(ka.competition)}">경쟁도 ${ka.competition||'-'}</span>
+        <span class="badge badge-gold">트렌드 ${ka.trending||'-'}</span>
+      </div>
+      <div class="strategy-summary">${data.channelAnalysis?.reason||''}</div>
+    `;
+    document.getElementById('yt-titles').innerHTML = (data.titleSuggestions||[]).map(t => `
+      <li class="title-item">
+        <span class="title-text">${t}</span>
+        <button class="copy-btn" onclick="copyText('${t.replace(/'/g,"\\'")}', this)">복사</button>
+      </li>`).join('');
+    document.getElementById('yt-tags').innerHTML = (data.recommendedTags||[]).map(tag =>
+      `<span class="tag">${tag}</span>`).join('');
+    document.getElementById('yt-thumbnail').innerHTML = (data.thumbnailTips||[]).map(t=>`<li>${t}</li>`).join('');
+    document.getElementById('yt-summary').textContent = data.summary || '';
+    document.getElementById('yt-strategy').innerHTML = (data.growthStrategy||[]).map(t=>`<li>${t}</li>`).join('');
+  }
+
+  /* ── ⑫ 블로그 매트릭스 ── */
+  async function runBlogMatrix() {
+    const url = document.getElementById('matrix-url').value.trim();
+    const kw  = document.getElementById('matrix-keyword').value.trim();
+    if (!url || !kw) { alert('블로그 주소와 키워드를 모두 입력해주세요.'); return; }
+    const card = document.querySelector('#page-blog-matrix .card');
+    disableBtn(card, true);
+    showLoading('matrix', true);
+    showResult('matrix', false);
+    showError('matrix', '');
+    try {
+      const data = await callAPI({ mode: 'blog-matrix', blogUrl: url, keyword: kw, platform: platformState.matrix });
+      renderBlogMatrix(data);
+      showResult('matrix', true);
+    } catch(e) { showError('matrix', e.message); }
+    finally { disableBtn(card, false); showLoading('matrix', false); }
+  }
+
+  function renderBlogMatrix(data) {
+    const lv = data.blogLevel || {};
+    const ks = data.keywordStatus || {};
+    const raw = data.rawData || {};
+    const color = LEVEL_COLORS[lv.level ?? 0] || '#9e9e9e';
+
+    document.getElementById('matrix-level-card').innerHTML = `
+      <div class="matrix-card-title">블로그 레벨</div>
+      <div class="matrix-big-value" style="color:${color};">Level ${lv.level ?? 0}</div>
+      <div class="matrix-sub" style="margin-bottom:10px;">${lv.reason||''}</div>
+      <div class="level-scale" style="margin-top:8px;">${levelScaleHTML(lv.level ?? 0)}</div>
+    `;
+    document.getElementById('matrix-keyword-card').innerHTML = `
+      <div class="matrix-card-title">키워드 현황</div>
+      ${raw.monthlySearch != null ? `<div class="matrix-big-value">${raw.monthlySearch.toLocaleString()}</div><div class="matrix-sub">월간 검색량</div>` : ''}
+      <div class="badge-row" style="margin-top:10px;">
+        <span class="badge ${volClass(ks.searchVolume)}">검색량 ${ks.searchVolume||'-'}</span>
+        <span class="badge ${compClass(ks.competition)}">경쟁도 ${ks.competition||'-'}</span>
+        <span class="badge badge-gold">기회 ${ks.opportunity||'-'}</span>
+      </div>
+      ${raw.blogCount != null ? `<div class="matrix-sub" style="margin-top:8px;">경쟁 포스트 ${raw.blogCount.toLocaleString()}개</div>` : ''}
+    `;
+    document.getElementById('matrix-golden').innerHTML = (data.goldenKeywords||[]).map(k => `
+      <div class="keyword-card">
+        <div class="keyword-name">🥇 ${k.keyword}</div>
+        <div class="badge-row"><span class="badge badge-gold">황금도 ${k.score}</span></div>
+        <div class="keyword-tip">${k.reason}</div>
+      </div>`).join('');
+    document.getElementById('matrix-competition').innerHTML = (data.competitionMatrix||[]).map(c => `
+      <tr>
+        <td style="font-weight:600;">${c.competitor}</td>
+        <td style="color:#22543d;">${c.strength}</td>
+        <td style="color:#c53030;">${c.weakness}</td>
+      </tr>`).join('');
+    document.getElementById('matrix-content').innerHTML = (data.contentPlan||[]).map(t=>`<li>${t}</li>`).join('');
+    document.getElementById('matrix-summary').textContent = data.summary || '';
+    document.getElementById('matrix-quickwins').innerHTML = (data.quickWins||[]).map(t=>`<li>${t}</li>`).join('');
   }
 
   /* ── 키워드마스터 카테고리 버튼 ── */
