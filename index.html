@@ -665,6 +665,529 @@
       .main { padding: 20px 16px; }
     }
   </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <style>
+    /* ════════════════════════════════════════
+       REDESIGN — 모던 프리미엄 대시보드
+    ════════════════════════════════════════ */
+    :root {
+      --bg:        #eef2ff;
+      --primary:   #2563eb;
+      --primary-l: #eff6ff;
+      --accent:    #f59e0b;
+      --success:   #10b981;
+      --danger:    #ef4444;
+      --text:      #1e293b;
+      --muted:     #64748b;
+      --border:    #e2e8f0;
+      --card:      #ffffff;
+      --shadow:    0 2px 16px rgba(37,99,235,0.07);
+      --shadow-lg: 0 8px 32px rgba(37,99,235,0.13);
+      --r:         14px;
+      --r-sm:      10px;
+    }
+
+    *, *::before, *::after {
+      font-family: 'Pretendard', 'Noto Sans KR', -apple-system, sans-serif !important;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(circle at 20% 20%, rgba(37,99,235,0.06) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(245,158,11,0.05) 0%, transparent 50%);
+      color: var(--text);
+    }
+
+    /* ── 헤더 ── */
+    header {
+      background: linear-gradient(135deg, #0f1f4e 0%, #1a3a8f 60%, #2563eb 100%);
+      padding: 0 28px;
+      height: 58px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 4px 20px rgba(15,31,78,0.35);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    header h1 {
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #fff;
+    }
+
+    header p {
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.6);
+      margin-top: 2px;
+    }
+
+    /* ── 사이드바 ── */
+    .sidebar {
+      width: 210px;
+      min-width: 210px;
+      background: #0d1b2e;
+      min-height: calc(100vh - 58px);
+      padding: 12px 0 24px;
+      position: sticky;
+      top: 58px;
+      height: calc(100vh - 58px);
+      overflow-y: auto;
+      border-right: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-track { background: transparent; }
+    .sidebar::-webkit-scrollbar-thumb { background: #2563eb44; border-radius: 4px; }
+
+    .sidebar-section {
+      padding: 16px 18px 5px;
+      font-size: 0.62rem;
+      font-weight: 700;
+      color: #3b5080;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 18px;
+      color: #7090b8;
+      font-size: 0.84rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.18s;
+      border-left: 3px solid transparent;
+      margin: 1px 6px 1px 0;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .menu-item:hover {
+      background: rgba(37,99,235,0.1);
+      color: #93c5fd;
+    }
+
+    .menu-item.active {
+      background: rgba(37,99,235,0.15);
+      color: #60a5fa;
+      border-left-color: #3b82f6;
+      font-weight: 700;
+    }
+
+    .menu-icon { font-size: 0.95rem; width: 20px; text-align: center; }
+
+    /* ── 메인 영역 ── */
+    .main { padding: 32px 36px; }
+
+    /* ── 페이지 전환 애니메이션 ── */
+    .page.active {
+      animation: slideIn 0.22s cubic-bezier(0.16,1,0.3,1);
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .page-title {
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 5px;
+      letter-spacing: -0.04em;
+    }
+
+    .page-desc {
+      font-size: 0.84rem;
+      color: var(--muted);
+      margin-bottom: 28px;
+      line-height: 1.65;
+    }
+
+    /* ── 카드 ── */
+    .card {
+      background: var(--card);
+      border-radius: var(--r);
+      padding: 24px 26px;
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+      border: 1px solid rgba(37,99,235,0.07);
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+
+    .card:hover { box-shadow: var(--shadow-lg); }
+
+    .card-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1.5px solid #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: -0.02em;
+    }
+
+    /* ── 폼 ── */
+    label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 7px;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 12px 15px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-sm);
+      font-size: 0.93rem;
+      color: var(--text);
+      transition: all 0.2s;
+      outline: none;
+      background: #fafcff;
+    }
+
+    input[type="text"]:focus, textarea:focus {
+      border-color: var(--primary);
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(37,99,235,0.09);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 130px;
+      line-height: 1.65;
+    }
+
+    /* ── 플랫폼 버튼 ── */
+    .platform-btn {
+      flex: 1;
+      padding: 10px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-sm);
+      background: #fafcff;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+
+    .platform-btn.active {
+      border-color: var(--primary);
+      background: var(--primary-l);
+      color: var(--primary);
+    }
+
+    .platform-btn:hover { border-color: var(--primary); }
+
+    /* ── 실행 버튼 ── */
+    .btn-run {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #0f1f4e 0%, #2563eb 100%);
+      color: white;
+      border: none;
+      border-radius: var(--r-sm);
+      font-size: 0.97rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 18px;
+      letter-spacing: -0.01em;
+      box-shadow: 0 4px 16px rgba(37,99,235,0.38);
+    }
+
+    .btn-run:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(37,99,235,0.48);
+    }
+
+    .btn-run:active { transform: translateY(0); }
+    .btn-run:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* ── 로딩 ── */
+    .spinner {
+      width: 34px;
+      height: 34px;
+      border: 3px solid #e2e8f0;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      margin: 0 auto 14px;
+    }
+
+    /* ── 에러 ── */
+    .error-box {
+      background: #fff1f2;
+      border: 1.5px solid #fecdd3;
+      border-radius: var(--r-sm);
+      padding: 13px 17px;
+      color: #e11d48;
+    }
+
+    /* ── 키워드 카드 ── */
+    .keyword-card {
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      background: #fafcff;
+      transition: all 0.2s;
+    }
+
+    .keyword-card:hover {
+      border-color: #93c5fd;
+      box-shadow: 0 4px 16px rgba(37,99,235,0.1);
+      transform: translateY(-2px);
+    }
+
+    /* ── 배지 ── */
+    .badge {
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 3px 9px;
+      border-radius: 20px;
+      letter-spacing: 0.02em;
+    }
+
+    .badge-vol-high  { background: #d1fae5; color: #065f46; }
+    .badge-vol-mid   { background: #fef9c3; color: #713f12; }
+    .badge-vol-low   { background: #fee2e2; color: #7f1d1d; }
+    .badge-comp-high { background: #fee2e2; color: #7f1d1d; }
+    .badge-comp-mid  { background: #fef9c3; color: #713f12; }
+    .badge-comp-low  { background: #d1fae5; color: #065f46; }
+    .badge-gold      { background: #fef3c7; color: #78350f; }
+
+    /* ── 태그 ── */
+    .tag {
+      background: var(--primary-l);
+      color: var(--primary);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid rgba(37,99,235,0.15);
+      transition: all 0.15s;
+    }
+
+    .tag:hover {
+      background: #dbeafe;
+      border-color: rgba(37,99,235,0.3);
+      transform: translateY(-1px);
+    }
+
+    /* ── 제목 목록 ── */
+    .title-item {
+      padding: 13px 16px;
+      background: #f8faff;
+      border-radius: var(--r-sm);
+      border: 1.5px solid var(--border);
+      transition: border-color 0.18s;
+    }
+
+    .title-item:hover { border-color: #93c5fd; }
+
+    .copy-btn {
+      background: #f1f5f9;
+      border: none;
+      border-radius: 6px;
+      padding: 5px 11px;
+      font-size: 0.72rem;
+      cursor: pointer;
+      color: var(--muted);
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+
+    .copy-btn:hover { background: var(--primary-l); color: var(--primary); }
+
+    /* ── 전략 박스 ── */
+    .strategy-summary {
+      font-size: 0.86rem;
+      color: #334155;
+      line-height: 1.72;
+      padding: 14px 16px;
+      background: linear-gradient(135deg, #f8faff, #eff6ff);
+      border-radius: var(--r-sm);
+      border-left: 3px solid var(--primary);
+      margin-bottom: 12px;
+    }
+
+    /* ── 팁 목록 ── */
+    .tips-list li {
+      font-size: 0.84rem;
+      color: #334155;
+      line-height: 1.65;
+    }
+
+    .tips-list li::before { color: var(--success); }
+
+    /* ── 스텝 번호 ── */
+    .step-num {
+      background: linear-gradient(135deg, #0f1f4e, #2563eb);
+      box-shadow: 0 2px 8px rgba(37,99,235,0.3);
+    }
+
+    /* ── 확인 링크 버튼 ── */
+    .check-link {
+      border-radius: var(--r-sm);
+      font-weight: 700;
+      transition: all 0.2s;
+    }
+
+    .check-link:hover { transform: translateY(-2px); opacity: 0.9; }
+    .check-link-naver  { box-shadow: 0 3px 12px rgba(3,199,90,0.3); }
+    .check-link-google { box-shadow: 0 3px 12px rgba(66,133,244,0.3); }
+
+    /* ── 스코어 카드 ── */
+    .score-card {
+      background: #fafcff;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      transition: all 0.2s;
+    }
+
+    .score-card:hover {
+      border-color: #93c5fd;
+      transform: translateY(-2px);
+    }
+
+    .score-label { color: var(--muted); font-weight: 700; letter-spacing: 0.02em; }
+    .score-value { color: var(--text); }
+
+    /* ── 정보 박스 ── */
+    .info-box {
+      background: #fffbeb;
+      border: 1.5px solid #fde68a;
+      border-radius: var(--r-sm);
+      color: #78350f;
+    }
+
+    /* ── 플랫폼 인라인 배지 ── */
+    .naver-badge   { background: rgba(3,199,90,0.08);  color: #059669; border: 1.5px solid rgba(3,199,90,0.2); }
+    .tistory-badge { background: rgba(255,105,0,0.08); color: #c2410c; border: 1.5px solid rgba(255,105,0,0.2); }
+
+    /* ── 레벨 시스템 ── */
+    .level-current {
+      background: linear-gradient(135deg, #f8faff, #eff6ff);
+      border: 1.5px solid rgba(37,99,235,0.12);
+      border-radius: 14px;
+    }
+
+    .level-big-badge {
+      box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+      border-radius: 12px;
+    }
+
+    .level-pip { border-radius: 8px; }
+    .level-pip.active { box-shadow: 0 3px 10px rgba(0,0,0,0.25); }
+
+    .next-level-box {
+      background: linear-gradient(135deg, #fffbeb, #fef3c7);
+      border: 1.5px solid #fde68a;
+      border-radius: 12px;
+    }
+
+    /* ── 데이터 소스 배지 ── */
+    .data-source-badge {
+      background: var(--primary-l);
+      color: var(--primary);
+      border: 1.5px solid rgba(37,99,235,0.18);
+      border-radius: 20px;
+    }
+
+    /* ── 네이버 스탯 ── */
+    .naver-stat {
+      background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+      border: 1.5px solid #bbf7d0;
+      border-radius: 12px;
+    }
+
+    .naver-stat-value { color: #14532d; }
+
+    /* ── stat-box ── */
+    .stat-box {
+      background: #fafcff;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      transition: all 0.2s;
+    }
+
+    .stat-box:hover { border-color: #93c5fd; transform: translateY(-2px); }
+    .stat-box-label { color: var(--muted); }
+    .stat-box-value { color: var(--text); }
+
+    /* ── 형태소 테이블 ── */
+    .morpheme-table th { background: #f8faff; color: var(--muted); }
+    .morpheme-table tr:hover td { background: #f8faff; }
+
+    /* ── 실시간 검색어 ── */
+    .realtime-item {
+      background: #f8faff;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      transition: all 0.18s;
+    }
+
+    .realtime-item:hover { border-color: #93c5fd; background: #eff6ff; }
+    .realtime-rank { color: var(--primary); font-weight: 800; font-size: 1.05rem; }
+
+    .trend-up   { background: #fee2e2; color: #dc2626; }
+    .trend-new  { background: #fef9c3; color: #78350f; }
+    .trend-keep { background: #f1f5f9; color: #64748b; }
+
+    /* ── 카테고리 버튼 ── */
+    .category-btn {
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      background: white;
+      color: var(--muted);
+      font-weight: 600;
+      transition: all 0.18s;
+    }
+
+    .category-btn.active { border-color: var(--primary); background: var(--primary-l); color: var(--primary); }
+    .category-btn:hover  { border-color: var(--primary); }
+
+    /* ── 블로그 매트릭스 카드 ── */
+    .matrix-card {
+      background: white;
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(37,99,235,0.07);
+    }
+
+    .matrix-card-title { color: var(--muted); letter-spacing: 0.8px; }
+    .matrix-big-value  { color: var(--text); letter-spacing: -0.04em; }
+    .matrix-sub        { color: #94a3b8; }
+
+    .competition-table th { background: #f8faff; color: var(--muted); }
+
+    /* ── 반응형 ── */
+    @media (max-width: 700px) {
+      .sidebar { width: 52px; min-width: 52px; }
+      .main { padding: 20px 14px; }
+      .page-title { font-size: 1.25rem; }
+    }
+  </style>
 </head>
 <body>
 
