@@ -303,7 +303,6 @@ textarea.form-control{resize:vertical;min-height:100px}
   <div class="sidebar-section">블로그 분석</div>
   <div class="sidebar-item" data-page="blog-missing"><span class="si-icon">🔎</span>블로그 누락 검사</div>
   <div class="sidebar-item" data-page="blog-index"><span class="si-icon">📈</span>블로그 지수 조회</div>
-  <div class="sidebar-item" data-page="blog-index-simple"><span class="si-icon">⚡</span>블로그 지수 심플</div>
   <div class="sidebar-item" data-page="blog-matrix"><span class="si-icon">🧩</span>블로그 매트릭스</div>
 
   <div class="sidebar-section">키워드 분석</div>
@@ -386,22 +385,6 @@ textarea.form-control{resize:vertical;min-height:100px}
 </div>
 
 <!-- =================== 3. BLOG INDEX SIMPLE =================== -->
-<div class="page" id="page-blog-index-simple">
-  <div class="page-header">
-    <h2>⚡ 블로그 지수 심플</h2>
-    <p>URL만으로 빠르게 블로그 레벨을 확인합니다.</p>
-  </div>
-  <div class="card">
-    <div class="form-group">
-      <label>블로그 URL</label>
-      <input type="url" class="form-control" id="bsimple-url" placeholder="https://blog.naver.com/yourname" />
-    </div>
-    <button class="btn btn-primary" onclick="analyzeBlogSimple()">⚡ 빠른 분석</button>
-  </div>
-  <div class="loading" id="bsimple-loading"><div class="spinner"></div><div class="loading-text">블로그를 빠르게 분석 중...</div></div>
-  <div class="result-area" id="bsimple-result"></div>
-</div>
-
 <!-- =================== 4. BLOG MATRIX =================== -->
 <div class="page" id="page-blog-matrix">
   <div class="page-header">
