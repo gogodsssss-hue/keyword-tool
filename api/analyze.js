@@ -602,6 +602,91 @@ keywords: 글에서 추출한 황금 키워드 5~7개. goldenScore는 검색량 
       );
     }
 
+    // ⑰ 포스트 추적기 (내 블로그 포스트 키워드 분석)
+    else if (mode === 'post-tracker') {
+      const blogId = (blogUrl || '').replace(/^https?:\/\/blog\.naver\.com\//i, '').replace(/\/$/, '').trim();
+      if (!blogId) return res.status(400).json({ error: '블로그 URL을 입력해주세요.' });
+
+      // RSS 가져오기
+      const rssRes = await fetch(`https://rss.blog.naver.com/${blogId}.xml`, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SEOBot/1.0)' }
+      });
+      if (!rssRes.ok) return res.status(400).json({ error: `RSS 불러오기 실패 (${rssRes.status}). 블로그 ID를 확인하세요.` });
+      const rssText = await rssRes.text();
+
+      // XML 파싱 (간단한 regex 파서)
+      const extractTag = (xml, tag) => {
+        const m = xml.match(new RegExp(`<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]></${tag}>|<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, 'i'));
+        return (m ? (m[1] || m[2]) : '').trim();
+      };
+      const extractAllTags = (xml, tag) => {
+        const re = new RegExp(`<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]></${tag}>|<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, 'gi');
+        const matches = [];
+        let m;
+        while ((m = re.exec(xml)) !== null) matches.push((m[1] || m[2]).trim());
+        return matches;
+      };
+
+      // <item> 블록들 추출
+      const itemBlocks = [];
+      const itemRe = /<item>([\s\S]*?)<\/item>/gi;
+      let im;
+      while ((im = itemRe.exec(rssText)) !== null) itemBlocks.push(im[1]);
+
+      const posts = itemBlocks.slice(0, 15).map(block => {
+        const title = extractTag(block, 'title').replace(/<[^>]*>/g, '');
+        const link = extractTag(block, 'link') || extractAllTags(block, 'link')[0] || '';
+        const pubDate = extractTag(block, 'pubDate');
+        const desc = extractTag(block, 'description').replace(/<[^>]*>/g, '').slice(0, 200);
+        // 해시태그 추출 (#태그 형식)
+        const fullDesc = extractTag(block, 'description');
+        const hashtags = [...new Set([
+          ...(fullDesc.match(/#([가-힣a-zA-Z0-9_]+)/g) || []).map(h => h.slice(1)),
+          ...(desc.match(/#([가-힣a-zA-Z0-9_]+)/g) || []).map(h => h.slice(1))
+        ])].slice(0, 8);
+        // 제목에서 키워드 추출 (2글자 이상 한국어 단어)
+        const titleKeywords = (title.match(/[가-힣]{2,8}/g) || []).slice(0, 4);
+        return { title, link, pubDate, desc, hashtags, titleKeywords };
+      });
+
+      if (!posts.length) return res.status(400).json({ error: 'RSS에서 포스트를 찾을 수 없습니다.' });
+
+      // 전체 고유 키워드 수집 (해시태그 우선)
+      const allKeywords = [...new Set(
+        posts.flatMap(p => [...p.hashtags, ...p.titleKeywords]).filter(k => k.length >= 2)
+      )].slice(0, 30);
+
+      // 검색량 조회 (최대 15개, Ad API 있을 때만)
+      let volumeMap = {};
+      if (hasAds && allKeywords.length > 0) {
+        const kwsToCheck = allKeywords.slice(0, 15);
+        const volResults = await Promise.all(
+          kwsToCheck.map(kw => naverSearchVolume(kw, AD_KEY, AD_SECRET, AD_CUSTOMER))
+        );
+        kwsToCheck.forEach((kw, i) => { if (volResults[i]) volumeMap[kw] = volResults[i]; });
+      }
+
+      // 각 포스트에 검색량 붙이기
+      const enrichedPosts = posts.map(p => ({
+        title: p.title,
+        link: p.link,
+        pubDate: p.pubDate ? new Date(p.pubDate).toLocaleDateString('ko-KR') : '',
+        desc: p.desc,
+        keywords: [...p.hashtags, ...p.titleKeywords.filter(k => !p.hashtags.includes(k))].slice(0, 6).map(k => ({
+          keyword: k,
+          vol: volumeMap[k] || null
+        }))
+      }));
+
+      // 베스트 키워드 (검색량 상위)
+      const bestKeywords = Object.entries(volumeMap)
+        .sort((a, b) => (b[1].total || 0) - (a[1].total || 0))
+        .slice(0, 10)
+        .map(([kw, v]) => ({ keyword: kw, total: v.total, pc: v.pc, mobile: v.mobile, compIdx: v.compIdx }));
+
+      result = { posts: enrichedPosts, bestKeywords, blogId, totalPosts: posts.length };
+    }
+
     else {
       return res.status(400).json({ error: '지원하지 않는 모드입니다.' });
     }

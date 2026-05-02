@@ -346,6 +346,13 @@ textarea.form-control{resize:vertical;min-height:100px}
   <div class="sidebar-item" data-page="blog-missing"><span class="si-icon">🔎</span>블로그 누락 검사</div>
   <div class="sidebar-item active" data-page="blog-index"><span class="si-icon">🚀</span>통합 분석</div>
 
+  <div class="sidebar-section">트렌드</div>
+  <div class="sidebar-item" data-page="km-realtime"><span class="si-icon">📡</span>실시간 검색어</div>
+  <div class="sidebar-item" data-page="youtube-analyze"><span class="si-icon">📺</span>유튜브 분석기</div>
+
+  <div class="sidebar-section">블로그 관리</div>
+  <div class="sidebar-item" data-page="post-tracker"><span class="si-icon">📌</span>포스트 추적기</div>
+
   <div class="sidebar-section">콘텐츠 제작</div>
   <div class="sidebar-item" data-page="draft-helper"><span class="si-icon">✍️</span>대본 도우미</div>
 </nav>
@@ -425,6 +432,67 @@ textarea.form-control{resize:vertical;min-height:100px}
       <div class="chat-paste-hint">💡 블로그 스크린샷을 Ctrl+V로 붙여넣으면 AI가 분석해 드립니다</div>
     </div>
   </div>
+</div>
+
+<!-- =================== 실시간 검색어 =================== -->
+<div class="page" id="page-km-realtime">
+  <div class="page-header">
+    <h2>📡 실시간 검색어</h2>
+    <p>부동산·금융·경제 분야 실시간 인기 검색어와 트렌드를 확인합니다.</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>카테고리</label>
+      <select class="form-control" id="realtime-category">
+        <option value="부동산">부동산</option>
+        <option value="금융/경제">금융/경제</option>
+        <option value="재테크/투자">재테크/투자</option>
+        <option value="뉴스/이슈">뉴스/이슈</option>
+        <option value="전체">전체</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" onclick="analyzeRealtime()">📡 실시간 검색어 조회</button>
+  </div>
+  <div class="loading" id="realtime-loading"><div class="spinner"></div><div class="loading-text">실시간 검색어를 분석 중...</div></div>
+  <div class="result-area" id="realtime-result"></div>
+</div>
+
+<!-- =================== 유튜브 분석기 =================== -->
+<div class="page" id="page-youtube-analyze">
+  <div class="page-header">
+    <h2>📺 유튜브 분석기</h2>
+    <p>유튜브 채널·키워드 전략을 분석하고 블로그와 연계할 콘텐츠 전략을 제시합니다.</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>채널명 / 영상 키워드</label>
+      <input type="text" class="form-control" id="yt-keyword" placeholder="예) 부동산 재테크 유튜버" />
+    </div>
+    <div class="form-group">
+      <label>주제 분야</label>
+      <input type="text" class="form-control" id="yt-topic" placeholder="예) 부동산, 금리, 재테크" />
+    </div>
+    <button class="btn btn-primary" onclick="analyzeYoutube()">📺 유튜브 분석</button>
+  </div>
+  <div class="loading" id="yt-loading"><div class="spinner"></div><div class="loading-text">유튜브 전략을 분석 중...</div></div>
+  <div class="result-area" id="yt-result"></div>
+</div>
+
+<!-- =================== 포스트 추적기 =================== -->
+<div class="page" id="page-post-tracker">
+  <div class="page-header">
+    <h2>📌 포스트 추적기</h2>
+    <p>내 블로그 최근 포스트를 불러와 각 글의 키워드·검색량을 한눈에 확인합니다.</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>블로그 URL</label>
+      <input type="url" class="form-control" id="tracker-url" placeholder="https://blog.naver.com/yourname" />
+    </div>
+    <button class="btn btn-primary" onclick="analyzePostTracker()">📌 포스트 분석 시작</button>
+  </div>
+  <div class="loading" id="tracker-loading"><div class="spinner"></div><div class="loading-text">RSS 불러오는 중...</div></div>
+  <div class="result-area" id="tracker-result"></div>
 </div>
 
 <!-- =================== DRAFT HELPER =================== -->
@@ -888,6 +956,143 @@ async function generateDraft(keyword, topic) {
   } catch(e) {
     document.getElementById('bindex-draft-result').innerHTML = `<div class="card" style="color:var(--red-text)">대본 생성 오류: ${escHtml(e.message)}</div>`;
   }
+}
+
+// ═══════════════════════════════════════════
+//  포스트 추적기
+// ═══════════════════════════════════════════
+
+async function analyzePostTracker() {
+  const blogUrl = document.getElementById('tracker-url').value.trim();
+  if (!blogUrl) { alert('블로그 URL을 입력해주세요.'); return; }
+  showLoading('tracker');
+  try {
+    const data = await callApi({ mode: 'post-tracker', blogUrl });
+    const posts = data.posts || [];
+    const best = data.bestKeywords || [];
+
+    const volBadge = v => {
+      if (!v) return `<span style="font-size:.7rem;color:var(--text-light)">조회불가</span>`;
+      const t = v.total || 0;
+      const color = t >= 10000 ? '#22543d' : t >= 3000 ? '#744210' : '#4a5568';
+      const bg    = t >= 10000 ? '#c6f6d5'  : t >= 3000 ? '#fefcbf'  : 'var(--bg)';
+      return `<span style="font-size:.72rem;background:${bg};color:${color};padding:2px 7px;border-radius:10px;font-weight:600">${t >= 10000 ? '🔥' : t >= 3000 ? '⭐' : ''}${t.toLocaleString()}</span>`;
+    };
+
+    const compLabel = c => ({ low:'낮음', middle:'중간', high:'높음' }[c] || c || '-');
+
+    const postCards = posts.map(p => `
+      <div style="padding:14px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:flex-start;gap:10px">
+          <div style="flex:1;min-width:0">
+            <a href="${escHtml(p.link)}" target="_blank" style="font-weight:600;font-size:.9rem;color:var(--navy-mid);text-decoration:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(p.title)}">${escHtml(p.title)}</a>
+            <div style="font-size:.75rem;color:var(--text-light);margin-top:2px">${escHtml(p.pubDate)}</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px">
+          ${p.keywords.length ? p.keywords.map(k => `
+            <span style="display:inline-flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:.78rem">
+              <span style="color:var(--text)">${escHtml(k.keyword)}</span>
+              ${volBadge(k.vol)}
+            </span>`).join('') : `<span style="font-size:.78rem;color:var(--text-light)">키워드 없음</span>`}
+        </div>
+      </div>`).join('');
+
+    const bestRows = best.length ? best.map((k, i) => `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+        <span style="min-width:22px;font-weight:700;color:var(--navy-mid);font-size:.85rem">${i+1}</span>
+        <span style="flex:1;font-weight:600;font-size:.88rem">${escHtml(k.keyword)}</span>
+        <span style="font-size:.78rem;color:var(--text-mid)">월 <b>${(k.total||0).toLocaleString()}</b>회</span>
+        <span style="font-size:.75rem;color:var(--text-light)">경쟁 ${compLabel(k.compIdx)}</span>
+      </div>`).join('') : '<div style="font-size:.82rem;color:var(--text-light)">검색광고 API 키 설정 시 실제 검색량이 표시됩니다.</div>';
+
+    showResult('tracker', `
+      <div class="card" style="margin-top:0">
+        <div class="card-title">📊 내 블로그 키워드 TOP ${best.length || '-'}</div>
+        <div style="font-size:.8rem;color:var(--text-light);margin-bottom:10px">블로그 전체 포스트에서 가장 많이 쓰인 키워드 검색량 순위</div>
+        ${bestRows}
+      </div>
+      <div class="card" style="margin-top:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div class="card-title" style="margin:0">📌 최근 포스트 (${posts.length}개)</div>
+          <span style="font-size:.72rem;color:var(--text-light)">${escHtml(data.blogId)}</span>
+        </div>
+        <div style="font-size:.8rem;color:var(--text-light);margin-bottom:12px">키워드 뱃지 숫자 = 월간 검색량. 🔥10,000+ ⭐3,000+</div>
+        ${postCards}
+      </div>`);
+  } catch(e) { showError('tracker', e.message); }
+}
+
+// ═══════════════════════════════════════════
+//  실시간 검색어
+// ═══════════════════════════════════════════
+
+async function analyzeRealtime() {
+  const category = document.getElementById('realtime-category').value;
+  showLoading('realtime');
+  try {
+    const data = await callApi({ mode: 'km-realtime', topic: category });
+    const keywords = data.keywords || [];
+    const trendIcon = t => t === '상승' ? '🔺' : t === '신규' ? '🆕' : '➡️';
+    const rows = keywords.map(k => `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+        <span style="min-width:28px;font-weight:700;color:var(--navy-mid);font-size:1rem">${k.rank}</span>
+        <span style="flex:1">
+          <span style="font-weight:600;font-size:.95rem">${escHtml(k.keyword)}</span>
+          <span style="margin-left:6px;font-size:.75rem;color:var(--text-light)">${trendIcon(k.trend)} ${escHtml(k.trend||'')}</span>
+          <div style="font-size:.8rem;color:var(--text-mid);margin-top:2px">${escHtml(k.desc||'')}</div>
+          ${k.headline ? `<div style="font-size:.75rem;color:var(--text-light);margin-top:2px">📰 ${escHtml(k.headline)}</div>` : ''}
+        </span>
+        <span style="font-size:.72rem;background:var(--bg);padding:2px 8px;border-radius:10px;color:var(--text-mid);white-space:nowrap">${escHtml(k.category||'')}</span>
+      </div>`).join('');
+    showResult('realtime', `
+      <div class="card" style="margin-top:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div class="card-title" style="margin:0">📡 실시간 인기 검색어 — ${escHtml(category)}</div>
+          <span style="font-size:.72rem;color:var(--text-light)">${data.updatedAt||''} ${data._hasRealNews ? '🔴 실시간' : '⚪ AI 추정'}</span>
+        </div>
+        ${data.summary ? `<div style="font-size:.82rem;color:var(--text-mid);margin-bottom:12px;padding:8px 12px;background:var(--bg);border-radius:8px">${escHtml(data.summary)}</div>` : ''}
+        ${rows}
+      </div>`);
+  } catch(e) { showError('realtime', e.message); }
+}
+
+// ═══════════════════════════════════════════
+//  유튜브 분석기
+// ═══════════════════════════════════════════
+
+async function analyzeYoutube() {
+  const keyword = document.getElementById('yt-keyword').value.trim();
+  const topic = document.getElementById('yt-topic').value.trim();
+  if (!keyword) { alert('채널명 또는 키워드를 입력해주세요.'); return; }
+  showLoading('yt');
+  try {
+    const data = await callApi({ mode: 'youtube-analyze', keyword, topic });
+    const ca = data.channelAnalysis || {};
+    const ka = data.keywordAnalysis || {};
+    const list = (arr, emoji) => (arr||[]).map(s => `<li>${emoji} ${escHtml(s)}</li>`).join('');
+    const tags = (data.recommendedTags||[]).map(t => `<span class="badge" style="background:var(--bg);color:var(--text-mid)">#${escHtml(t)}</span>`).join('');
+    showResult('yt', `
+      <div class="card" style="margin-top:0">
+        <div class="card-title">📺 유튜브 분석 — <span style="font-weight:400">${escHtml(keyword)}</span></div>
+        ${data.summary ? `<div style="font-size:.85rem;color:var(--text-mid);margin-bottom:16px;padding:10px 14px;background:var(--bg);border-radius:8px;line-height:1.7">${escHtml(data.summary)}</div>` : ''}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+          <div style="background:var(--bg);border-radius:10px;padding:12px">
+            <div style="font-size:.72rem;color:var(--text-light);margin-bottom:4px">채널 수준</div>
+            <div style="font-weight:700;font-size:1rem;color:var(--navy-mid)">${escHtml(ca.level||'-')}</div>
+            <div style="font-size:.78rem;color:var(--text-mid);margin-top:4px">${escHtml(ca.reason||'')}</div>
+          </div>
+          <div style="background:var(--bg);border-radius:10px;padding:12px">
+            <div style="font-size:.72rem;color:var(--text-light);margin-bottom:4px">키워드 분석</div>
+            <div style="font-size:.82rem">검색량 <b>${escHtml(ka.searchVolume||'-')}</b> · 경쟁 <b>${escHtml(ka.competition||'-')}</b> · 트렌드 <b>${escHtml(ka.trending||'-')}</b></div>
+          </div>
+        </div>
+        ${(data.titleSuggestions||[]).length ? `<div style="margin-bottom:14px"><div style="font-weight:600;font-size:.85rem;margin-bottom:8px">🎬 추천 제목</div><ul class="tips-list">${list(data.titleSuggestions,'▶️')}</ul></div>` : ''}
+        ${tags ? `<div style="margin-bottom:14px"><div style="font-weight:600;font-size:.85rem;margin-bottom:8px">🏷️ 추천 태그</div><div style="display:flex;flex-wrap:wrap;gap:6px">${tags}</div></div>` : ''}
+        ${(data.thumbnailTips||[]).length ? `<div style="margin-bottom:14px"><div style="font-weight:600;font-size:.85rem;margin-bottom:8px">🖼️ 썸네일 팁</div><ul class="tips-list">${list(data.thumbnailTips,'💡')}</ul></div>` : ''}
+        ${(data.growthStrategy||[]).length ? `<div><div style="font-weight:600;font-size:.85rem;margin-bottom:8px">📈 성장 전략</div><ul class="tips-list">${list(data.growthStrategy,'🚀')}</ul></div>` : ''}
+      </div>`);
+  } catch(e) { showError('yt', e.message); }
 }
 
 // ═══════════════════════════════════════════
