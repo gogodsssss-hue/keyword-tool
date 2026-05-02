@@ -342,26 +342,9 @@ textarea.form-control{resize:vertical;min-height:100px}
 <div class="layout">
 <!-- ── SIDEBAR ── -->
 <nav class="sidebar" id="sidebar">
-  <div class="sidebar-section">블로그 분석</div>
+  <div class="sidebar-section">분석</div>
   <div class="sidebar-item" data-page="blog-missing"><span class="si-icon">🔎</span>블로그 누락 검사</div>
-  <div class="sidebar-item" data-page="blog-index"><span class="si-icon">📈</span>블로그 지수 조회</div>
-  <div class="sidebar-item" data-page="blog-matrix"><span class="si-icon">🧩</span>블로그 매트릭스</div>
-
-  <div class="sidebar-section">키워드 분석</div>
-  <div class="sidebar-item" data-page="keyword-recommend"><span class="si-icon">💡</span>키워드 추천</div>
-  <div class="sidebar-item active" data-page="golden-keyword"><span class="si-icon">🥇</span>황금 키워드 추출</div>
-  <div class="sidebar-item" data-page="keyword-index"><span class="si-icon">📊</span>키워드 지수 조회</div>
-  <div class="sidebar-item" data-page="km-search"><span class="si-icon">🎯</span>키워드마스터</div>
-  <div class="sidebar-item" data-page="infinite-keyword"><span class="si-icon">♾️</span>무한 키워드</div>
-  <div class="sidebar-item" data-page="keyword-combiner"><span class="si-icon">🏷️</span>세부키워드 조합기</div>
-
-  <div class="sidebar-section">트렌드/텍스트</div>
-  <div class="sidebar-item" data-page="km-realtime"><span class="si-icon">📡</span>실시간 검색어</div>
-  <div class="sidebar-item" data-page="km-morpheme"><span class="si-icon">🔬</span>형태소 분석기</div>
-
-  <div class="sidebar-section">전문 분석</div>
-  <div class="sidebar-item" data-page="km-seller"><span class="si-icon">🛒</span>셀러마스터</div>
-  <div class="sidebar-item" data-page="youtube-analyze"><span class="si-icon">📺</span>유튜브 분석기</div>
+  <div class="sidebar-item active" data-page="blog-index"><span class="si-icon">🚀</span>통합 분석</div>
 
   <div class="sidebar-section">콘텐츠 제작</div>
   <div class="sidebar-item" data-page="draft-helper"><span class="si-icon">✍️</span>대본 도우미</div>
@@ -392,10 +375,10 @@ textarea.form-control{resize:vertical;min-height:100px}
 </div>
 
 <!-- =================== 2. BLOG INDEX =================== -->
-<div class="page" id="page-blog-index">
+<div class="page active" id="page-blog-index">
   <div class="page-header">
-    <h2>📈 블로그 지수 조회</h2>
-    <p>블로그의 SEO 레벨을 0~10으로 측정하고 맞춤 성장 전략을 제시합니다.</p>
+    <h2>🚀 통합 분석</h2>
+    <p>블로그 레벨 · 황금 키워드 · 대본 초안을 한 번에 분석합니다.</p>
   </div>
   <div class="card">
     <div class="form-group">
@@ -406,10 +389,12 @@ textarea.form-control{resize:vertical;min-height:100px}
       <label>블로그 주제</label>
       <input type="text" class="form-control" id="bindex-topic" placeholder="예) 부동산, 금융, 재테크" />
     </div>
-    <button class="btn btn-primary" style="margin-top:14px;width:100%" onclick="analyzeBlogIndex()">📈 블로그 지수 분석</button>
+    <button class="btn btn-primary" style="margin-top:14px;width:100%" onclick="analyzeAll()">🚀 통합 분석 시작</button>
   </div>
-  <div class="loading" id="bindex-loading"><div class="spinner"></div><div class="loading-text">블로그 지수를 측정 중입니다...</div></div>
+  <div class="loading" id="bindex-loading"><div class="spinner"></div><div class="loading-text">블로그 레벨 + 황금 키워드 분석 중...</div></div>
   <div class="result-area" id="bindex-result"></div>
+  <div class="result-area" id="bindex-kw-result"></div>
+  <div class="result-area" id="bindex-draft-result"></div>
 
   <!-- 채팅창 — 항상 표시 -->
   <div id="bindex-chat-wrap">
@@ -440,255 +425,6 @@ textarea.form-control{resize:vertical;min-height:100px}
       <div class="chat-paste-hint">💡 블로그 스크린샷을 Ctrl+V로 붙여넣으면 AI가 분석해 드립니다</div>
     </div>
   </div>
-</div>
-
-<!-- =================== 3. BLOG MATRIX =================== -->
-<div class="page" id="page-blog-matrix">
-  <div class="page-header">
-    <h2>🧩 블로그 매트릭스</h2>
-    <p>블로그 레벨 × 키워드 × 경쟁 분석을 종합한 성장 매트릭스를 제공합니다.</p>
-  </div>
-  <div class="card">
-    <div class="form-group">
-      <label>블로그 URL</label>
-      <input type="url" class="form-control" id="bmatrix-url" placeholder="https://blog.naver.com/yourname" />
-    </div>
-    <div class="form-group">
-      <label>분석 키워드</label>
-      <input type="text" class="form-control" id="bmatrix-keyword" placeholder="예) 강남 맛집" />
-    </div>
-    <div class="form-group">
-      <label>플랫폼</label>
-      <div class="platform-group" id="bmatrix-platform">
-        <button class="platform-btn active" data-val="both" onclick="setPlatform('bmatrix',this)">둘 다</button>
-        <button class="platform-btn naver" data-val="naver" onclick="setPlatform('bmatrix',this)">네이버</button>
-        <button class="platform-btn tistory" data-val="tistory" onclick="setPlatform('bmatrix',this)">티스토리</button>
-      </div>
-    </div>
-    <button class="btn btn-primary" onclick="analyzeBlogMatrix()">🧩 매트릭스 분석</button>
-  </div>
-  <div class="loading" id="bmatrix-loading"><div class="spinner"></div><div class="loading-text">매트릭스를 구성 중입니다...</div></div>
-  <div class="result-area" id="bmatrix-result"></div>
-</div>
-
-<!-- =================== 5. KEYWORD RECOMMEND =================== -->
-<div class="page" id="page-keyword-recommend">
-  <div class="page-header">
-    <h2>💡 키워드 추천</h2>
-    <p>주제에 맞는 최적의 키워드를 추천해 드립니다.</p>
-  </div>
-  <div class="card">
-    <div class="form-group">
-      <label>주제</label>
-      <input type="text" class="form-control" id="krecom-topic" placeholder="예) 다이어트, 여행, 재테크" />
-    </div>
-    <div class="form-group">
-      <label>플랫폼</label>
-      <div class="platform-group" id="krecom-platform">
-        <button class="platform-btn active" data-val="both" onclick="setPlatform('krecom',this)">둘 다</button>
-        <button class="platform-btn naver" data-val="naver" onclick="setPlatform('krecom',this)">네이버</button>
-        <button class="platform-btn tistory" data-val="tistory" onclick="setPlatform('krecom',this)">티스토리</button>
-      </div>
-    </div>
-    <button class="btn btn-primary" onclick="analyzeKwRecom()">💡 키워드 추천받기</button>
-  </div>
-  <div class="loading" id="krecom-loading"><div class="spinner"></div><div class="loading-text">최적의 키워드를 탐색 중...</div></div>
-  <div class="result-area" id="krecom-result"></div>
-</div>
-
-<!-- =================== 6. GOLDEN KEYWORD =================== -->
-<div class="page active" id="page-golden-keyword">
-  <div class="page-header">
-    <h2>🥇 황금 키워드 추출</h2>
-    <p>경쟁이 낮고 검색량이 높은 황금 키워드를 찾아드립니다.</p>
-  </div>
-  <div class="card">
-    <div class="form-group">
-      <label>주제</label>
-      <input type="text" class="form-control" id="golden-topic" placeholder="예) 맛집, 헬스, 부업" />
-    </div>
-    <div class="form-group">
-      <label>플랫폼</label>
-      <div class="platform-group" id="golden-platform">
-        <button class="platform-btn active" data-val="both" onclick="setPlatform('golden',this)">둘 다</button>
-        <button class="platform-btn naver" data-val="naver" onclick="setPlatform('golden',this)">네이버</button>
-        <button class="platform-btn tistory" data-val="tistory" onclick="setPlatform('golden',this)">티스토리</button>
-      </div>
-    </div>
-    <button class="btn btn-primary" onclick="analyzeGolden()">🥇 황금 키워드 찾기</button>
-  </div>
-  <div class="loading" id="golden-loading"><div class="spinner"></div><div class="loading-text">황금 키워드를 발굴 중입니다...</div></div>
-  <div class="result-area" id="golden-result"></div>
-</div>
-
-<!-- =================== 7. KEYWORD INDEX =================== -->
-<div class="page" id="page-keyword-index">
-  <div class="page-header">
-    <h2>📊 키워드 지수 조회</h2>
-    <p>특정 키워드의 검색량, 경쟁도, 트렌드를 분석합니다.</p>
-  </div>
-  <div class="card">
-    <div class="form-group">
-      <label>키워드</label>
-      <input type="text" class="form-control" id="kidx-keyword" placeholder="예) 강남 맛집" />
-    </div>
-    <div class="form-group">
-      <label>플랫폼</label>
-      <div class="platform-group" id="kidx-platform">
-        <button class="platform-btn active" data-val="both" onclick="setPlatform('kidx',this)">둘 다</button>
-        <button class="platform-btn naver" data-val="naver" onclick="setPlatform('kidx',this)">네이버</button>
-        <button class="platform-btn tistory" data-val="tistory" onclick="setPlatform('kidx',this)">티스토리</button>
-      </div>
-    </div>
-    <button class="btn btn-primary" onclick="analyzeKwIndex()">📊 키워드 지수 분석</button>
-  </div>
-  <div class="loading" id="kidx-loading"><div class="spinner"></div><div class="loading-text">키워드 지수를 조회 중...</div></div>
-  <div class="result-area" id="kidx-result"></div>
-</div>
-
-<!-- =================== 8. KM-SEARCH =================== -->
-<div class="page" id="page-km-search">
-  <div class="page-header">
-    <h2>🎯 키워드마스터</h2>
-    <p>키워드의 검색량과 경쟁도를 심층 분석합니다.</p>
-  </div>
-  <div class="card">
-    <div class="form-group">
-      <label>키워드</label>
-      <input type="text" class="form-control" id="kmsearch-keyword" placeholder="예) 홍대 카페 추천" />
-    </div>
-    <div class="form-group">
-      <label>플랫폼</label>
-      <div class="platform-group" id="kmsearch-platform">
-        <button class="platform-btn active" data-val="both" onclick="setPlatform('kmsearch',this)">둘 다</button>
-        <button class="platform-btn naver" data-val="naver" onclick="setPlatform('kmsearch',this)">네이버</button>
-        <button class="platform-btn tistory" data-val="tistory" onclick="setPlatform('kmsearch',this)">티스토리</button>
-      </div>
-    </div>
-    <button class="btn btn-primary" onclick="analyzeKmSearch()">🎯 키워드 분석</button>
-  </div>
-  <div class="loading" id="kmsearch-loading"><div class="spinner"></div><div class="loading-text">키워드를 심층 분석 중...</div></div>
-  <div class="result-area" id="kmsearch-result"></div>
-</div>
-
-<!-- =================== 9. INFINITE KEYWORD =================== -->
-<div class="page" id="page-infinite-keyword">
-  <div class="page-header">
-    <h2>♾️ 무한 키워드</h2>
-    <p>주제와 관련된 50개 키워드를 한번에 생성합니다.</p>
-  </div>
-  <div class="card">
-    <div class="form-group">
-      <label>주제</label>
-      <input type="text" class="form-control" id="infinite-topic" placeholder="예) 요가, 주식, 캠핑" />
-    </div>
-    <div class="form-group">
-      <label>플랫폼</label>
-      <div class="platform-group" id="infinite-platform">
-        <button class="platform-btn active" data-val="both" onclick="setPlatform('infinite',this)">둘 다</button>
-        <button class="platform-btn naver" data-val="naver" onclick="setPlatform('infinite',this)">네이버</button>
-        <button class="platform-btn tistory" data-val="tistory" onclick="setPlatform('infinite',this)">티스토리</button>
-      </div>
-    </div>
-    <button class="btn btn-primary" onclick="analyzeInfinite()">♾️ 무한 키워드 생성</button>
-  </div>
-  <div class="loading" id="infinite-loading"><div class="spinner"></div><div class="loading-text">키워드 50개를 생성 중...</div></div>
-  <div class="result-area" id="infinite-result"></div>
-</div>
-
-<!-- =================== 10. KEYWORD COMBINER =================== -->
-<div class="page" id="page-keyword-combiner">
-  <div class="page-header">
-    <h2>🏷️ 세부키워드 조합기</h2>
-    <p>키워드를 다양한 형식으로 조합하고 변환합니다.</p>
-  </div>
-  <div class="card">
-    <div class="form-group">
-      <label>키워드 목록 <span style="color:var(--text-light);font-weight:400">(줄바꿈으로 구분)</span></label>
-      <textarea class="form-control" id="combiner-keywords" placeholder="키워드1&#10;키워드2&#10;키워드3" rows="6"></textarea>
-    </div>
-    <button class="btn btn-primary" onclick="analyzeCombiner()">🏷️ 키워드 조합하기</button>
-  </div>
-  <div class="loading" id="combiner-loading"><div class="spinner"></div><div class="loading-text">키워드를 조합 중...</div></div>
-  <div class="result-area" id="combiner-result"></div>
-</div>
-
-<!-- =================== 11. KM-REALTIME =================== -->
-<div class="page" id="page-km-realtime">
-  <div class="page-header">
-    <h2>📡 실시간 검색어</h2>
-    <p>분야별 실시간 인기 검색어를 확인합니다.</p>
-  </div>
-  <div class="card">
-    <div class="form-group">
-      <label>카테고리</label>
-      <select class="form-control" id="realtime-category">
-        <option value="전체">전체</option>
-        <option value="부동산">부동산</option>
-        <option value="금융경제">금융경제</option>
-        <option value="재테크투자">재테크투자</option>
-        <option value="뉴스이슈">뉴스이슈</option>
-      </select>
-    </div>
-    <button class="btn btn-primary" onclick="analyzeRealtime()">📡 실시간 검색어 조회</button>
-  </div>
-  <div class="loading" id="realtime-loading"><div class="spinner"></div><div class="loading-text">실시간 검색어를 불러오는 중...</div></div>
-  <div class="result-area" id="realtime-result"></div>
-</div>
-
-<!-- =================== 12. KM-MORPHEME =================== -->
-<div class="page" id="page-km-morpheme">
-  <div class="page-header">
-    <h2>🔬 형태소 분석기</h2>
-    <p>텍스트에서 핵심 키워드를 추출하고 감정을 분석합니다.</p>
-  </div>
-  <div class="card">
-    <div class="form-group">
-      <label>분석할 텍스트</label>
-      <textarea class="form-control" id="morpheme-text" placeholder="분석할 글이나 제목을 입력하세요..." rows="6"></textarea>
-    </div>
-    <button class="btn btn-primary" onclick="analyzeMorpheme()">🔬 형태소 분석 시작</button>
-  </div>
-  <div class="loading" id="morpheme-loading"><div class="spinner"></div><div class="loading-text">형태소를 분석 중입니다...</div></div>
-  <div class="result-area" id="morpheme-result"></div>
-</div>
-
-<!-- =================== 13. KM-SELLER =================== -->
-<div class="page" id="page-km-seller">
-  <div class="page-header">
-    <h2>🛒 셀러마스터</h2>
-    <p>상품 키워드의 경쟁도와 시장 현황을 분석합니다.</p>
-  </div>
-  <div class="card">
-    <div class="form-group">
-      <label>상품 키워드</label>
-      <input type="text" class="form-control" id="seller-keyword" placeholder="예) 에어팟 케이스" />
-    </div>
-    <button class="btn btn-primary" onclick="analyzeSeller()">🛒 셀러 분석</button>
-  </div>
-  <div class="loading" id="seller-loading"><div class="spinner"></div><div class="loading-text">시장 현황을 분석 중...</div></div>
-  <div class="result-area" id="seller-result"></div>
-</div>
-
-<!-- =================== 14. YOUTUBE ANALYZE =================== -->
-<div class="page" id="page-youtube-analyze">
-  <div class="page-header">
-    <h2>📺 유튜브 분석기</h2>
-    <p>유튜브 채널 및 키워드 전략을 분석합니다.</p>
-  </div>
-  <div class="card">
-    <div class="form-group">
-      <label>채널명 / 영상 키워드</label>
-      <input type="text" class="form-control" id="yt-keyword" placeholder="예) 재테크 유튜버" />
-    </div>
-    <div class="form-group">
-      <label>주제</label>
-      <input type="text" class="form-control" id="yt-topic" placeholder="예) 주식, 부동산, 요리" />
-    </div>
-    <button class="btn btn-primary" onclick="analyzeYoutube()">📺 유튜브 분석</button>
-  </div>
-  <div class="loading" id="yt-loading"><div class="spinner"></div><div class="loading-text">유튜브 전략을 분석 중...</div></div>
-  <div class="result-area" id="yt-result"></div>
 </div>
 
 <!-- =================== DRAFT HELPER =================== -->
@@ -1063,552 +799,95 @@ async function sendChat() {
 }
 
 // ═══════════════════════════════════════════
-//  3. BLOG MATRIX
+//  통합 분석 (레벨 + 황금키워드 + 대본)
 // ═══════════════════════════════════════════
-async function analyzeBlogMatrix() {
-  const url = document.getElementById('bmatrix-url').value.trim();
-  const keyword = document.getElementById('bmatrix-keyword').value.trim();
-  const platform = getPlatform('bmatrix');
+async function analyzeAll() {
+  const url   = document.getElementById('bindex-url').value.trim();
+  const topic = document.getElementById('bindex-topic').value.trim();
   if (!url) { alert('블로그 URL을 입력해주세요.'); return; }
-  showLoading('bmatrix');
-  try {
-    const data = await callApi({mode:'blog-matrix', blogUrl:url, keyword, platform});
-    const bl = data.blogLevel||{};
-    const ks = data.keywordStatus||{};
-    const gk = data.goldenKeywords||[];
-    const cm = data.competitionMatrix||[];
-    const cp = data.contentPlan||[];
-    const qw = data.quickWins||[];
 
-    const gkCards = gk.map(g=>`
+  showLoading('bindex');
+  document.getElementById('bindex-kw-result').innerHTML = '';
+  document.getElementById('bindex-draft-result').innerHTML = '';
+
+  try {
+    // 블로그 레벨 + 황금키워드 병렬 호출
+    const [indexData, kwData] = await Promise.all([
+      callApi({ mode: 'blog-index', blogUrl: url, topic }),
+      callApi({ mode: 'golden-keyword', topic: topic || '부동산 금융 재테크', platform: '둘 다' })
+    ]);
+
+    // 블로그 레벨 결과
+    state.blogContext = { blogUrl: url, topic, estimatedLevel: indexData.estimatedLevel, levelReason: indexData.levelReason || '', nextLevelTips: indexData.nextLevelTips || [], summary: indexData.summary || '' };
+    state.chatMessages = [];
+    const level = indexData.estimatedLevel || 0;
+    const scores = (indexData.scores||[]).map(s=>`<div class="score-card"><div class="score-val">${escHtml(s.value)}</div><div class="score-label">${escHtml(s.label)}</div>${s.sub?`<div class="score-sub">${escHtml(s.sub)}</div>`:''}</div>`).join('');
+    const tips = (indexData.tips||[]).map(t=>`<li>${escHtml(t)}</li>`).join('');
+    const nextTips = (indexData.nextLevelTips||[]).map(t=>`<li>${escHtml(t)}</li>`).join('');
+
+    showResult('bindex', `
+      <div class="card result-fade">${renderLevelViz(level, indexData.levelReason)}</div>
+      ${scores ? `<div class="card result-fade"><div class="card-title">📋 세부 점수</div><div class="scores-grid">${scores}</div></div>` : ''}
+      ${indexData.summary ? `<div class="summary-box result-fade">${escHtml(indexData.summary)}</div>` : ''}
+      ${tips ? `<div class="card result-fade"><div class="card-title">💡 분석 팁</div><ul class="tips-list">${tips}</ul></div>` : ''}
+      ${nextTips ? `<div class="card result-fade"><div class="card-title">🚀 다음 레벨 전략</div><ul class="tips-list">${nextTips}</ul></div>` : ''}
+    `);
+
+    // 황금키워드 결과
+    const kwCards = (kwData.goldenKeywords||[]).map(k=>`
       <div class="keyword-card">
-        <div class="kc-word">${escHtml(g.keyword)}</div>
-        <div class="kc-meta"><span class="kc-score">점수 ${escHtml(g.score)}</span></div>
-        ${g.reason?`<div class="kc-reason">${escHtml(g.reason)}</div>`:''}
+        <div class="kc-word">🥇 ${escHtml(k.keyword)}</div>
+        <div class="kc-meta">
+          ${renderBadge('검색량 '+escHtml(k.searchVolume||''), k.searchVolume)}
+          ${renderBadge('경쟁도 '+escHtml(k.competition||''), k.competition)}
+          <span class="badge" style="background:var(--gold-bg);color:var(--gold-text)">황금도 ${escHtml(k.goldenScore||'')}</span>
+        </div>
+        <div class="kc-reason">${escHtml(k.reason||'')}</div>
+        <button class="btn" style="margin-top:10px;padding:6px 14px;font-size:.78rem;background:var(--navy-mid);color:#fff;border:none;border-radius:8px;cursor:pointer;width:100%"
+          onclick="generateDraft('${escHtml(k.keyword).replace(/'/g,"\\'")}','${escHtml(topic).replace(/'/g,"\\'")}')">
+          ✍️ 이 키워드로 대본 생성
+        </button>
       </div>`).join('');
 
-    const compRows = cm.map(c=>`
-      <div class="competitor-row">
-        <div class="comp-name">${escHtml(c.competitor||c.keyword||'')}</div>
-        <div class="comp-meta">
-          <div><div class="comp-label">강점</div><div class="comp-strength">${escHtml(c.strength)}</div></div>
-          <div><div class="comp-label">약점</div><div class="comp-weakness">${escHtml(c.weakness)}</div></div>
-        </div>
-      </div>`).join('');
-
-    showResult('bmatrix', `
-      <div class="card result-fade">
-        <div class="card-title">🏠 블로그 레벨</div>
-        <div class="matrix-grid">
-          <div class="matrix-item">
-            <div class="matrix-item-title">블로그 레벨</div>
-            <div class="matrix-item-val" style="font-size:1.8rem;color:${LEVEL_COLORS[bl.level||0]}">${bl.level||0}</div>
-            <div class="matrix-item-sub">${escHtml(bl.reason||'')}</div>
-          </div>
-          <div class="matrix-item">
-            <div class="matrix-item-title">키워드 상태</div>
-            <div class="matrix-item-val">${renderBadge('검색량 '+escHtml(ks.searchVolume||''), ks.searchVolume)}</div>
-            <div class="matrix-item-sub">경쟁도 ${renderBadge(escHtml(ks.competition||''), ks.competition)} &nbsp; 기회 ${renderBadge(escHtml(ks.opportunity||''), ks.opportunity)}</div>
-          </div>
-        </div>
-      </div>
-      ${gkCards ? `<div class="card result-fade">
+    document.getElementById('bindex-kw-result').innerHTML = kwCards ? `
+      <div class="card result-fade" style="margin-top:0">
         <div class="card-title">🥇 황금 키워드</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px">${gkCards}</div>
-      </div>` : ''}
-      ${compRows ? `<div class="card result-fade">
-        <div class="card-title">⚔️ 경쟁 매트릭스</div>
-        ${compRows}
-      </div>` : ''}
-      ${cp.length ? `<div class="card result-fade">
-        <div class="card-title">📝 콘텐츠 플랜</div>
-        <ul class="tips-list">${cp.map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul>
-      </div>` : ''}
-      ${qw.length ? `<div class="card result-fade">
-        <div class="card-title">⚡ 빠른 성과</div>
-        <ul class="tips-list">${qw.map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul>
-      </div>` : ''}
-      ${data.summary ? `<div class="summary-box result-fade">${escHtml(data.summary)}</div>` : ''}
-    `);
-  } catch(e) { showError('bmatrix', e.message); }
+        ${kwData._hasNaver ? '<span style="font-size:.72rem;color:var(--naver);font-weight:600">🟢 네이버 실데이터 반영</span>' : ''}
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:10px">${kwCards}</div>
+      </div>` : '';
+
+    // 채팅 초기화
+    const msgs = document.getElementById('bindex-chat-messages');
+    msgs.innerHTML = '';
+    appendChatBubble('ai', `분석 완료! 현재 **Level ${level} (${LEVEL_NAMES[level]})** 수준이에요.\n황금 키워드 중 마음에 드는 것으로 대본을 바로 만들 수 있어요 😊`);
+    document.getElementById('bindex-chat-wrap').scrollIntoView({behavior:'smooth', block:'nearest'});
+
+  } catch(e) { showError('bindex', e.message); }
 }
 
-// ═══════════════════════════════════════════
-//  5. KEYWORD RECOMMEND
-// ═══════════════════════════════════════════
-async function analyzeKwRecom() {
-  const topic = document.getElementById('krecom-topic').value.trim();
-  const platform = getPlatform('krecom');
-  if (!topic) { alert('주제를 입력해주세요.'); return; }
-  showLoading('krecom');
-  try {
-    const data = await callApi({mode:'keyword-recommend', topic, platform});
-    showResult('krecom', renderKwRecomResult(data));
-  } catch(e) { showError('krecom', e.message); }
-}
-
-function renderKwRecomResult(data) {
-  const sections = [];
-  const addSection = (title, items, tag='tag') => {
-    if (!items||!items.length) return;
-    const chips = items.map(k => {
-      if (typeof k === 'object') {
-        return `<span class="tag">${escHtml(k.keyword||k.title||k)}</span>`;
-      }
-      return `<span class="tag">${escHtml(k)}</span>`;
-    }).join('');
-    sections.push(`<div class="card result-fade"><div class="card-title">${title}</div><div class="tag-cloud">${chips}</div></div>`);
-  };
-  addSection('🔑 주요 키워드', data.mainKeywords||data.keywords||[]);
-  addSection('📌 롱테일 키워드', data.longtailKeywords||data.longtail||[]);
-  addSection('📝 추천 제목', data.titles||data.titleSuggestions||[]);
-  if ((data.strategy||[]).length) {
-    sections.push(`<div class="card result-fade"><div class="card-title">🎯 콘텐츠 전략</div><ul class="tips-list">${(data.strategy||[]).map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul></div>`);
-  }
-  if ((data.structureTips||data.tips||[]).length) {
-    const tips = data.structureTips||data.tips||[];
-    sections.push(`<div class="card result-fade"><div class="card-title">💡 구성 팁</div><ul class="tips-list">${tips.map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul></div>`);
-  }
-  if (data.summary) sections.push(`<div class="summary-box result-fade">${escHtml(data.summary)}</div>`);
-  return sections.join('') || '<div class="error-box">결과 데이터가 없습니다.</div>';
-}
-
-// ═══════════════════════════════════════════
-//  6. GOLDEN KEYWORD
-// ═══════════════════════════════════════════
-async function analyzeGolden() {
-  const topic = document.getElementById('golden-topic').value.trim();
-  const platform = getPlatform('golden');
-  if (!topic) { alert('주제를 입력해주세요.'); return; }
-  showLoading('golden');
-  try {
-    const data = await callApi({mode:'golden-keyword', topic, platform});
-    const keywords = data.goldenKeywords || data.keywords || [];
-    const tips = data.tips || data.usageTips || [];
-    const cards = keywords.map(g => {
-      const kw = typeof g==='string' ? g : (g.keyword||g.title||'');
-      const score = g.score||'';
-      const reason = g.reason||g.desc||'';
-      return `
-        <div class="keyword-card">
-          <div class="kc-word">🥇 ${escHtml(kw)}</div>
-          <div class="kc-meta">
-            ${score?`<span class="kc-score">점수 ${escHtml(String(score))}</span>`:''}
-            ${renderBadge('황금', 'gold')}
-          </div>
-          ${reason?`<div class="kc-reason">${escHtml(reason)}</div>`:''}
-        </div>`;
-    }).join('');
-    showResult('golden', `
-      ${data.summary ? `<div class="summary-box result-fade">${escHtml(data.summary)}</div>` : ''}
-      ${cards ? `<div class="card result-fade">
-        <div class="card-title">🥇 황금 키워드</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">${cards}</div>
-      </div>` : ''}
-      ${tips.length ? `<div class="card result-fade">
-        <div class="card-title">💡 활용 팁</div>
-        <ul class="tips-list">${tips.map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul>
-      </div>` : ''}
-    `);
-  } catch(e) { showError('golden', e.message); }
-}
-
-// ═══════════════════════════════════════════
-//  7. KEYWORD INDEX
-// ═══════════════════════════════════════════
-async function analyzeKwIndex() {
-  const keyword = document.getElementById('kidx-keyword').value.trim();
-  const platform = getPlatform('kidx');
-  if (!keyword) { alert('키워드를 입력해주세요.'); return; }
-  showLoading('kidx');
-  try {
-    const data = await callApi({mode:'keyword-index', keyword, platform});
-    showResult('kidx', renderKwIndexResult(data, keyword));
-  } catch(e) { showError('kidx', e.message); }
-}
-
-function renderKwIndexResult(data, keyword) {
-  const raw = data.rawData||{};
-  const hasRaw = raw && (raw.monthlySearch||raw.pc||raw.mobile||raw.blogCount);
-  let html = '';
-  if (hasRaw) {
-    const rawCards = [
-      raw.monthlySearch!=null ? `<div class="raw-card"><div class="raw-val">${Number(raw.monthlySearch).toLocaleString()}</div><div class="raw-label">월 검색량</div></div>` : '',
-      raw.pc!=null ? `<div class="raw-card"><div class="raw-val">${Number(raw.pc).toLocaleString()}</div><div class="raw-label">PC 검색</div></div>` : '',
-      raw.mobile!=null ? `<div class="raw-card"><div class="raw-val">${Number(raw.mobile).toLocaleString()}</div><div class="raw-label">모바일 검색</div></div>` : '',
-      raw.blogCount!=null ? `<div class="raw-card"><div class="raw-val">${Number(raw.blogCount).toLocaleString()}</div><div class="raw-label">블로그 수</div></div>` : '',
-      raw.trendAvg!=null ? `<div class="raw-card"><div class="raw-val">${raw.trendAvg}</div><div class="raw-label">트렌드</div></div>` : '',
-    ].filter(Boolean).join('');
-    html += `<div class="card result-fade"><div class="card-title">📊 네이버 실데이터</div><div class="raw-data-grid">${rawCards}</div></div>`;
-  }
-  html += `<div class="card result-fade"><div class="card-title">📈 키워드 현황</div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
-      ${renderBadge('검색량 '+(data.searchVolume||''), data.searchVolume)}
-      ${renderBadge('경쟁도 '+(data.competition||''), data.competition)}
-    </div>
-    ${data.analysis ? `<div class="text-mid" style="font-size:.83rem;line-height:1.6">${escHtml(data.analysis)}</div>` : ''}
-  </div>`;
-  if ((data.relatedKeywords||[]).length) {
-    const tags = (data.relatedKeywords||[]).map(k=>`<span class="tag" onclick="reanalyzeKwidx('${escHtml(k)}')">${escHtml(k)}</span>`).join('');
-    html += `<div class="card result-fade"><div class="card-title">🔗 연관 키워드</div><div class="tag-cloud">${tags}</div></div>`;
-  }
-  if ((data.tips||[]).length) {
-    html += `<div class="card result-fade"><div class="card-title">💡 전략 팁</div><ul class="tips-list">${(data.tips||[]).map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul></div>`;
-  }
-  return html;
-}
-function reanalyzeKwidx(kw) {
-  document.getElementById('kidx-keyword').value = kw;
-  analyzeKwIndex();
-}
-
-// ═══════════════════════════════════════════
-//  8. KM-SEARCH
-// ═══════════════════════════════════════════
-async function analyzeKmSearch() {
-  const keyword = document.getElementById('kmsearch-keyword').value.trim();
-  const platform = getPlatform('kmsearch');
-  if (!keyword) { alert('키워드를 입력해주세요.'); return; }
-  showLoading('kmsearch');
-  try {
-    const data = await callApi({mode:'km-search', keyword, platform});
-    const raw = data.rawData||{};
-    const hasRaw = raw && (raw.monthlySearch!=null||raw.pc!=null||raw.mobile!=null||raw.blogCount!=null);
-    let html = '';
-    if (hasRaw) {
-      const rawCards = [
-        raw.monthlySearch!=null?`<div class="raw-card"><div class="raw-val">${Number(raw.monthlySearch).toLocaleString()}</div><div class="raw-label">월 검색량</div></div>`:'',
-        raw.pc!=null?`<div class="raw-card"><div class="raw-val">${Number(raw.pc).toLocaleString()}</div><div class="raw-label">PC 검색</div></div>`:'',
-        raw.mobile!=null?`<div class="raw-card"><div class="raw-val">${Number(raw.mobile).toLocaleString()}</div><div class="raw-label">모바일</div></div>`:'',
-        raw.blogCount!=null?`<div class="raw-card"><div class="raw-val">${Number(raw.blogCount).toLocaleString()}</div><div class="raw-label">블로그 수</div></div>`:'',
-      ].filter(Boolean).join('');
-      html += `<div class="card result-fade"><div class="card-title">📡 네이버 실데이터</div><div class="raw-data-grid">${rawCards}</div></div>`;
-    }
-    html += `<div class="card result-fade"><div class="card-title">📊 키워드 분석</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
-        ${renderBadge('검색량 '+(data.searchVolume||''), data.searchVolume)}
-        ${renderBadge('경쟁도 '+(data.competition||''), data.competition)}
-      </div>
-      ${data.analysis?`<div class="text-mid" style="font-size:.83rem;line-height:1.6">${escHtml(data.analysis)}</div>`:''}
+async function generateDraft(keyword, topic) {
+  document.getElementById('bindex-draft-result').innerHTML = `
+    <div class="card result-fade" style="margin-top:0">
+      <div class="card-title">✍️ 대본 생성 중...</div>
+      <div style="color:var(--text-light);font-size:.85rem">「${escHtml(keyword)}」 키워드로 대본을 작성하고 있습니다...</div>
     </div>`;
-    if ((data.relatedKeywords||[]).length) {
-      const tags = (data.relatedKeywords||[]).map(k=>`<span class="tag longtail" onclick="reanalyzeKmSearch('${escHtml(k)}')">${escHtml(k)}</span>`).join('');
-      html += `<div class="card result-fade"><div class="card-title">🔗 연관 키워드 <span class="text-xs text-light" style="font-weight:400">(클릭하면 재분석)</span></div><div class="tag-cloud">${tags}</div></div>`;
-    }
-    if ((data.tips||[]).length) {
-      html += `<div class="card result-fade"><div class="card-title">💡 SEO 팁</div><ul class="tips-list">${(data.tips||[]).map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul></div>`;
-    }
-    showResult('kmsearch', html);
-  } catch(e) { showError('kmsearch', e.message); }
-}
-function reanalyzeKmSearch(kw) {
-  document.getElementById('kmsearch-keyword').value = kw;
-  analyzeKmSearch();
-}
-
-// ═══════════════════════════════════════════
-//  9. INFINITE KEYWORD
-// ═══════════════════════════════════════════
-async function analyzeInfinite() {
-  const topic = document.getElementById('infinite-topic').value.trim();
-  const platform = getPlatform('infinite');
-  if (!topic) { alert('주제를 입력해주세요.'); return; }
-  showLoading('infinite');
+  document.getElementById('bindex-draft-result').scrollIntoView({behavior:'smooth', block:'nearest'});
   try {
-    const data = await callApi({mode:'infinite-keyword', topic, platform});
-    const kws = data.keywords||[];
-    const main = kws.filter(k=>k.type==='메인'||k.type==='main');
-    const sub  = kws.filter(k=>k.type==='세부'||k.type==='sub');
-    const long = kws.filter(k=>k.type==='롱테일'||k.type==='longtail'||(!k.type&&true));
-
-    const renderKwList = (list) => list.map(k=>`
-      <div class="kw-row">
-        <span class="kw-name">${escHtml(k.keyword)}</span>
-        <div class="kw-meta">
-          ${k.searchVolume?renderBadge(k.searchVolume, k.searchVolume):''}
-          ${k.competition?`<span class="badge ${getBadgeClass(k.competition)}" style="font-size:.65rem">${escHtml(k.competition)}</span>`:''}
+    const data = await callApi({ mode: 'keyword-to-draft', keyword, topic, length: '중간 (800~1200자)' });
+    const draft = data.draft || '';
+    document.getElementById('bindex-draft-result').innerHTML = `
+      <div class="card result-fade" style="margin-top:0">
+        <div class="card-title">✍️ 대본 초안 — <span style="font-weight:400;color:var(--text-mid)">${escHtml(keyword)}</span></div>
+        ${(data.usedKeywords||[]).length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">${data.usedKeywords.map(k=>`<span class="badge" style="background:var(--gold-bg);color:var(--gold-text)">🥇 ${escHtml(k)}</span>`).join('')}</div>` : ''}
+        <div class="draft-script">${escHtml(draft)}</div>
+        <div class="draft-copy-row">
+          <button class="copy-btn" style="padding:8px 18px;font-size:.82rem" onclick="navigator.clipboard.writeText(document.querySelector('#bindex-draft-result .draft-script').textContent).then(()=>{this.textContent='✓ 복사됨';setTimeout(()=>this.textContent='📋 대본 복사',1800)})">📋 대본 복사</button>
         </div>
-      </div>`).join('');
-
-    const allList = kws.length ? kws : [];
-    showResult('infinite', `
-      ${data.summary?`<div class="summary-box result-fade">${escHtml(data.summary)}</div>`:''}
-      <div class="card result-fade">
-        <div class="card-title">♾️ 키워드 목록 <span class="badge badge-blue" style="margin-left:6px">${data.totalCount||kws.length}개</span></div>
-        <div class="tabs">
-          <button class="tab-btn active" onclick="switchTab(this,'inf-all')">전체 (${allList.length})</button>
-          <button class="tab-btn" onclick="switchTab(this,'inf-main')">메인 (${main.length})</button>
-          <button class="tab-btn" onclick="switchTab(this,'inf-sub')">세부 (${sub.length})</button>
-          <button class="tab-btn" onclick="switchTab(this,'inf-long')">롱테일 (${long.length})</button>
-        </div>
-        <div class="tab-panel active" id="inf-all"><div class="kw-table">${renderKwList(allList)||'<div class="text-mid text-sm">결과가 없습니다.</div>'}</div></div>
-        <div class="tab-panel" id="inf-main"><div class="kw-table">${renderKwList(main)||'<div class="text-mid text-sm">결과가 없습니다.</div>'}</div></div>
-        <div class="tab-panel" id="inf-sub"><div class="kw-table">${renderKwList(sub)||'<div class="text-mid text-sm">결과가 없습니다.</div>'}</div></div>
-        <div class="tab-panel" id="inf-long"><div class="kw-table">${renderKwList(long)||'<div class="text-mid text-sm">결과가 없습니다.</div>'}</div></div>
       </div>
-    `);
-  } catch(e) { showError('infinite', e.message); }
-}
-function switchTab(btn, panelId) {
-  const card = btn.closest('.card');
-  card.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  card.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById(panelId).classList.add('active');
-}
-
-// ═══════════════════════════════════════════
-//  10. KEYWORD COMBINER
-// ═══════════════════════════════════════════
-async function analyzeCombiner() {
-  const raw = document.getElementById('combiner-keywords').value.trim();
-  if (!raw) { alert('키워드를 입력해주세요.'); return; }
-  const keywords = raw.split('\n').map(k=>k.trim()).filter(Boolean);
-  if (!keywords.length) { alert('유효한 키워드가 없습니다.'); return; }
-
-  // Local transformation (instant)
-  const comma = keywords.join(', ');
-  const space = keywords.join(' ');
-  const hashtag = keywords.map(k=>'#'+k).join(' ');
-  const naver = keywords.join(',');
-
-  const makeBlock = (label, text, id) => `
-    <div class="combiner-label">
-      <span>${label}</span>
-      <button class="btn-copy" onclick="copyText(document.getElementById('${id}').textContent, this)">📋 복사</button>
-    </div>
-    <div class="combiner-block" id="${id}">${escHtml(text)}</div>`;
-
-  showResult('combiner', `
-    <div class="card result-fade">
-      <div class="card-title">🏷️ 변환 결과 <span class="badge badge-blue" style="margin-left:6px">${keywords.length}개 키워드</span></div>
-      ${makeBlock('콤마 구분', comma, 'cb-comma')}
-      <div style="height:12px"></div>
-      ${makeBlock('공백 구분', space, 'cb-space')}
-      <div style="height:12px"></div>
-      ${makeBlock('해시태그', hashtag, 'cb-hashtag')}
-      <div style="height:12px"></div>
-      ${makeBlock('네이버 태그', naver, 'cb-naver')}
-    </div>
-    <div id="combiner-api-result"></div>
-  `);
-
-  // Also call API for recommended combos
-  showLoading('combiner');
-  try {
-    const data = await callApi({mode:'keyword-combiner', keyword: raw});
-    hideLoading('combiner');
-    const rec = data.recommended||[];
-    if (rec.length) {
-      document.getElementById('combiner-api-result').innerHTML = `
-        <div class="card result-fade">
-          <div class="card-title">✨ AI 추천 조합 (${rec.length}개)</div>
-          ${rec.map((r,i)=>`
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:${i%2===0?'#f7fbff':'#fff'};border-radius:8px;margin-bottom:6px;border:1px solid #e2ecf9">
-              <span style="font-size:.83rem;font-weight:600;color:var(--navy)">${escHtml(r)}</span>
-              <button class="btn-copy" onclick="copyText('${escHtml(r).replace(/'/g,"\\'")}', this)">📋 복사</button>
-            </div>`).join('')}
-        </div>`;
-    }
-    if (data.totalCount) {
-      // Update count badge
-    }
+      ${(data.seoTips||[]).length ? `<div class="card result-fade" style="margin-top:0"><div class="card-title">💡 포스팅 전 체크리스트</div><ul class="tips-list">${data.seoTips.map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul></div>` : ''}`;
   } catch(e) {
-    hideLoading('combiner');
-    // Non-critical — local result already shown
+    document.getElementById('bindex-draft-result').innerHTML = `<div class="card" style="color:var(--red-text)">대본 생성 오류: ${escHtml(e.message)}</div>`;
   }
-}
-
-// ═══════════════════════════════════════════
-//  11. KM-REALTIME
-// ═══════════════════════════════════════════
-async function analyzeRealtime() {
-  const topic = document.getElementById('realtime-category').value;
-  showLoading('realtime');
-  try {
-    const data = await callApi({mode:'km-realtime', topic});
-    const kws = data.keywords||[];
-    const rows = kws.map(k => {
-      const rankEl = k.rank<=3 ? `<span class="rank-num top3">${k.rank}</span>` : `<span class="rank-num">${k.rank}</span>`;
-      let trendEl = '';
-      if (k.trend==='상승') trendEl = `<span class="trend-badge trend-up">↑ 상승</span>`;
-      else if (k.trend==='신규') trendEl = `<span class="trend-badge trend-new">★ 신규</span>`;
-      else trendEl = `<span class="trend-badge trend-keep">- 유지</span>`;
-      return `<tr>
-        <td style="text-align:center">${rankEl}</td>
-        <td><strong style="color:var(--navy)">${escHtml(k.keyword)}</strong>${k.headline?`<div style="font-size:.71rem;color:var(--text-light);margin-top:2px">${escHtml(k.headline)}</div>`:''}</td>
-        <td><span class="badge badge-blue">${escHtml(k.category||'')}</span></td>
-        <td>${trendEl}</td>
-        <td style="font-size:.75rem;color:var(--text-mid)">${escHtml(k.desc||'')}</td>
-      </tr>`;
-    }).join('');
-
-    showResult('realtime', `
-      ${data.summary?`<div class="summary-box result-fade">${escHtml(data.summary)}</div>`:''}
-      <div class="card result-fade">
-        <div class="card-title" style="display:flex;justify-content:space-between">
-          📡 실시간 검색어
-          ${data.updatedAt?`<span class="text-xs text-light">업데이트: ${escHtml(data.updatedAt)}</span>`:''}
-          ${data._hasRealNews?`<span class="badge badge-naver">실데이터</span>`:''}
-        </div>
-        <div class="scroll-x">
-          <table class="data-table">
-            <thead><tr><th style="width:50px">순위</th><th>키워드</th><th>분야</th><th>트렌드</th><th>설명</th></tr></thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </div>
-      </div>
-    `);
-  } catch(e) { showError('realtime', e.message); }
-}
-
-// ═══════════════════════════════════════════
-//  12. KM-MORPHEME
-// ═══════════════════════════════════════════
-async function analyzeMorpheme() {
-  const keyword = document.getElementById('morpheme-text').value.trim();
-  if (!keyword) { alert('텍스트를 입력해주세요.'); return; }
-  showLoading('morpheme');
-  try {
-    const data = await callApi({mode:'km-morpheme', keyword});
-    const morphemes = data.morphemes||[];
-    const topKws = data.topKeywords||[];
-    const maxCount = morphemes.length ? Math.max(...morphemes.map(m=>m.count||1)) : 1;
-
-    const bars = morphemes.slice(0,20).map(m => {
-      const pct = Math.round((m.count/maxCount)*100);
-      const posClass = m.pos==='동사'?'pos-verb':m.pos==='형용사'?'pos-adj':'pos-noun';
-      return `<div class="morpheme-row">
-        <div class="morpheme-word">${escHtml(m.word)}</div>
-        <div class="morpheme-bar-wrap">
-          <div class="morpheme-bar-fill" style="width:${pct}%"><span class="morpheme-bar-val">${m.count}</span></div>
-        </div>
-        <span class="morpheme-pos ${posClass}">${escHtml(m.pos||'명사')}</span>
-      </div>`;
-    }).join('');
-
-    const sentEmoji = data.sentiment==='긍정'?'😊':data.sentiment==='부정'?'😟':'😐';
-    const sentColor = data.sentiment==='긍정'?'var(--green-text)':data.sentiment==='부정'?'var(--red-text)':'var(--text-mid)';
-
-    showResult('morpheme', `
-      <div class="card result-fade">
-        <div class="card-title">🔬 형태소 빈도</div>
-        <div class="morpheme-bars">${bars||'<div class="text-mid text-sm">형태소를 추출하지 못했습니다.</div>'}</div>
-      </div>
-      <div class="card result-fade">
-        <div class="card-title">💭 감정 분석</div>
-        <div class="sentiment-card">
-          <div class="sentiment-emoji">${sentEmoji}</div>
-          <div class="sentiment-info">
-            <div class="s-label">감정</div>
-            <div class="s-val" style="color:${sentColor}">${escHtml(data.sentiment||'')} ${data.sentimentScore!=null?`(${data.sentimentScore > 0 ? '+':''}${data.sentimentScore})`:''}
-            </div>
-            ${data.sentimentDetail?`<div class="s-detail">${escHtml(data.sentimentDetail)}</div>`:''}
-          </div>
-        </div>
-      </div>
-      ${topKws.length?`<div class="card result-fade">
-        <div class="card-title">🏆 상위 키워드</div>
-        <div class="tag-cloud">${topKws.map(k=>`<span class="tag">${escHtml(k)}</span>`).join('')}</div>
-      </div>`:''}
-      ${data.summary?`<div class="summary-box result-fade">${escHtml(data.summary)}</div>`:''}
-    `);
-  } catch(e) { showError('morpheme', e.message); }
-}
-
-// ═══════════════════════════════════════════
-//  13. KM-SELLER
-// ═══════════════════════════════════════════
-async function analyzeSeller() {
-  const keyword = document.getElementById('seller-keyword').value.trim();
-  if (!keyword) { alert('키워드를 입력해주세요.'); return; }
-  showLoading('seller');
-  try {
-    const data = await callApi({mode:'km-seller', keyword});
-    const pr = data.priceRange||{};
-    const hasPr = pr.min!=null||pr.max!=null||pr.avg!=null;
-    let priceHtml = '';
-    if (hasPr) {
-      const min = pr.min||0, max = pr.max||0, avg = pr.avg||0;
-      const range = max-min||1;
-      const avgPct = max ? Math.round(((avg-min)/range)*80+10) : 50;
-      priceHtml = `<div class="card result-fade">
-        <div class="card-title">💰 가격대 분석</div>
-        <div class="price-bar-wrap">
-          <div class="price-avg-marker" style="left:${avgPct}%" data-label="평균 ${avg.toLocaleString()}원"></div>
-        </div>
-        <div class="price-labels">
-          <span>최저 ${min.toLocaleString()}원</span>
-          <span>최고 ${max.toLocaleString()}원</span>
-        </div>
-        ${data.productCount?`<div class="mt-2 text-sm text-mid">검색된 상품: <strong>${Number(data.productCount).toLocaleString()}개</strong></div>`:''}
-      </div>`;
-    }
-    const tips = (data.sellerTips||[]).map(t=>`<li>${escHtml(t)}</li>`).join('');
-    const prods = (data.relatedProducts||[]).map(p=>`<span class="product-tag">${escHtml(p)}</span>`).join('');
-
-    showResult('seller', `
-      <div class="card result-fade">
-        <div class="card-title">📦 경쟁도</div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
-          ${renderBadge('경쟁도 '+(data.competition||''), data.competition)}
-        </div>
-        ${data.analysis?`<div class="text-mid" style="font-size:.83rem;line-height:1.6">${escHtml(data.analysis)}</div>`:''}
-      </div>
-      ${priceHtml}
-      ${tips?`<div class="card result-fade"><div class="card-title">💡 셀러 팁</div><ul class="tips-list">${tips}</ul></div>`:''}
-      ${prods?`<div class="card result-fade"><div class="card-title">🛍️ 연관 상품</div><div style="display:flex;flex-wrap:wrap">${prods}</div></div>`:''}
-    `);
-  } catch(e) { showError('seller', e.message); }
-}
-
-// ═══════════════════════════════════════════
-//  14. YOUTUBE ANALYZE
-// ═══════════════════════════════════════════
-async function analyzeYoutube() {
-  const keyword = document.getElementById('yt-keyword').value.trim();
-  const topic = document.getElementById('yt-topic').value.trim();
-  if (!keyword) { alert('채널명 또는 키워드를 입력해주세요.'); return; }
-  showLoading('yt');
-  try {
-    const data = await callApi({mode:'youtube-analyze', keyword, topic});
-    const ca = data.channelAnalysis||{};
-    const ka = data.keywordAnalysis||{};
-    const titles = data.titleSuggestions||[];
-    const tags = data.recommendedTags||[];
-    const thumbTips = data.thumbnailTips||[];
-    const growth = data.growthStrategy||[];
-
-    const titleCards = titles.map((t,i)=>`
-      <div class="title-chip">
-        <span style="font-weight:600;flex:1">${escHtml(t)}</span>
-        <button class="btn-copy" onclick="copyText('${escHtml(t).replace(/'/g,"\\'")}', this)">📋 복사</button>
-      </div>`).join('');
-    const tagChips = tags.map(t=>`<span class="tag-chip">#${escHtml(t)}</span>`).join(' ');
-
-    showResult('yt', `
-      <div class="card result-fade">
-        <div class="yt-section-title">📺 채널 분석</div>
-        <div class="matrix-grid">
-          <div class="matrix-item">
-            <div class="matrix-item-title">채널 레벨</div>
-            <div class="matrix-item-val">${escHtml(ca.level||'')}</div>
-            <div class="matrix-item-sub">${escHtml(ca.reason||'')}</div>
-          </div>
-          <div class="matrix-item">
-            <div class="matrix-item-title">키워드 분석</div>
-            <div class="matrix-item-val" style="font-size:.82rem">${renderBadge('검색량 '+(ka.searchVolume||''), ka.searchVolume)} ${renderBadge('경쟁도 '+(ka.competition||''), ka.competition)}</div>
-            <div class="matrix-item-sub">트렌드: ${escHtml(ka.trending||'')}</div>
-          </div>
-        </div>
-      </div>
-      ${titleCards?`<div class="card result-fade"><div class="card-title">📝 추천 제목</div>${titleCards}</div>`:''}
-      ${tagChips?`<div class="card result-fade"><div class="card-title">🏷️ 추천 태그</div><div style="display:flex;flex-wrap:wrap;gap:6px">${tagChips}</div></div>`:''}
-      ${thumbTips.length?`<div class="card result-fade"><div class="card-title">🖼️ 썸네일 팁</div><ul class="tips-list">${thumbTips.map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul></div>`:''}
-      ${growth.length?`<div class="card result-fade"><div class="card-title">🚀 성장 전략</div><ul class="tips-list">${growth.map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul></div>`:''}
-      ${data.summary?`<div class="summary-box result-fade">${escHtml(data.summary)}</div>`:''}
-    `);
-  } catch(e) { showError('yt', e.message); }
 }
 
 // ═══════════════════════════════════════════
