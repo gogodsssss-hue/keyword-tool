@@ -79,15 +79,24 @@ async function naverSearchVolume(keyword, apiKey, secretKey, customerId) {
     );
     if (!res.ok) return null;
     const d = await res.json();
-    // 공백 제거 후 비교 (네이버가 다른 형태로 반환하는 경우 대비)
-    const norm = s => (s || '').replace(/\s+/g, '').toLowerCase();
-    const kw = d.keywordList?.find(k => norm(k.relKeyword) === norm(keyword)) || d.keywordList?.[0];
-    if (!kw) return null;
-    // "<10" 같은 문자열 처리: 낮은 검색량은 5로 근사
+    const list = d.keywordList || [];
+    if (!list.length) return null;
+
     const parseVol = v => { if (typeof v === 'number') return v; if (String(v).startsWith('<')) return 5; return Number(v) || 0; };
+    const norm = s => (s || '').replace(/\s+/g, '').toLowerCase();
+    const normKw = norm(keyword);
+
+    // 1순위: 정확 일치
+    let kw = list.find(k => norm(k.relKeyword) === normKw);
+    // 2순위: 입력 키워드가 relKeyword에 포함되거나 반대
+    if (!kw) kw = list.find(k => norm(k.relKeyword).includes(normKw) || normKw.includes(norm(k.relKeyword)));
+    // 3순위: 검색량 가장 높은 첫 번째
+    if (!kw) kw = list.sort((a, b) => (parseVol(b.monthlyPcQcCnt) + parseVol(b.monthlyMobileQcCnt)) - (parseVol(a.monthlyPcQcCnt) + parseVol(a.monthlyMobileQcCnt)))[0];
+
+    if (!kw) return null;
     const pc  = parseVol(kw.monthlyPcQcCnt);
     const mob = parseVol(kw.monthlyMobileQcCnt);
-    return { pc, mobile: mob, total: pc + mob, compIdx: kw.compIdx };
+    return { pc, mobile: mob, total: pc + mob, compIdx: kw.compIdx, matchedKeyword: kw.relKeyword };
   } catch { return null; }
 }
 
