@@ -73,6 +73,34 @@ async function naverSearchVolume(keyword, apiKey, secretKey, customerId) {
   } catch { return null; }
 }
 
+// 네이버 뉴스 검색 (실시간 뉴스)
+async function naverNewsSearch(query, cid, csec) {
+  if (!cid || !csec) return null;
+  try {
+    const res = await fetch(
+      `https://openapi.naver.com/v1/search/news.json?query=${encodeURIComponent(query)}&display=15&sort=date`,
+      { headers: { 'X-Naver-Client-Id': cid, 'X-Naver-Client-Secret': csec } }
+    );
+    if (!res.ok) return null;
+    const d = await res.json();
+    return d.items ?? null;
+  } catch { return null; }
+}
+
+// 네이버 쇼핑 검색 (상품수)
+async function naverShoppingSearch(query, cid, csec) {
+  if (!cid || !csec) return null;
+  try {
+    const res = await fetch(
+      `https://openapi.naver.com/v1/search/shop.json?query=${encodeURIComponent(query)}&display=1`,
+      { headers: { 'X-Naver-Client-Id': cid, 'X-Naver-Client-Secret': csec } }
+    );
+    if (!res.ok) return null;
+    const d = await res.json();
+    return d.total ?? null;
+  } catch { return null; }
+}
+
 // 수치 → 레벨 변환
 function compLevel(total) {
   if (total === null || total === undefined) return null;
@@ -313,52 +341,137 @@ estimatedLevel은 0~10 정수, levelReason은 1문장, points는 4가지 핵심 
       );
     }
 
-    // ⑦ 대화형 블로그 코칭
-    else if (mode === 'chat') {
-      const { messages, blogContext } = req.body;
-      if (!messages?.length) return res.status(400).json({ error: '메시지가 없습니다.' });
+    // ⑦ 키워드마스터 - 검색량 조회
+    else if (mode === 'km-search') {
+      const [blogCount, trend] = await Promise.all([
+        hasNaver ? naverBlogSearch(keyword, NAVER_CID, NAVER_CSEC) : Promise.resolve(null),
+        hasNaver ? naverDataLab(keyword, NAVER_CID, NAVER_CSEC)    : Promise.resolve(null)
+      ]);
+      const vol = hasAds ? await naverSearchVolume(keyword, AD_KEY, AD_SECRET, AD_CUSTOMER) : null;
 
-      const ctx = blogContext || {};
-      const systemPrompt = `당신은 한국 블로그 SEO 전문 코치입니다. 부동산·금융·경제 분야 블로그에 특화되어 있습니다.
+      result = await claude(CLAUDE_KEY,
+        `한국 블로그 SEO 전문가. 순수 JSON만 반환.
+{"searchVolume":"높음|중간|낮음","competition":"높음|중간|낮음","relatedKeywords":[""],"analysis":"","tips":[""]}
+relatedKeywords 10개, tips 4개.`,
+        `키워드: ${keyword}\n블로그수: ${blogCount ?? '없음'}\n트렌드: ${trend?.avg ?? '없음'}\n월검색량: ${vol?.total ?? '없음'} (PC ${vol?.pc ?? '-'}, 모바일 ${vol?.mobile ?? '-'})`
+      );
+      result.rawData = {
+        blogCount,
+        trendAvg: trend?.avg ?? null,
+        monthlySearch: vol?.total ?? null,
+        pc: vol?.pc ?? null,
+        mobile: vol?.mobile ?? null
+      };
+    }
 
-분석된 블로그 정보:
-- 블로그 주소: ${ctx.blogUrl || '미입력'}
-- 주제 분야: ${ctx.topic || '부동산/금융/경제'}
-- 현재 추정 레벨: Level ${ctx.estimatedLevel ?? '?'} (0~10)
-- 레벨 추정 근거: ${ctx.levelReason || ''}
-- 종합 분석: ${ctx.summary || ''}
-- 다음 레벨 조건: ${(ctx.nextLevelTips || []).join(' / ')}
+    // ⑧ 키워드마스터 - 형태소 분석
+    else if (mode === 'km-morpheme') {
+      result = await claude(CLAUDE_KEY,
+        `한국어 형태소 분석 전문가. 순수 JSON만 반환.
+{"morphemes":[{"word":"","pos":"명사|동사|형용사|부사","count":0}],"topKeywords":[""],"sentiment":"긍정|부정|중립","sentimentScore":0.0,"sentimentDetail":"","summary":""}
+morphemes는 의미있는 단어 위주 최대 30개 빈도순. topKeywords 10개.`,
+        `분석할 텍스트:\n${keyword}`,
+        3000
+      );
+    }
 
-대화 원칙:
-1. 짧고 명확하게 말하세요. 한 답변은 3~5문장 이내.
-2. 구체적인 숫자와 행동 지침을 제시하세요.
-3. 부동산·금융·경제 블로그 특성을 반영하세요.
-4. 네이버 블로그와 티스토리 차이를 구분해서 설명하세요.
-5. "정직한 선배"처럼 솔직하고 실용적으로 안내하세요.
-6. 마지막에 다음 질문을 유도하는 짧은 한 마디를 추가하세요.
+    // ⑨ 키워드마스터 - 셀러마스터
+    else if (mode === 'km-seller') {
+      const productCount = hasNaver ? await naverShoppingSearch(keyword, NAVER_CID, NAVER_CSEC) : null;
+      result = await claude(CLAUDE_KEY,
+        `한국 온라인 쇼핑 셀러 전문가. 순수 JSON만 반환.
+{"competition":"높음|중간|낮음","priceRange":{"min":0,"max":0,"avg":0},"sellerTips":[""],"relatedProducts":[""],"analysis":""}
+sellerTips 5개, relatedProducts 5개.`,
+        `상품 키워드: ${keyword}\n네이버 쇼핑 상품수: ${productCount !== null ? productCount.toLocaleString() + '개' : '알 수 없음'}`
+      );
+      result.productCount = productCount;
+    }
 
-JSON 없이 자연스러운 한국어 대화체로 답하세요.`;
+    // ⑩ 키워드마스터 - 실시간 검색어
+    else if (mode === 'km-realtime') {
+      const today = new Date().toISOString().slice(0, 10);
+      const categoryQuery = {
+        '부동산':    '부동산 아파트 전세',
+        '금융/경제': '경제 금융 주식',
+        '재테크/투자': '재테크 투자 ETF',
+        '뉴스/이슈': '이슈 사건 사고',
+        '전체':      '주요뉴스 이슈'
+      }[topic] || '주요뉴스';
 
-      const res2 = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': CLAUDE_KEY,
-          'anthropic-version': '2023-06-01'
-        },
-        body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 600,
-          system: systemPrompt,
-          messages: messages.map(m => ({ role: m.role, content: m.content }))
-        })
-      });
-      if (!res2.ok) {
-        const e = await res2.json();
-        return res.status(res2.status).json({ error: e.error?.message || 'Claude API 오류' });
+      const newsItems = hasNaver
+        ? await naverNewsSearch(categoryQuery, NAVER_CID, NAVER_CSEC)
+        : null;
+
+      if (newsItems && newsItems.length > 0) {
+        const strip = s => (s || '').replace(/<[^>]*>/g, '').trim();
+        const newsTitles = newsItems.slice(0, 12).map((item, i) =>
+          `${i+1}. 제목: ${strip(item.title)} / 요약: ${strip(item.description).slice(0, 60)}`
+        ).join('\n');
+
+        result = await claude(CLAUDE_KEY,
+          `한국 뉴스 트렌드 분석가. 순수 JSON만 반환.
+{"keywords":[{"rank":1,"keyword":"핵심검색어(5글자이내)","category":"분야","trend":"상승|신규|유지","desc":"뉴스한줄요약(25자이내)","headline":"원본뉴스제목그대로"}],"summary":"오늘트렌드한줄요약"}
+각 뉴스에서 핵심 검색 키워드 추출 + 한줄 요약. keywords 10개.`,
+          `분야: ${topic}\n날짜: ${today}\n\n최신 뉴스:\n${newsTitles}`
+        );
+        result._hasRealNews = true;
+      } else {
+        result = await claude(CLAUDE_KEY,
+          `한국 트렌드 분석 전문가. 순수 JSON만 반환.
+{"keywords":[{"rank":1,"keyword":"","category":"","trend":"상승|신규|유지","desc":""}],"summary":""}
+keywords 10개. 오늘 날짜 기준 해당 분야 이슈 키워드.`,
+          `분야: ${topic || '전체'}\n날짜: ${today}`
+        );
+        result._hasRealNews = false;
       }
-      const d2 = await res2.json();
-      return res.status(200).json({ reply: d2.content?.[0]?.text || '' });
+      result.updatedAt = new Date().toLocaleString('ko-KR', { hour12: false });
+    }
+
+    // ⑪ 유튜브 분석기
+    else if (mode === 'youtube-analyze') {
+      result = await claude(CLAUDE_KEY,
+        `한국 유튜브 SEO 전문가. 부동산·금융·경제 특화. 순수 JSON만 반환.
+{
+  "channelAnalysis": {"level":"신규|성장|중급|전문가|파워채널","reason":"채널 수준 분석 1~2문장"},
+  "keywordAnalysis": {"searchVolume":"높음|중간|낮음","competition":"높음|중간|낮음","trending":"상승|유지|하락"},
+  "titleSuggestions": ["제목1","제목2","제목3"],
+  "recommendedTags": ["태그1","태그2","태그3","태그4","태그5","태그6","태그7","태그8","태그9","태그10"],
+  "thumbnailTips": ["썸네일팁1","썸네일팁2","썸네일팁3"],
+  "growthStrategy": ["전략1","전략2","전략3","전략4","전략5"],
+  "summary": "종합 분석 2~3문장"
+}
+titleSuggestions는 유튜브 알고리즘 최적화 제목. recommendedTags 10개.`,
+        `분석 대상: ${keyword}\n채널 분야: ${topic || '부동산/금융/경제'}`
+      );
+    }
+
+    // ⑫ 블로그 매트릭스
+    else if (mode === 'blog-matrix') {
+      const [blogCount, trend] = await Promise.all([
+        hasNaver ? naverBlogSearch(keyword, NAVER_CID, NAVER_CSEC) : Promise.resolve(null),
+        hasNaver ? naverDataLab(keyword, NAVER_CID, NAVER_CSEC)    : Promise.resolve(null)
+      ]);
+      const vol = hasAds ? await naverSearchVolume(keyword, AD_KEY, AD_SECRET, AD_CUSTOMER) : null;
+
+      result = await claude(CLAUDE_KEY,
+        `한국 블로그 SEO 전문가. 종합 매트릭스 분석. 순수 JSON만 반환.
+{
+  "blogLevel": {"level":0,"reason":"레벨 근거 1문장"},
+  "keywordStatus": {"searchVolume":"높음|중간|낮음","competition":"높음|중간|낮음","opportunity":"높음|중간|낮음"},
+  "goldenKeywords": [{"keyword":"","score":"★~★★★★★","reason":""}],
+  "competitionMatrix": [{"competitor":"경쟁유형","strength":"강점","weakness":"약점"}],
+  "contentPlan": ["콘텐츠계획1","콘텐츠계획2","콘텐츠계획3"],
+  "quickWins": ["빠른성과전략1","빠른성과전략2","빠른성과전략3"],
+  "summary": "종합 분석 2~3문장"
+}
+goldenKeywords 3개, competitionMatrix 3개, contentPlan 4개, quickWins 4개.`,
+        `블로그: ${blogUrl}\n키워드: ${keyword}\n플랫폼: ${platform||'둘 다'}\n블로그수: ${blogCount ?? '없음'}\n트렌드: ${trend?.avg ?? '없음'}\n월검색량: ${vol?.total ?? '없음'}`
+      );
+      result.rawData = {
+        blogCount,
+        trendAvg: trend?.avg ?? null,
+        monthlySearch: vol?.total ?? null
+      };
     }
 
     else {

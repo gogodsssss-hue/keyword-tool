@@ -401,6 +401,7 @@
     /* ── Level 0~10 시스템 ── */
     .level-display {
       margin-bottom: 20px;
+      grid-column: 1 / -1;
     }
 
     .level-current {
@@ -671,12 +672,672 @@
     .naver-stat-value { font-size: 1.2rem; font-weight: 800; color: #22543d; }
     .naver-stat-sub   { font-size: 0.7rem; color: #a0aec0; margin-top: 2px; }
 
+    /* ── 키워드마스터 ── */
+    textarea {
+      width: 100%;
+      padding: 11px 15px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      color: #2d3748;
+      transition: border-color 0.2s;
+      outline: none;
+      resize: vertical;
+      font-family: inherit;
+      min-height: 130px;
+      line-height: 1.6;
+    }
+    textarea:focus { border-color: #2b6cb0; }
+
+    .stat-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .stat-box {
+      background: #f7fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 14px 10px;
+      text-align: center;
+    }
+    .stat-box-label { font-size: 0.72rem; color: #718096; margin-bottom: 5px; font-weight: 600; }
+    .stat-box-value { font-size: 1.3rem; font-weight: 800; color: #1a365d; }
+    .stat-box-sub   { font-size: 0.68rem; color: #a0aec0; margin-top: 2px; }
+
+    .morpheme-table { width: 100%; border-collapse: collapse; }
+    .morpheme-table th, .morpheme-table td {
+      padding: 9px 12px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 0.83rem;
+    }
+    .morpheme-table th { background: #f7fafc; font-weight: 700; color: #4a5568; font-size: 0.78rem; }
+    .morpheme-table tr:last-child td { border-bottom: none; }
+
+    .sentiment-bar { height: 8px; border-radius: 4px; background: #e2e8f0; margin: 8px 0; overflow: hidden; }
+    .sentiment-fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
+    .sentiment-pos { background: #48bb78; }
+    .sentiment-neg { background: #fc8181; }
+    .sentiment-neu { background: #a0aec0; }
+
+    .realtime-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+    .realtime-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 15px;
+      background: #f7fafc;
+      border-radius: 9px;
+      border: 1.5px solid #e2e8f0;
+    }
+    .realtime-rank { font-size: 1rem; font-weight: 800; color: #1a365d; min-width: 28px; }
+    .realtime-keyword { font-size: 0.92rem; font-weight: 600; flex: 1; }
+    .realtime-trend { font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+    .trend-up   { background: #fed7d7; color: #c53030; }
+    .trend-new  { background: #fefcbf; color: #744210; }
+    .trend-keep { background: #e2e8f0; color: #718096; }
+
+    .category-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+    .category-btn {
+      padding: 8px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 20px;
+      background: white;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #718096;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .category-btn.active { border-color: #2b6cb0; background: #ebf4ff; color: #2b6cb0; }
+    .category-btn:hover  { border-color: #2b6cb0; }
+
+    /* ── 유튜브 분석기 ── */
+    .yt-level-badge {
+      display: inline-block;
+      padding: 6px 18px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 800;
+      color: white;
+      background: #ff0000;
+      margin-bottom: 10px;
+    }
+
+    /* ── 블로그 매트릭스 ── */
+    .matrix-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 600px) { .matrix-grid { grid-template-columns: 1fr; } }
+
+    .matrix-card {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      border: 1.5px solid #e2e8f0;
+    }
+    .matrix-card-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #718096;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .matrix-big-value {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #1a365d;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .matrix-sub { font-size: 0.8rem; color: #a0aec0; }
+
+    .competition-table { width: 100%; border-collapse: collapse; }
+    .competition-table th, .competition-table td {
+      padding: 9px 12px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 0.83rem;
+    }
+    .competition-table th { background: #f7fafc; font-weight: 700; color: #4a5568; font-size: 0.78rem; }
+    .competition-table tr:last-child td { border-bottom: none; }
+
     /* ── 반응형 ── */
     @media (max-width: 700px) {
       .sidebar { width: 52px; min-width: 52px; }
       .menu-item span:not(.menu-icon) { display: none; }
       .sidebar-section { display: none; }
       .main { padding: 20px 16px; }
+    }
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <style>
+    /* ════════════════════════════════════════
+       REDESIGN — 모던 프리미엄 대시보드
+    ════════════════════════════════════════ */
+    :root {
+      --bg:        #eef2ff;
+      --primary:   #2563eb;
+      --primary-l: #eff6ff;
+      --accent:    #f59e0b;
+      --success:   #10b981;
+      --danger:    #ef4444;
+      --text:      #1e293b;
+      --muted:     #64748b;
+      --border:    #e2e8f0;
+      --card:      #ffffff;
+      --shadow:    0 2px 16px rgba(37,99,235,0.07);
+      --shadow-lg: 0 8px 32px rgba(37,99,235,0.13);
+      --r:         14px;
+      --r-sm:      10px;
+    }
+
+    *, *::before, *::after {
+      font-family: 'Pretendard', 'Noto Sans KR', -apple-system, sans-serif !important;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg);
+      background-image:
+        radial-gradient(circle at 20% 20%, rgba(37,99,235,0.06) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(245,158,11,0.05) 0%, transparent 50%);
+      color: var(--text);
+    }
+
+    /* ── 헤더 ── */
+    header {
+      background: linear-gradient(135deg, #0f1f4e 0%, #1a3a8f 60%, #2563eb 100%);
+      padding: 0 28px;
+      height: 58px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 4px 20px rgba(15,31,78,0.35);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    header h1 {
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #fff;
+    }
+
+    header p {
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.6);
+      margin-top: 2px;
+    }
+
+    /* ── 사이드바 ── */
+    .sidebar {
+      width: 210px;
+      min-width: 210px;
+      background: #0d1b2e;
+      min-height: calc(100vh - 58px);
+      padding: 12px 0 24px;
+      position: sticky;
+      top: 58px;
+      height: calc(100vh - 58px);
+      overflow-y: auto;
+      border-right: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-track { background: transparent; }
+    .sidebar::-webkit-scrollbar-thumb { background: #2563eb44; border-radius: 4px; }
+
+    .sidebar-section {
+      padding: 16px 18px 5px;
+      font-size: 0.62rem;
+      font-weight: 700;
+      color: #3b5080;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 18px;
+      color: #7090b8;
+      font-size: 0.84rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.18s;
+      border-left: 3px solid transparent;
+      margin: 1px 6px 1px 0;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .menu-item:hover {
+      background: rgba(37,99,235,0.1);
+      color: #93c5fd;
+    }
+
+    .menu-item.active {
+      background: rgba(37,99,235,0.15);
+      color: #60a5fa;
+      border-left-color: #3b82f6;
+      font-weight: 700;
+    }
+
+    .menu-icon { font-size: 0.95rem; width: 20px; text-align: center; }
+
+    /* ── 메인 영역 ── */
+    .main { padding: 32px 36px; }
+
+    /* ── 페이지 전환 애니메이션 ── */
+    .page.active {
+      animation: slideIn 0.22s cubic-bezier(0.16,1,0.3,1);
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .page-title {
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 5px;
+      letter-spacing: -0.04em;
+    }
+
+    .page-desc {
+      font-size: 0.84rem;
+      color: var(--muted);
+      margin-bottom: 28px;
+      line-height: 1.65;
+    }
+
+    /* ── 카드 ── */
+    .card {
+      background: var(--card);
+      border-radius: var(--r);
+      padding: 24px 26px;
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+      border: 1px solid rgba(37,99,235,0.07);
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+
+    .card:hover { box-shadow: var(--shadow-lg); }
+
+    .card-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1.5px solid #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: -0.02em;
+    }
+
+    /* ── 폼 ── */
+    label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 7px;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 12px 15px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-sm);
+      font-size: 0.93rem;
+      color: var(--text);
+      transition: all 0.2s;
+      outline: none;
+      background: #fafcff;
+    }
+
+    input[type="text"]:focus, textarea:focus {
+      border-color: var(--primary);
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(37,99,235,0.09);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 130px;
+      line-height: 1.65;
+    }
+
+    /* ── 플랫폼 버튼 ── */
+    .platform-btn {
+      flex: 1;
+      padding: 10px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-sm);
+      background: #fafcff;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+
+    .platform-btn.active {
+      border-color: var(--primary);
+      background: var(--primary-l);
+      color: var(--primary);
+    }
+
+    .platform-btn:hover { border-color: var(--primary); }
+
+    /* ── 실행 버튼 ── */
+    .btn-run {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #0f1f4e 0%, #2563eb 100%);
+      color: white;
+      border: none;
+      border-radius: var(--r-sm);
+      font-size: 0.97rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 18px;
+      letter-spacing: -0.01em;
+      box-shadow: 0 4px 16px rgba(37,99,235,0.38);
+    }
+
+    .btn-run:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(37,99,235,0.48);
+    }
+
+    .btn-run:active { transform: translateY(0); }
+    .btn-run:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* ── 로딩 ── */
+    .spinner {
+      width: 34px;
+      height: 34px;
+      border: 3px solid #e2e8f0;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      margin: 0 auto 14px;
+    }
+
+    /* ── 에러 ── */
+    .error-box {
+      background: #fff1f2;
+      border: 1.5px solid #fecdd3;
+      border-radius: var(--r-sm);
+      padding: 13px 17px;
+      color: #e11d48;
+    }
+
+    /* ── 키워드 카드 ── */
+    .keyword-card {
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      background: #fafcff;
+      transition: all 0.2s;
+    }
+
+    .keyword-card:hover {
+      border-color: #93c5fd;
+      box-shadow: 0 4px 16px rgba(37,99,235,0.1);
+      transform: translateY(-2px);
+    }
+
+    /* ── 배지 ── */
+    .badge {
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 3px 9px;
+      border-radius: 20px;
+      letter-spacing: 0.02em;
+    }
+
+    .badge-vol-high  { background: #d1fae5; color: #065f46; }
+    .badge-vol-mid   { background: #fef9c3; color: #713f12; }
+    .badge-vol-low   { background: #fee2e2; color: #7f1d1d; }
+    .badge-comp-high { background: #fee2e2; color: #7f1d1d; }
+    .badge-comp-mid  { background: #fef9c3; color: #713f12; }
+    .badge-comp-low  { background: #d1fae5; color: #065f46; }
+    .badge-gold      { background: #fef3c7; color: #78350f; }
+
+    /* ── 태그 ── */
+    .tag {
+      background: var(--primary-l);
+      color: var(--primary);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid rgba(37,99,235,0.15);
+      transition: all 0.15s;
+    }
+
+    .tag:hover {
+      background: #dbeafe;
+      border-color: rgba(37,99,235,0.3);
+      transform: translateY(-1px);
+    }
+
+    /* ── 제목 목록 ── */
+    .title-item {
+      padding: 13px 16px;
+      background: #f8faff;
+      border-radius: var(--r-sm);
+      border: 1.5px solid var(--border);
+      transition: border-color 0.18s;
+    }
+
+    .title-item:hover { border-color: #93c5fd; }
+
+    .copy-btn {
+      background: #f1f5f9;
+      border: none;
+      border-radius: 6px;
+      padding: 5px 11px;
+      font-size: 0.72rem;
+      cursor: pointer;
+      color: var(--muted);
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+
+    .copy-btn:hover { background: var(--primary-l); color: var(--primary); }
+
+    /* ── 전략 박스 ── */
+    .strategy-summary {
+      font-size: 0.86rem;
+      color: #334155;
+      line-height: 1.72;
+      padding: 14px 16px;
+      background: linear-gradient(135deg, #f8faff, #eff6ff);
+      border-radius: var(--r-sm);
+      border-left: 3px solid var(--primary);
+      margin-bottom: 12px;
+    }
+
+    /* ── 팁 목록 ── */
+    .tips-list li {
+      font-size: 0.84rem;
+      color: #334155;
+      line-height: 1.65;
+    }
+
+    .tips-list li::before { color: var(--success); }
+
+    /* ── 스텝 번호 ── */
+    .step-num {
+      background: linear-gradient(135deg, #0f1f4e, #2563eb);
+      box-shadow: 0 2px 8px rgba(37,99,235,0.3);
+    }
+
+    /* ── 확인 링크 버튼 ── */
+    .check-link {
+      border-radius: var(--r-sm);
+      font-weight: 700;
+      transition: all 0.2s;
+    }
+
+    .check-link:hover { transform: translateY(-2px); opacity: 0.9; }
+    .check-link-naver  { box-shadow: 0 3px 12px rgba(3,199,90,0.3); }
+    .check-link-google { box-shadow: 0 3px 12px rgba(66,133,244,0.3); }
+
+    /* ── 스코어 카드 ── */
+    .score-card {
+      background: #fafcff;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      transition: all 0.2s;
+    }
+
+    .score-card:hover {
+      border-color: #93c5fd;
+      transform: translateY(-2px);
+    }
+
+    .score-label { color: var(--muted); font-weight: 700; letter-spacing: 0.02em; }
+    .score-value { color: var(--text); }
+
+    /* ── 정보 박스 ── */
+    .info-box {
+      background: #fffbeb;
+      border: 1.5px solid #fde68a;
+      border-radius: var(--r-sm);
+      color: #78350f;
+    }
+
+    /* ── 플랫폼 인라인 배지 ── */
+    .naver-badge   { background: rgba(3,199,90,0.08);  color: #059669; border: 1.5px solid rgba(3,199,90,0.2); }
+    .tistory-badge { background: rgba(255,105,0,0.08); color: #c2410c; border: 1.5px solid rgba(255,105,0,0.2); }
+
+    /* ── 레벨 시스템 ── */
+    .level-current {
+      background: linear-gradient(135deg, #f8faff, #eff6ff);
+      border: 1.5px solid rgba(37,99,235,0.12);
+      border-radius: 14px;
+    }
+
+    .level-big-badge {
+      box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+      border-radius: 12px;
+    }
+
+    .level-pip { border-radius: 8px; }
+    .level-pip.active { box-shadow: 0 3px 10px rgba(0,0,0,0.25); }
+
+    .next-level-box {
+      background: linear-gradient(135deg, #fffbeb, #fef3c7);
+      border: 1.5px solid #fde68a;
+      border-radius: 12px;
+    }
+
+    /* ── 데이터 소스 배지 ── */
+    .data-source-badge {
+      background: var(--primary-l);
+      color: var(--primary);
+      border: 1.5px solid rgba(37,99,235,0.18);
+      border-radius: 20px;
+    }
+
+    /* ── 네이버 스탯 ── */
+    .naver-stat {
+      background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+      border: 1.5px solid #bbf7d0;
+      border-radius: 12px;
+    }
+
+    .naver-stat-value { color: #14532d; }
+
+    /* ── stat-box ── */
+    .stat-box {
+      background: #fafcff;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      transition: all 0.2s;
+    }
+
+    .stat-box:hover { border-color: #93c5fd; transform: translateY(-2px); }
+    .stat-box-label { color: var(--muted); }
+    .stat-box-value { color: var(--text); }
+
+    /* ── 형태소 테이블 ── */
+    .morpheme-table th { background: #f8faff; color: var(--muted); }
+    .morpheme-table tr:hover td { background: #f8faff; }
+
+    /* ── 실시간 검색어 ── */
+    .realtime-item {
+      background: #f8faff;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      transition: all 0.18s;
+    }
+
+    .realtime-item:hover { border-color: #93c5fd; background: #eff6ff; }
+    .realtime-rank { color: var(--primary); font-weight: 800; font-size: 1.05rem; }
+
+    .trend-up   { background: #fee2e2; color: #dc2626; }
+    .trend-new  { background: #fef9c3; color: #78350f; }
+    .trend-keep { background: #f1f5f9; color: #64748b; }
+
+    /* ── 카테고리 버튼 ── */
+    .category-btn {
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      background: white;
+      color: var(--muted);
+      font-weight: 600;
+      transition: all 0.18s;
+    }
+
+    .category-btn.active { border-color: var(--primary); background: var(--primary-l); color: var(--primary); }
+    .category-btn:hover  { border-color: var(--primary); }
+
+    /* ── 블로그 매트릭스 카드 ── */
+    .matrix-card {
+      background: white;
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(37,99,235,0.07);
+    }
+
+    .matrix-card-title { color: var(--muted); letter-spacing: 0.8px; }
+    .matrix-big-value  { color: var(--text); letter-spacing: -0.04em; }
+    .matrix-sub        { color: #94a3b8; }
+
+    .competition-table th { background: #f8faff; color: var(--muted); }
+
+    /* ── 반응형 ── */
+    @media (max-width: 700px) {
+      .sidebar { width: 52px; min-width: 52px; }
+      .main { padding: 20px 14px; }
+      .page-title { font-size: 1.25rem; }
     }
   </style>
 </head>
@@ -714,6 +1375,28 @@
     </div>
     <div class="menu-item" data-page="keyword-recommend" onclick="showPage('keyword-recommend')">
       <span class="menu-icon">💡</span><span>키워드 추천</span>
+    </div>
+
+    <div class="sidebar-section" style="margin-top:10px;">키워드마스터</div>
+    <div class="menu-item" data-page="km-search" onclick="showPage('km-search')">
+      <span class="menu-icon">🔍</span><span>검색량 조회</span>
+    </div>
+    <div class="menu-item" data-page="km-morpheme" onclick="showPage('km-morpheme')">
+      <span class="menu-icon">🔤</span><span>형태소 분석</span>
+    </div>
+    <div class="menu-item" data-page="km-seller" onclick="showPage('km-seller')">
+      <span class="menu-icon">🛒</span><span>셀러마스터</span>
+    </div>
+    <div class="menu-item" data-page="km-realtime" onclick="showPage('km-realtime')">
+      <span class="menu-icon">📡</span><span>실시간 검색어</span>
+    </div>
+
+    <div class="sidebar-section" style="margin-top:10px;">추가 도구</div>
+    <div class="menu-item" data-page="youtube" onclick="showPage('youtube')">
+      <span class="menu-icon">▶️</span><span>유튜브 분석기</span>
+    </div>
+    <div class="menu-item" data-page="blog-matrix" onclick="showPage('blog-matrix')">
+      <span class="menu-icon">🔲</span><span>블로그 매트릭스</span>
     </div>
   </nav>
 
@@ -953,12 +1636,214 @@
       </div>
     </div>
 
+    <!-- ⑪ 유튜브 분석기 -->
+    <div id="page-youtube" class="page">
+      <div class="page-title">▶️ 유튜브 분석기</div>
+      <div class="page-desc">유튜브 채널·영상 키워드를 분석하고 제목·태그·썸네일·성장 전략을 제공합니다.</div>
+      <div class="card">
+        <label>분석할 주제 또는 유튜브 URL</label>
+        <input type="text" id="yt-keyword" placeholder="예: 부동산 투자, 금리 인상, https://youtube.com/watch?v=..." />
+        <label style="margin-top:14px;">채널 분야 (선택)</label>
+        <input type="text" id="yt-topic" placeholder="예: 부동산, 경제, 재테크, 일상 브이로그" />
+        <button class="btn-run" onclick="runYoutube()">▶️ 유튜브 분석</button>
+      </div>
+      <div class="error-box" id="youtube-error"></div>
+      <div class="loading" id="youtube-loading"><div class="spinner"></div><p>분석 중...</p></div>
+      <div class="result-section" id="youtube-result">
+        <div class="card">
+          <div class="card-title">📊 키워드 분석</div>
+          <div id="yt-keyword-analysis"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">✍️ 추천 제목 (유튜브 최적화)</div>
+          <ul class="title-list" id="yt-titles"></ul>
+        </div>
+        <div class="card">
+          <div class="card-title"># 추천 태그</div>
+          <div class="tag-cloud" id="yt-tags"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">🖼️ 썸네일 팁</div>
+          <ul class="tips-list" id="yt-thumbnail"></ul>
+        </div>
+        <div class="card">
+          <div class="card-title">📈 성장 전략</div>
+          <div class="strategy-summary" id="yt-summary"></div>
+          <ul class="tips-list" style="margin-top:12px;" id="yt-strategy"></ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ⑫ 블로그 매트릭스 -->
+    <div id="page-blog-matrix" class="page">
+      <div class="page-title">🔲 블로그 매트릭스</div>
+      <div class="page-desc">지수·키워드·경쟁 분석까지 한 번에 해결하는 종합 분석 도구입니다.</div>
+      <div class="card">
+        <label>블로그 주소</label>
+        <input type="text" id="matrix-url" placeholder="예: blog.naver.com/myid  또는  myid.tistory.com" />
+        <label style="margin-top:14px;">주요 키워드</label>
+        <input type="text" id="matrix-keyword" placeholder="예: 아파트 전세, 금리 인상, ETF 투자" />
+        <div style="margin-top:14px;">
+          <label>플랫폼</label>
+          <div class="platform-group">
+            <button class="platform-btn active" data-group="matrix" data-val="둘 다">둘 다</button>
+            <button class="platform-btn" data-group="matrix" data-val="네이버 블로그">네이버</button>
+            <button class="platform-btn" data-group="matrix" data-val="티스토리">티스토리</button>
+          </div>
+        </div>
+        <button class="btn-run" onclick="runBlogMatrix()">🔲 통합 분석</button>
+      </div>
+      <div class="error-box" id="matrix-error"></div>
+      <div class="loading" id="matrix-loading"><div class="spinner"></div><p>매트릭스 분석 중...</p></div>
+      <div class="result-section" id="matrix-result">
+        <div class="matrix-grid">
+          <div class="matrix-card" id="matrix-level-card"></div>
+          <div class="matrix-card" id="matrix-keyword-card"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">🥇 황금 키워드 TOP 3</div>
+          <div class="keyword-grid" id="matrix-golden"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">⚔️ 경쟁 매트릭스</div>
+          <table class="competition-table">
+            <thead><tr><th>경쟁 유형</th><th>강점</th><th>약점</th></tr></thead>
+            <tbody id="matrix-competition"></tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-title">📅 콘텐츠 계획</div>
+          <ul class="tips-list" id="matrix-content"></ul>
+        </div>
+        <div class="card">
+          <div class="card-title">⚡ 빠른 성과 전략</div>
+          <div class="strategy-summary" id="matrix-summary"></div>
+          <ul class="tips-list" style="margin-top:12px;" id="matrix-quickwins"></ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ⑦ 키워드마스터 - 검색량 조회 -->
+    <div id="page-km-search" class="page">
+      <div class="page-title">🔍 검색량 조회</div>
+      <div class="page-desc">최근 30일 검색량을 빠르게 확인합니다. PC·모바일 검색량, 경쟁 포스트 수, 트렌드 점수를 제공합니다.</div>
+      <div class="card">
+        <label>조회할 키워드</label>
+        <input type="text" id="km-search-keyword" placeholder="예: 아파트 전세, 금리 인상, ETF" />
+        <button class="btn-run" onclick="runKmSearch()">🔍 검색량 조회</button>
+      </div>
+      <div class="error-box" id="km-search-error"></div>
+      <div class="loading" id="km-search-loading"><div class="spinner"></div><p>조회 중...</p></div>
+      <div class="result-section" id="km-search-result">
+        <div class="card">
+          <div class="card-title">📊 검색량 현황</div>
+          <div id="km-search-stats" class="stat-row"></div>
+          <div id="km-search-badge" class="badge-row" style="margin-bottom:12px;"></div>
+          <div id="km-search-naver-link"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">🔗 연관 키워드</div>
+          <p style="font-size:0.8rem;color:#718096;margin-bottom:12px;">클릭하면 바로 재조회합니다</p>
+          <div class="tag-cloud" id="km-search-related"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">💡 분석 및 전략</div>
+          <div class="strategy-summary" id="km-search-analysis"></div>
+          <ul class="tips-list" style="margin-top:12px;" id="km-search-tips"></ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ⑧ 키워드마스터 - 형태소 분석 -->
+    <div id="page-km-morpheme" class="page">
+      <div class="page-title">🔤 형태소 분석기</div>
+      <div class="page-desc">텍스트를 형태소로 분석하고 키워드 빈도수와 감정을 파악합니다. 블로그 글, 댓글, 상품 설명 등 어떤 텍스트도 가능합니다.</div>
+      <div class="card">
+        <label>분석할 텍스트</label>
+        <textarea id="km-morpheme-text" placeholder="분석할 텍스트를 입력하세요."></textarea>
+        <button class="btn-run" onclick="runKmMorpheme()">🔤 형태소 분석</button>
+      </div>
+      <div class="error-box" id="km-morpheme-error"></div>
+      <div class="loading" id="km-morpheme-loading"><div class="spinner"></div><p>분석 중...</p></div>
+      <div class="result-section" id="km-morpheme-result">
+        <div class="card">
+          <div class="card-title">😊 감정 분석</div>
+          <div id="km-morpheme-sentiment"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">🏆 주요 키워드 (빈도 높은 순)</div>
+          <div class="tag-cloud" id="km-morpheme-keywords"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">📊 형태소 분석 결과</div>
+          <table class="morpheme-table">
+            <thead><tr><th>단어</th><th>품사</th><th>빈도</th></tr></thead>
+            <tbody id="km-morpheme-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ⑨ 키워드마스터 - 셀러마스터 -->
+    <div id="page-km-seller" class="page">
+      <div class="page-title">🛒 셀러마스터</div>
+      <div class="page-desc">상품 키워드의 네이버 쇼핑 상품수와 경쟁도를 분석합니다. 온라인 셀러를 위한 시장 진입 전략을 제공합니다.</div>
+      <div class="card">
+        <label>상품 키워드</label>
+        <input type="text" id="km-seller-keyword" placeholder="예: 무선 이어폰, 공기청정기, 요가매트" />
+        <button class="btn-run" onclick="runKmSeller()">🛒 상품수 확인</button>
+      </div>
+      <div class="error-box" id="km-seller-error"></div>
+      <div class="loading" id="km-seller-loading"><div class="spinner"></div><p>조회 중...</p></div>
+      <div class="result-section" id="km-seller-result">
+        <div class="card">
+          <div class="card-title">📦 상품 현황</div>
+          <div id="km-seller-stats"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">💡 셀러 전략</div>
+          <div class="strategy-summary" id="km-seller-analysis"></div>
+          <ul class="tips-list" style="margin-top:12px;" id="km-seller-tips"></ul>
+        </div>
+        <div class="card">
+          <div class="card-title">🔗 관련 상품 키워드</div>
+          <div class="tag-cloud" id="km-seller-related"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ⑩ 키워드마스터 - 실시간 검색어 -->
+    <div id="page-km-realtime" class="page">
+      <div class="page-title">📡 실시간 검색어</div>
+      <div class="page-desc">현재 이슈가 되는 키워드를 분야별로 확인합니다. (AI 트렌드 분석)</div>
+      <div class="card">
+        <label>분야 선택</label>
+        <div class="category-group">
+          <button class="category-btn active" data-cat="부동산">🏠 부동산</button>
+          <button class="category-btn" data-cat="금융/경제">💰 금융/경제</button>
+          <button class="category-btn" data-cat="재테크/투자">📈 재테크/투자</button>
+          <button class="category-btn" data-cat="뉴스/이슈">📰 뉴스/이슈</button>
+          <button class="category-btn" data-cat="전체">🌐 전체</button>
+        </div>
+        <button class="btn-run" onclick="runKmRealtime()">📡 검색어 불러오기</button>
+      </div>
+      <div class="error-box" id="km-realtime-error"></div>
+      <div class="loading" id="km-realtime-loading"><div class="spinner"></div><p>트렌드 분석 중...</p></div>
+      <div class="result-section" id="km-realtime-result">
+        <div class="card">
+          <div class="card-title">🔥 실시간 인기 검색어</div>
+          <div class="info-box" id="km-realtime-summary"></div>
+          <ul class="realtime-list" id="km-realtime-list"></ul>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
 <script>
   /* ── 플랫폼 버튼 ── */
-  const platformState = { kidx: '둘 다', gold: '둘 다', rec: '둘 다' };
+  const platformState = { kidx: '둘 다', gold: '둘 다', rec: '둘 다', matrix: '둘 다' };
 
   document.querySelectorAll('.platform-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1441,6 +2326,300 @@
       btn.textContent = '✓ 복사됨';
       setTimeout(() => btn.textContent = '복사', 1500);
     });
+  }
+
+  /* ── ⑪ 유튜브 분석기 ── */
+  async function runYoutube() {
+    const kw    = document.getElementById('yt-keyword').value.trim();
+    const topic = document.getElementById('yt-topic').value.trim();
+    if (!kw) { alert('주제 또는 URL을 입력해주세요.'); return; }
+    const card = document.querySelector('#page-youtube .card');
+    disableBtn(card, true);
+    showLoading('youtube', true);
+    showResult('youtube', false);
+    showError('youtube', '');
+    try {
+      const data = await callAPI({ mode: 'youtube-analyze', keyword: kw, topic });
+      renderYoutube(data);
+      showResult('youtube', true);
+    } catch(e) { showError('youtube', e.message); }
+    finally { disableBtn(card, false); showLoading('youtube', false); }
+  }
+
+  function renderYoutube(data) {
+    const ka = data.keywordAnalysis || {};
+    document.getElementById('yt-keyword-analysis').innerHTML = `
+      <div class="badge-row" style="margin-bottom:12px;">
+        <span class="badge ${volClass(ka.searchVolume)}">검색량 ${ka.searchVolume||'-'}</span>
+        <span class="badge ${compClass(ka.competition)}">경쟁도 ${ka.competition||'-'}</span>
+        <span class="badge badge-gold">트렌드 ${ka.trending||'-'}</span>
+      </div>
+      <div class="strategy-summary">${data.channelAnalysis?.reason||''}</div>
+    `;
+    document.getElementById('yt-titles').innerHTML = (data.titleSuggestions||[]).map(t => `
+      <li class="title-item">
+        <span class="title-text">${t}</span>
+        <button class="copy-btn" onclick="copyText('${t.replace(/'/g,"\\'")}', this)">복사</button>
+      </li>`).join('');
+    document.getElementById('yt-tags').innerHTML = (data.recommendedTags||[]).map(tag =>
+      `<span class="tag">${tag}</span>`).join('');
+    document.getElementById('yt-thumbnail').innerHTML = (data.thumbnailTips||[]).map(t=>`<li>${t}</li>`).join('');
+    document.getElementById('yt-summary').textContent = data.summary || '';
+    document.getElementById('yt-strategy').innerHTML = (data.growthStrategy||[]).map(t=>`<li>${t}</li>`).join('');
+  }
+
+  /* ── ⑫ 블로그 매트릭스 ── */
+  async function runBlogMatrix() {
+    const url = document.getElementById('matrix-url').value.trim();
+    const kw  = document.getElementById('matrix-keyword').value.trim();
+    if (!url || !kw) { alert('블로그 주소와 키워드를 모두 입력해주세요.'); return; }
+    const card = document.querySelector('#page-blog-matrix .card');
+    disableBtn(card, true);
+    showLoading('matrix', true);
+    showResult('matrix', false);
+    showError('matrix', '');
+    try {
+      const data = await callAPI({ mode: 'blog-matrix', blogUrl: url, keyword: kw, platform: platformState.matrix });
+      renderBlogMatrix(data);
+      showResult('matrix', true);
+    } catch(e) { showError('matrix', e.message); }
+    finally { disableBtn(card, false); showLoading('matrix', false); }
+  }
+
+  function renderBlogMatrix(data) {
+    const lv = data.blogLevel || {};
+    const ks = data.keywordStatus || {};
+    const raw = data.rawData || {};
+    const color = LEVEL_COLORS[lv.level ?? 0] || '#9e9e9e';
+
+    document.getElementById('matrix-level-card').innerHTML = `
+      <div class="matrix-card-title">블로그 레벨</div>
+      <div class="matrix-big-value" style="color:${color};">Level ${lv.level ?? 0}</div>
+      <div class="matrix-sub" style="margin-bottom:10px;">${lv.reason||''}</div>
+      <div class="level-scale" style="margin-top:8px;">${levelScaleHTML(lv.level ?? 0)}</div>
+    `;
+    document.getElementById('matrix-keyword-card').innerHTML = `
+      <div class="matrix-card-title">키워드 현황</div>
+      ${raw.monthlySearch != null ? `<div class="matrix-big-value">${raw.monthlySearch.toLocaleString()}</div><div class="matrix-sub">월간 검색량</div>` : ''}
+      <div class="badge-row" style="margin-top:10px;">
+        <span class="badge ${volClass(ks.searchVolume)}">검색량 ${ks.searchVolume||'-'}</span>
+        <span class="badge ${compClass(ks.competition)}">경쟁도 ${ks.competition||'-'}</span>
+        <span class="badge badge-gold">기회 ${ks.opportunity||'-'}</span>
+      </div>
+      ${raw.blogCount != null ? `<div class="matrix-sub" style="margin-top:8px;">경쟁 포스트 ${raw.blogCount.toLocaleString()}개</div>` : ''}
+    `;
+    document.getElementById('matrix-golden').innerHTML = (data.goldenKeywords||[]).map(k => `
+      <div class="keyword-card">
+        <div class="keyword-name">🥇 ${k.keyword}</div>
+        <div class="badge-row"><span class="badge badge-gold">황금도 ${k.score}</span></div>
+        <div class="keyword-tip">${k.reason}</div>
+      </div>`).join('');
+    document.getElementById('matrix-competition').innerHTML = (data.competitionMatrix||[]).map(c => `
+      <tr>
+        <td style="font-weight:600;">${c.competitor}</td>
+        <td style="color:#22543d;">${c.strength}</td>
+        <td style="color:#c53030;">${c.weakness}</td>
+      </tr>`).join('');
+    document.getElementById('matrix-content').innerHTML = (data.contentPlan||[]).map(t=>`<li>${t}</li>`).join('');
+    document.getElementById('matrix-summary').textContent = data.summary || '';
+    document.getElementById('matrix-quickwins').innerHTML = (data.quickWins||[]).map(t=>`<li>${t}</li>`).join('');
+  }
+
+  /* ── 키워드마스터 카테고리 버튼 ── */
+  let kmRealtimeCat = '부동산';
+  document.querySelectorAll('.category-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      kmRealtimeCat = btn.dataset.cat;
+    });
+  });
+
+  /* ── ⑦ 검색량 조회 ── */
+  async function runKmSearch() {
+    const kw = document.getElementById('km-search-keyword').value.trim();
+    if (!kw) { alert('키워드를 입력해주세요.'); return; }
+    const card = document.querySelector('#page-km-search .card');
+    disableBtn(card, true);
+    showLoading('km-search', true);
+    showResult('km-search', false);
+    showError('km-search', '');
+    try {
+      const data = await callAPI({ mode: 'km-search', keyword: kw });
+      renderKmSearch(data, kw);
+      showResult('km-search', true);
+    } catch(e) { showError('km-search', e.message); }
+    finally { disableBtn(card, false); showLoading('km-search', false); }
+  }
+
+  function renderKmSearch(data, kw) {
+    const raw = data.rawData || {};
+    const hasVol = raw.pc !== null && raw.pc !== undefined;
+    document.getElementById('km-search-stats').innerHTML = `
+      ${hasVol ? `
+        <div class="stat-box"><div class="stat-box-label">PC 검색량</div><div class="stat-box-value">${(raw.pc||0).toLocaleString()}</div><div class="stat-box-sub">최근 30일</div></div>
+        <div class="stat-box"><div class="stat-box-label">모바일 검색량</div><div class="stat-box-value">${(raw.mobile||0).toLocaleString()}</div><div class="stat-box-sub">최근 30일</div></div>
+        <div class="stat-box" style="border-color:#2b6cb0;"><div class="stat-box-label">총 검색량</div><div class="stat-box-value" style="color:#2b6cb0;">${(raw.monthlySearch||0).toLocaleString()}</div><div class="stat-box-sub">PC + 모바일</div></div>
+      ` : `<div class="info-box" style="grid-column:1/-1;">🤖 네이버 광고 API 미연결 — 검색량은 AI 추정값입니다.</div>`}
+      ${raw.blogCount != null ? `<div class="stat-box"><div class="stat-box-label">경쟁 포스트 수</div><div class="stat-box-value">${raw.blogCount.toLocaleString()}</div><div class="stat-box-sub">네이버 블로그</div></div>` : ''}
+      ${raw.trendAvg != null ? `<div class="stat-box"><div class="stat-box-label">트렌드 점수</div><div class="stat-box-value">${raw.trendAvg}</div><div class="stat-box-sub">최근 3개월 평균</div></div>` : ''}
+    `;
+    document.getElementById('km-search-badge').innerHTML = `
+      <span class="badge ${volClass(data.searchVolume)}">검색량 ${data.searchVolume||'-'}</span>
+      <span class="badge ${compClass(data.competition)}">경쟁도 ${data.competition||'-'}</span>
+    `;
+    document.getElementById('km-search-naver-link').innerHTML = `
+      <a href="https://search.naver.com/search.naver?query=${encodeURIComponent(kw)}" target="_blank" class="check-link check-link-naver" style="display:inline-flex;margin-top:10px;">🟢 네이버에서 실제 결과 보기</a>
+    `;
+    document.getElementById('km-search-related').innerHTML = (data.relatedKeywords||[]).map(k =>
+      `<span class="tag" onclick="setKmSearch('${k.replace(/'/g,"\\'")}')"> ${k}</span>`).join('');
+    document.getElementById('km-search-analysis').textContent = data.analysis || '';
+    document.getElementById('km-search-tips').innerHTML = (data.tips||[]).map(t=>`<li>${t}</li>`).join('');
+  }
+
+  function setKmSearch(kw) {
+    document.getElementById('km-search-keyword').value = kw;
+    showPage('km-search');
+    runKmSearch();
+  }
+
+  /* ── ⑧ 형태소 분석 ── */
+  async function runKmMorpheme() {
+    const text = document.getElementById('km-morpheme-text').value.trim();
+    if (!text) { alert('분석할 텍스트를 입력해주세요.'); return; }
+    const card = document.querySelector('#page-km-morpheme .card');
+    disableBtn(card, true);
+    showLoading('km-morpheme', true);
+    showResult('km-morpheme', false);
+    showError('km-morpheme', '');
+    try {
+      const data = await callAPI({ mode: 'km-morpheme', keyword: text });
+      renderKmMorpheme(data);
+      showResult('km-morpheme', true);
+    } catch(e) { showError('km-morpheme', e.message); }
+    finally { disableBtn(card, false); showLoading('km-morpheme', false); }
+  }
+
+  function renderKmMorpheme(data) {
+    const sentMap = {
+      '긍정': { cls:'pos', label:'긍정적 😊', color:'#48bb78' },
+      '부정': { cls:'neg', label:'부정적 😔', color:'#fc8181' },
+      '중립': { cls:'neu', label:'중립적 😐', color:'#a0aec0' }
+    };
+    const s = sentMap[data.sentiment] || sentMap['중립'];
+    const score = Math.round((data.sentimentScore||0.5)*100);
+    document.getElementById('km-morpheme-sentiment').innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+        <span class="badge" style="background:${s.color}22;color:${s.color};border:1.5px solid ${s.color}44;font-size:0.9rem;padding:6px 14px;">${s.label}</span>
+        <span style="font-size:0.85rem;color:#718096;">${score}% 확신도</span>
+      </div>
+      <div class="sentiment-bar"><div class="sentiment-fill sentiment-${s.cls}" style="width:${score}%"></div></div>
+      <div style="font-size:0.85rem;color:#4a5568;margin-top:10px;line-height:1.6;">${data.sentimentDetail||''}</div>
+    `;
+    document.getElementById('km-morpheme-keywords').innerHTML = (data.topKeywords||[]).map((k,i)=>
+      `<span class="tag" style="font-size:${i<3?'0.95rem':'0.82rem'};font-weight:${i<3?'700':'500'};">${k}</span>`).join('');
+    document.getElementById('km-morpheme-table').innerHTML = (data.morphemes||[]).map(m=>`
+      <tr>
+        <td style="font-weight:600;">${m.word}</td>
+        <td><span class="badge" style="background:#ebf4ff;color:#2b6cb0;">${m.pos}</span></td>
+        <td style="font-weight:700;color:#1a365d;">${m.count}회</td>
+      </tr>`).join('');
+  }
+
+  /* ── ⑨ 셀러마스터 ── */
+  async function runKmSeller() {
+    const kw = document.getElementById('km-seller-keyword').value.trim();
+    if (!kw) { alert('상품 키워드를 입력해주세요.'); return; }
+    const card = document.querySelector('#page-km-seller .card');
+    disableBtn(card, true);
+    showLoading('km-seller', true);
+    showResult('km-seller', false);
+    showError('km-seller', '');
+    try {
+      const data = await callAPI({ mode: 'km-seller', keyword: kw });
+      renderKmSeller(data);
+      showResult('km-seller', true);
+    } catch(e) { showError('km-seller', e.message); }
+    finally { disableBtn(card, false); showLoading('km-seller', false); }
+  }
+
+  function renderKmSeller(data) {
+    const pr = data.priceRange || {};
+    document.getElementById('km-seller-stats').innerHTML = `
+      <div class="stat-row">
+        ${data.productCount != null ? `
+          <div class="stat-box" style="border-color:#2b6cb0;">
+            <div class="stat-box-label">네이버 쇼핑 상품수</div>
+            <div class="stat-box-value" style="color:#2b6cb0;">${data.productCount.toLocaleString()}</div>
+            <div class="stat-box-sub">실제 데이터</div>
+          </div>` : `<div class="info-box" style="grid-column:1/-1;">🤖 AI 추정값입니다.</div>`}
+        <div class="stat-box">
+          <div class="stat-box-label">경쟁도</div>
+          <div class="stat-box-value" style="font-size:1.1rem;">${data.competition||'-'}</div>
+          <div class="stat-box-sub">판매 경쟁 수준</div>
+        </div>
+        ${pr.avg ? `<div class="stat-box"><div class="stat-box-label">평균 예상가</div><div class="stat-box-value" style="font-size:1rem;">${pr.avg.toLocaleString()}원</div><div class="stat-box-sub">${(pr.min||0).toLocaleString()}~${(pr.max||0).toLocaleString()}원</div></div>` : ''}
+      </div>
+    `;
+    document.getElementById('km-seller-analysis').textContent = data.analysis || '';
+    document.getElementById('km-seller-tips').innerHTML = (data.sellerTips||[]).map(t=>`<li>${t}</li>`).join('');
+    document.getElementById('km-seller-related').innerHTML = (data.relatedProducts||[]).map(k=>
+      `<span class="tag" onclick="setKmSeller('${k.replace(/'/g,"\\'")}')"> ${k}</span>`).join('');
+  }
+
+  function setKmSeller(kw) {
+    document.getElementById('km-seller-keyword').value = kw;
+    showPage('km-seller');
+    runKmSeller();
+  }
+
+  /* ── ⑩ 실시간 검색어 ── */
+  async function runKmRealtime() {
+    const card = document.querySelector('#page-km-realtime .card');
+    disableBtn(card, true);
+    showLoading('km-realtime', true);
+    showResult('km-realtime', false);
+    showError('km-realtime', '');
+    try {
+      const data = await callAPI({ mode: 'km-realtime', topic: kmRealtimeCat });
+      renderKmRealtime(data);
+      showResult('km-realtime', true);
+    } catch(e) { showError('km-realtime', e.message); }
+    finally { disableBtn(card, false); showLoading('km-realtime', false); }
+  }
+
+  function renderKmRealtime(data) {
+    const trendMap = {
+      '상승': { cls:'trend-up',   label:'▲ 상승' },
+      '신규': { cls:'trend-new',  label:'🆕 신규' },
+      '유지': { cls:'trend-keep', label:'→ 유지' }
+    };
+
+    const sourceBadge = data._hasRealNews
+      ? `<span style="display:inline-block;background:#c6f6d5;color:#22543d;border:1.5px solid #9ae6b4;border-radius:20px;padding:2px 10px;font-size:0.75rem;font-weight:700;">🟢 네이버 실뉴스 반영</span>`
+      : `<span style="display:inline-block;background:#fef3c7;color:#92400e;border:1.5px solid #f6e05e;border-radius:20px;padding:2px 10px;font-size:0.75rem;font-weight:700;">🤖 AI 추정</span>`;
+
+    document.getElementById('km-realtime-summary').innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px;">
+        ${sourceBadge}
+        ${data.updatedAt ? `<span style="font-size:0.75rem;color:#a0aec0;">마지막 업데이트: ${data.updatedAt}</span>` : ''}
+      </div>
+      <div style="font-size:0.85rem;color:#744210;">${data.summary || ''}</div>
+    `;
+
+    document.getElementById('km-realtime-list').innerHTML = (data.keywords||[]).map(k => {
+      const t = trendMap[k.trend] || trendMap['유지'];
+      return `
+        <li class="realtime-item" style="flex-direction:column;align-items:flex-start;gap:5px;">
+          <div style="display:flex;align-items:center;gap:10px;width:100%;">
+            <span class="realtime-rank">${k.rank}</span>
+            <span class="realtime-keyword" style="flex:1;">${k.keyword}</span>
+            <span class="realtime-trend ${t.cls}">${t.label}</span>
+          </div>
+          ${k.headline ? `<div style="font-size:0.8rem;color:#4a5568;padding-left:38px;line-height:1.5;">${k.headline}</div>` : ''}
+          ${k.desc ? `<div style="font-size:0.73rem;color:#a0aec0;padding-left:38px;">${k.category} · ${k.desc}</div>` : ''}
+        </li>`;
+    }).join('');
   }
 </script>
 
