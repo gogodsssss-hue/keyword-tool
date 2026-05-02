@@ -366,6 +366,9 @@ textarea.form-control{resize:vertical;min-height:100px}
 
   <div class="sidebar-section">콘텐츠 제작</div>
   <div class="sidebar-item" data-page="draft-helper"><span class="si-icon">✍️</span>대본 도우미</div>
+
+  <div class="sidebar-section">벤치마킹</div>
+  <div class="sidebar-item" data-page="top-bloggers"><span class="si-icon">🏅</span>상위 블로거 목록</div>
 </nav>
 
 <!-- ── MAIN ── -->
@@ -624,6 +627,26 @@ textarea.form-control{resize:vertical;min-height:100px}
   </div>
   <div class="loading" id="tracker-loading"><div class="spinner"></div><div class="loading-text">RSS 불러오는 중...</div></div>
   <div class="result-area" id="tracker-result"></div>
+</div>
+
+<!-- =================== 상위 블로거 목록 =================== -->
+<div class="page" id="page-top-bloggers">
+  <div class="page-header">
+    <h2>🏅 상위 블로거 목록</h2>
+    <p>내 분야 네이버 상위 노출 블로거들을 수집합니다. 직접 방문해서 글쓰기 방식을 벤치마킹하세요.</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>분야 / 키워드</label>
+      <input type="text" class="form-control" id="tb-topic" placeholder="예) 부동산, 전세자금대출, 미국 기준금리, 아파트 청약" />
+    </div>
+    <div style="background:#f0f7ff;border:1px solid #bee3f8;border-radius:8px;padding:10px 14px;font-size:.8rem;color:#2c5282;margin-bottom:14px">
+      💡 입력한 키워드로 네이버 상위 블로그 결과를 분석해 자주 등장하는 블로거를 순위별로 보여줍니다.
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="loadTopBloggers()">🏅 상위 블로거 수집</button>
+  </div>
+  <div class="loading" id="tb-loading"><div class="spinner"></div><div class="loading-text">네이버 상위 블로그 분석 중...</div></div>
+  <div class="result-area" id="tb-result"></div>
 </div>
 
 <!-- =================== DRAFT HELPER =================== -->
@@ -1327,6 +1350,77 @@ async function loadGoldenKeywords(topic) {
 // ═══════════════════════════════════════════
 //  순위 체커
 // ═══════════════════════════════════════════
+
+async function loadTopBloggers() {
+  const topic = document.getElementById('tb-topic').value.trim();
+  if (!topic) { alert('분야/키워드를 입력해주세요.'); return; }
+
+  showLoading('tb');
+  hideResult('tb');
+  try {
+    const data = await callApi({ mode: 'top-bloggers', topic });
+    const bloggers = data.bloggers || [];
+
+    if (!bloggers.length) {
+      showResult('tb', '<div class="card">결과를 찾을 수 없습니다. 다른 키워드로 시도해보세요.</div>');
+      return;
+    }
+
+    const rows = bloggers.map((b, i) => {
+      const rank = i + 1;
+      const badgeStyle = rank <= 3
+        ? 'background:linear-gradient(135deg,#d4af37,#f0c040);color:#5a3e0a'
+        : rank <= 10
+          ? 'background:#c6f6d5;color:#22543d'
+          : rank <= 30
+            ? 'background:#bee3f8;color:#2c5282'
+            : 'background:#e2e8f0;color:#4a5568';
+
+      const strengthBar = Math.min(100, b.count * 20);
+
+      return `
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">
+          <span style="min-width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;flex-shrink:0;${badgeStyle}">${rank}</span>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <a href="${escHtml(b.link)}" target="_blank" rel="noopener"
+                style="font-weight:700;font-size:.92rem;color:var(--navy-mid);text-decoration:none"
+                onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+                ${escHtml(b.name) || '이름 없음'}
+              </a>
+              <span style="font-size:.72rem;color:var(--text-light)">${b.count}회 상위 노출</span>
+            </div>
+            <div style="height:4px;background:#e2e8f0;border-radius:2px;margin-bottom:6px;max-width:200px">
+              <div style="height:100%;width:${strengthBar}%;background:linear-gradient(90deg,var(--navy-mid),var(--sky));border-radius:2px"></div>
+            </div>
+            ${b.titles.length ? `<div style="font-size:.74rem;color:var(--text-light)">${b.titles.map(t => `"${escHtml(t)}"`).join(' · ')}</div>` : ''}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+            <a href="${escHtml(b.link)}" target="_blank" rel="noopener"
+              style="font-size:.72rem;padding:4px 10px;border:1px solid var(--border);border-radius:6px;text-decoration:none;color:var(--text-mid);text-align:center;background:#fff">
+              방문 →
+            </a>
+            <button onclick="document.getElementById('rank-blogurl').value=${JSON.stringify(b.link)};switchPage('rank-checker')"
+              style="font-size:.68rem;padding:3px 8px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:#fff;font-family:inherit;color:var(--text-mid)">
+              순위비교
+            </button>
+          </div>
+        </div>`;
+    }).join('');
+
+    showResult('tb', `
+      <div class="card result-fade">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div class="card-title" style="margin:0">🏅 「${escHtml(data.topic)}」 상위 노출 블로거 ${bloggers.length}명</div>
+        </div>
+        <div style="font-size:.78rem;color:var(--text-light);margin-bottom:14px">
+          네이버 블로그 검색 상위 결과 기준 · 숫자 = 상위 결과에 등장한 횟수 · 클릭해서 벤치마킹하세요
+        </div>
+        ${rows}
+      </div>
+    `);
+  } catch(e) { showError('tb', e.message); }
+}
 
 async function checkMyRank() {
   const keyword = document.getElementById('rank-keyword').value.trim();

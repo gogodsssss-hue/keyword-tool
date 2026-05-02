@@ -1004,7 +1004,54 @@ JSON 없이 자연스러운 한국어 대화체로 답하세요.`;
       result = { rows };
     }
 
-    // ⑱ 순위 체커 — 키워드 검색 시 내 블로그 몇 위?
+    // ⑱ 상위 블로거 수집 — 분야 키워드로 자주 등장하는 블로거 목록
+    else if (mode === 'top-bloggers') {
+      if (!hasNaver) return res.status(400).json({ error: '네이버 API가 필요합니다.' });
+      if (!topic) return res.status(400).json({ error: '주제를 입력해주세요.' });
+
+      // 관련 키워드 5개 생성 (주제 변형)
+      const searchQueries = [
+        topic,
+        `${topic} 방법`,
+        `${topic} 정리`,
+        `${topic} 최신`,
+        `${topic} 분석`
+      ];
+
+      // 각 키워드로 상위 30개씩 검색
+      const allItems = [];
+      for (const q of searchQueries) {
+        const r = await naverBlogSearchItems(q, NAVER_CID, NAVER_CSEC, 30);
+        if (r?.items) allItems.push(...r.items);
+        await new Promise(res => setTimeout(res, 200));
+      }
+
+      // 블로거별 등장 횟수 집계
+      const bloggerMap = {};
+      const strip = s => (s || '').replace(/<[^>]*>/g, '').trim();
+      for (const item of allItems) {
+        const link = item.bloggerlink || '';
+        const name = item.bloggername || '';
+        if (!link || link.includes('post.naver') || link.includes('cafe.naver')) continue;
+        const key = link.toLowerCase().replace(/\/$/, '');
+        if (!bloggerMap[key]) {
+          bloggerMap[key] = { name: strip(name), link, count: 0, titles: [] };
+        }
+        bloggerMap[key].count++;
+        if (bloggerMap[key].titles.length < 3) {
+          bloggerMap[key].titles.push(strip(item.title).slice(0, 40));
+        }
+      }
+
+      // 등장 횟수 순 정렬
+      const bloggers = Object.values(bloggerMap)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 100);
+
+      result = { bloggers, topic, total: bloggers.length };
+    }
+
+    // ⑲ 순위 체커 — 키워드 검색 시 내 블로그 몇 위?
     else if (mode === 'rank-checker') {
       if (!hasNaver) return res.status(400).json({ error: '네이버 API가 설정되지 않았습니다.' });
       if (!keyword || !blogUrl) return res.status(400).json({ error: '키워드와 블로그 URL을 입력해주세요.' });
