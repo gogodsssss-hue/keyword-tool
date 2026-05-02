@@ -415,16 +415,21 @@ textarea.form-control{resize:vertical;min-height:100px}
   </div>
   <div class="loading" id="bindex-loading"><div class="spinner"></div><div class="loading-text">블로그 지수를 측정 중입니다...</div></div>
   <div class="result-area" id="bindex-result"></div>
-  <div id="bindex-chat-wrap" style="display:none">
-    <div class="card-title" style="margin:0 0 10px">💬 블로그 코칭 챗</div>
-    <div class="chat-wrap">
-      <div class="chat-header">AI 블로그 코치 — 무엇이든 물어보세요!</div>
-      <div class="chat-messages" id="bindex-chat-messages"></div>
+
+  <!-- 채팅창 — 항상 표시 -->
+  <div id="bindex-chat-wrap">
+    <div class="chat-wrap" style="margin-top:18px">
+      <div class="chat-header">💬 AI 블로그 코치 — 분석 전후 언제든 질문하세요!</div>
+      <div class="chat-messages" id="bindex-chat-messages">
+        <div class="chat-bubble ai">안녕하세요! 블로그 SEO 전문 코치입니다 😊<br>위에서 분석을 먼저 실행하거나, 궁금한 점을 바로 물어보세요!</div>
+      </div>
       <div class="chat-quick">
         <button class="chat-quick-btn" onclick="sendQuick('레벨 올리는 핵심은?')">레벨 올리는 핵심은?</button>
         <button class="chat-quick-btn" onclick="sendQuick('하루 포스팅 몇 개?')">하루 포스팅 몇 개?</button>
         <button class="chat-quick-btn" onclick="sendQuick('노출 잘 되는 키워드?')">노출 잘 되는 키워드?</button>
         <button class="chat-quick-btn" onclick="sendQuick('지금 당장 고칠 것?')">지금 당장 고칠 것?</button>
+        <button class="chat-quick-btn" onclick="sendQuick('부동산 블로그 전략은?')">부동산 블로그 전략은?</button>
+        <button class="chat-quick-btn" onclick="sendQuick('이웃 늘리는 방법?')">이웃 늘리는 방법?</button>
       </div>
       <div class="chat-input-row">
         <input type="text" class="chat-input" id="bindex-chat-input" placeholder="질문을 입력하세요..." onkeydown="if(event.key==='Enter')sendChat()" />
@@ -855,7 +860,6 @@ async function analyzeBlogIndex() {
   const isInfluencer   = document.getElementById('bindex-influencer').value;
 
   showLoading('bindex');
-  document.getElementById('bindex-chat-wrap').style.display = 'none';
   try {
     const data = await callApi({
       mode:'blog-index', blogUrl:url, topic,
@@ -911,13 +915,11 @@ async function analyzeBlogIndex() {
       </div>` : ''}
     `);
 
-    // Show chat
-    const chatWrap = document.getElementById('bindex-chat-wrap');
-    chatWrap.style.display = 'block';
+    // 분석 완료 후 채팅 메시지 업데이트
     const msgs = document.getElementById('bindex-chat-messages');
     msgs.innerHTML = '';
-    appendChatBubble('ai', `안녕하세요! 블로그 분석이 완료됐습니다. 현재 **Level ${level} (${LEVEL_NAMES[level]})** 수준이에요. 궁금한 점을 물어보세요! 😊`);
-    chatWrap.scrollIntoView({behavior:'smooth', block:'nearest'});
+    appendChatBubble('ai', `분석 완료! 현재 **Level ${level} (${LEVEL_NAMES[level]})** 수준이에요. 궁금한 점을 바로 물어보세요 😊`);
+    document.getElementById('bindex-chat-wrap').scrollIntoView({behavior:'smooth', block:'nearest'});
   } catch(e) { showError('bindex', e.message); }
 }
 
