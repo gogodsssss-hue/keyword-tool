@@ -1067,22 +1067,14 @@ async function runNsDraftToKeyword() {
   resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   try {
     const data = await callApi({ mode: 'draft-to-keyword', draft, platform });
-    const kwCards = (data.keywords||[]).map(k => `
-      <div class="keyword-card">
-        <div class="kc-word">🔑 ${escHtml(k.keyword)}</div>
-        <div class="kc-meta">
-          ${renderBadge('검색량 '+escHtml(k.searchVolume||''), k.searchVolume)}
-          ${renderBadge('경쟁도 '+escHtml(k.competition||''), k.competition)}
-          <span class="badge" style="background:var(--gold-bg);color:var(--gold-text)">황금도 ${escHtml(k.goldenScore||'')}</span>
-        </div>
-        <div class="kc-reason">${escHtml(k.why||'')}</div>
-        <button class="btn" style="margin-top:10px;padding:6px 14px;font-size:.78rem;background:var(--navy-mid);color:#fff;border:none;border-radius:8px;cursor:pointer;width:100%"
-          onclick="generateDraft('${escHtml(k.keyword).replace(/'/g,"\\'")}','')">✍️ 이 키워드로 대본 생성</button>
-      </div>`).join('');
+    const kwCards = (data.keywords||[]).map(k => renderGoldenCard(k, '')).join('');
     resultEl.innerHTML = kwCards ? `
       <div class="card result-fade" style="margin-top:0">
-        <div class="card-title">📝 추출된 키워드</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:10px">${kwCards}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div class="card-title" style="margin:0">📝 이 글에서 추출한 황금 키워드</div>
+          <span style="font-size:.72rem;color:var(--naver);font-weight:600">🟢 네이버 실데이터</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">${kwCards}</div>
       </div>
       ${(data.missingKeywords||[]).length ? `<div class="card result-fade" style="margin-top:0"><div class="card-title">➕ 추가하면 좋을 키워드</div><div style="display:flex;flex-wrap:wrap;gap:8px">${data.missingKeywords.map(k=>`<span class="badge">${escHtml(k)}</span>`).join('')}</div></div>` : ''}
       ${(data.seoTips||[]).length ? `<div class="card result-fade" style="margin-top:0"><div class="card-title">💡 SEO 개선 포인트</div><ul class="tips-list">${data.seoTips.map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul></div>` : ''}` : '';

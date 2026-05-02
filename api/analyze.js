@@ -624,19 +624,60 @@ JSON 없이 자연스러운 한국어 대화체로 답하세요.`;
 
     // 대본 → 키워드 추출
     else if (mode === 'draft-to-keyword') {
-      let naverContext = '';
-      if (hasNaver) {
-        const words = draft.replace(/[^가-힣a-z0-9\s]/gi,'').split(/\s+/).filter(w=>w.length>1).slice(0,5);
-        const counts = await Promise.all(words.map(w => naverBlogSearch(w, NAVER_CID, NAVER_CSEC)));
-        counts.forEach((c,i) => { if(c!==null) naverContext += `\n"${words[i]}" 블로그 검색결과: ${c.toLocaleString()}개`; });
-      }
-      result = await claude(CLAUDE_KEY,
-        `한국 블로그 SEO 전문가. 부동산·금융·경제 특화. 순수 JSON만 반환.
-${naverContext ? '아래 네이버 실데이터를 참고해 분석하세요.\n'+naverContext : ''}
-{"keywords":[{"keyword":"","searchVolume":"높음|중간|낮음","competition":"높음|중간|낮음","goldenScore":"A~F","why":""}],"missingKeywords":[""],"seoTips":[""]}
-keywords: 글에서 추출한 황금 키워드 5~7개. goldenScore는 검색량 높고 경쟁 낮을수록 A. missingKeywords: 추가하면 좋을 키워드 5개. seoTips: SEO 개선 포인트 4가지.`,
+      // 1단계: Claude는 키워드 후보만 추출 (점수/수치 추측 없이)
+      const extracted = await claude(CLAUDE_KEY,
+        `한국 블로그 SEO 전문가. 순수 JSON만 반환.
+{"keywords":["키워드1","키워드2","키워드3","키워드4","키워드5","키워드6","키워드7","키워드8"],"missingKeywords":["추가하면좋을키워드1","추가하면좋을키워드2","추가하면좋을키워드3"],"seoTips":["팁1","팁2","팁3","팁4"]}
+글에서 SEO에 쓸 만한 검색 키워드 8개 추출. missingKeywords는 글에 없지만 추가하면 좋을 키워드 3개. 키워드만 반환, 점수/평가 없이.`,
         `플랫폼: ${platform||'둘 다'}\n\n[블로그 대본]\n${draft.slice(0,3000)}`
       );
+
+      const kwList = extracted.keywords || [];
+
+      // 2단계: 각 키워드 실제 네이버 데이터 조회
+      const kwData = await Promise.all(
+        kwList.map(async kw => {
+          const [vol, bc] = await Promise.all([
+            hasAds   ? naverSearchVolume(kw, AD_KEY, AD_SECRET, AD_CUSTOMER) : Promise.resolve(null),
+            hasNaver ? naverBlogSearch(kw, NAVER_CID, NAVER_CSEC)            : Promise.resolve(null)
+          ]);
+          return { keyword: kw, vol, blogCount: bc };
+        })
+      );
+
+      // 3단계: 실수치로 황금도 계산
+      const goldenScore = (vol, comp) => {
+        const v = vol  || 0;
+        const c = comp || 999999;
+        const ratio = v / (c + 1);
+        if (ratio >= 1   && v >= 5000) return 'A+';
+        if (ratio >= 0.5 && v >= 2000) return 'A';
+        if (ratio >= 0.2 && v >= 1000) return 'B+';
+        if (ratio >= 0.1)              return 'B';
+        if (v >= 5000)                 return 'B';
+        return 'C';
+      };
+      const volLabel  = v => v >= 10000 ? '높음' : v >= 2000 ? '중간' : '낮음';
+      const compLabel = c => c <= 5000  ? '낮음' : c <= 30000 ? '중간' : '높음';
+
+      result = {
+        keywords: kwData.map(k => ({
+          keyword:       k.keyword,
+          searchVolume:  k.vol ? volLabel(k.vol.total) : '조회불가',
+          competition:   k.blogCount !== null ? compLabel(k.blogCount) : '조회불가',
+          goldenScore:   goldenScore(k.vol?.total, k.blogCount),
+          monthlyPc:     k.vol?.pc     ?? null,
+          monthlyMobile: k.vol?.mobile ?? null,
+          monthlyTotal:  k.vol?.total  ?? null,
+          blogCount:     k.blogCount   ?? null,
+          why: `월검색 ${(k.vol?.total ?? 0).toLocaleString()}회 · 블로그 ${(k.blogCount ?? 0).toLocaleString()}개`
+        })).sort((a,b) => {
+          const o = {'A+':0,'A':1,'B+':2,'B':3,'C':4};
+          return (o[a.goldenScore]??5) - (o[b.goldenScore]??5);
+        }),
+        missingKeywords: extracted.missingKeywords || [],
+        seoTips: extracted.seoTips || []
+      };
     }
 
     // 키워드 → 대본 생성
