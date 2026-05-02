@@ -311,6 +311,10 @@ textarea.form-control{resize:vertical;min-height:100px}
 }
 
 /* ── 대본 도우미 ── */
+.ns-tab{background:#fff;border:2px solid var(--border);border-radius:12px;padding:14px 8px;cursor:pointer;text-align:center;transition:all .18s;font-family:inherit;color:var(--text)}
+.ns-tab:hover{border-color:var(--navy-mid);color:var(--navy-mid)}
+.ns-tab.active{border-color:var(--navy-mid);background:var(--navy);color:#fff}
+.ns-tab.active div{color:#fff !important}
 .draft-tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px}
 .draft-tab{padding:10px 22px;font-size:.85rem;font-weight:600;color:var(--text-light);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit}
 .draft-tab.active{color:var(--navy-mid);border-bottom-color:var(--navy-mid)}
@@ -895,18 +899,14 @@ async function analyzeAll() {
       ${indexData.summary ? `<div class="summary-box result-fade">${escHtml(indexData.summary)}</div>` : ''}
       ${tips ? `<div class="card result-fade"><div class="card-title">💡 분석 팁</div><ul class="tips-list">${tips}</ul></div>` : ''}
       ${nextTips ? `<div class="card result-fade"><div class="card-title">🚀 다음 레벨 전략</div><ul class="tips-list">${nextTips}</ul></div>` : ''}
-      <div class="card result-fade" style="text-align:center">
-        <div style="font-size:.85rem;color:var(--text-mid);margin-bottom:12px">내 블로그 주제에 맞는 황금 키워드를 찾아볼까요?</div>
-        <button class="btn btn-primary" onclick="loadGoldenKeywords('${escHtml(topic||'부동산 금융 재테크').replace(/'/g,"\\'")}')">🥇 황금 키워드 찾기</button>
-      </div>
     `);
 
-    document.getElementById('bindex-kw-result').innerHTML = '';
+    renderNextStepPanel(topic);
 
     // 채팅 초기화
     const msgs = document.getElementById('bindex-chat-messages');
     msgs.innerHTML = '';
-    appendChatBubble('ai', `분석 완료! 현재 **Level ${level} (${LEVEL_NAMES[level]})** 수준이에요.\n황금 키워드가 필요하면 아래 버튼을 눌러보세요 😊`);
+    appendChatBubble('ai', `분석 완료! 현재 **Level ${level} (${LEVEL_NAMES[level]})** 수준이에요.\n아래에서 다음 단계를 골라보세요 😊`);
     document.getElementById('bindex-chat-wrap').scrollIntoView({behavior:'smooth', block:'nearest'});
 
   } catch(e) { showError('bindex', e.message); }
@@ -935,6 +935,101 @@ async function generateDraft(keyword, topic) {
   } catch(e) {
     document.getElementById('bindex-draft-result').innerHTML = `<div class="card" style="color:var(--red-text)">대본 생성 오류: ${escHtml(e.message)}</div>`;
   }
+}
+
+// ═══════════════════════════════════════════
+//  다음 단계 패널 (진단 후 3가지 선택)
+// ═══════════════════════════════════════════
+
+function renderNextStepPanel(topic) {
+  const t = (topic || '부동산 금융 재테크').replace(/'/g, "\\'");
+  document.getElementById('bindex-kw-result').innerHTML = `
+    <div class="card result-fade" style="margin-top:0" id="next-step-card">
+      <div class="card-title" style="margin-bottom:14px">📌 다음 단계 — 무엇을 도와드릴까요?</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px">
+        <button id="nstab-1" class="ns-tab active" onclick="switchNsTab(1,'${t}')">
+          <div style="font-size:1.3rem;margin-bottom:4px">📝</div>
+          <div style="font-weight:600;font-size:.82rem">대본 → 키워드</div>
+          <div style="font-size:.72rem;color:var(--text-light);margin-top:3px">쓴 글에서 키워드 추출</div>
+        </button>
+        <button id="nstab-2" class="ns-tab" onclick="switchNsTab(2,'${t}')">
+          <div style="font-size:1.3rem;margin-bottom:4px">🔑</div>
+          <div style="font-weight:600;font-size:.82rem">키워드 → 대본</div>
+          <div style="font-size:.72rem;color:var(--text-light);margin-top:3px">키워드로 대본 초안 생성</div>
+        </button>
+        <button id="nstab-3" class="ns-tab" onclick="switchNsTab(3,'${t}')">
+          <div style="font-size:1.3rem;margin-bottom:4px">🥇</div>
+          <div style="font-weight:600;font-size:.82rem">키워드 추천</div>
+          <div style="font-size:.72rem;color:var(--text-light);margin-top:3px">황금 키워드 찾아주기</div>
+        </button>
+      </div>
+      <div id="nspanel-1">
+        <div class="form-group" style="margin-bottom:10px">
+          <label style="font-size:.82rem">작성한 대본 붙여넣기</label>
+          <textarea id="ns-draft-input" class="form-control" rows="5" placeholder="블로그에 쓸 대본이나 초안을 붙여넣어 주세요..." style="resize:vertical;min-height:100px"></textarea>
+        </div>
+        <button class="btn btn-primary" style="width:100%" onclick="runNsDraftToKeyword()">📝 키워드 추출</button>
+      </div>
+      <div id="nspanel-2" style="display:none">
+        <div class="form-group" style="margin-bottom:10px">
+          <label style="font-size:.82rem">키워드 입력</label>
+          <input type="text" id="ns-kw-input" class="form-control" placeholder="예) 강남 아파트 투자, 금리 인하 영향" />
+        </div>
+        <button class="btn btn-primary" style="width:100%" onclick="runNsKeywordToDraft('${t}')">🔑 대본 생성</button>
+      </div>
+      <div id="nspanel-3" style="display:none">
+        <div style="font-size:.83rem;color:var(--text-mid);margin-bottom:12px">주제 <b>${topic || '부동산 금융 재테크'}</b>에 맞는 황금 키워드를 찾아드립니다.</div>
+        <button class="btn btn-primary" style="width:100%" onclick="loadGoldenKeywords('${t}')">🥇 황금 키워드 추천받기</button>
+      </div>
+    </div>`;
+  document.getElementById('bindex-kw-result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function switchNsTab(n, topic) {
+  [1,2,3].forEach(i => {
+    document.getElementById(`nstab-${i}`).classList.toggle('active', i === n);
+    document.getElementById(`nspanel-${i}`).style.display = i === n ? '' : 'none';
+  });
+}
+
+async function runNsDraftToKeyword() {
+  const draft = document.getElementById('ns-draft-input').value.trim();
+  if (!draft) { alert('대본을 입력해주세요.'); return; }
+  if (draft.length < 50) { alert('50자 이상 입력해주세요.'); return; }
+  const platform = document.querySelector('#pg-draft-kw .platform-btn.active')?.dataset.val || '둘 다';
+  const resultEl = document.getElementById('bindex-draft-result');
+  resultEl.innerHTML = `<div class="card result-fade" style="margin-top:0"><div class="card-title">📝 키워드 추출 중...</div></div>`;
+  resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  try {
+    const data = await callApi({ mode: 'draft-to-keyword', draft, platform });
+    const kwCards = (data.keywords||[]).map(k => `
+      <div class="keyword-card">
+        <div class="kc-word">🔑 ${escHtml(k.keyword)}</div>
+        <div class="kc-meta">
+          ${renderBadge('검색량 '+escHtml(k.searchVolume||''), k.searchVolume)}
+          ${renderBadge('경쟁도 '+escHtml(k.competition||''), k.competition)}
+          <span class="badge" style="background:var(--gold-bg);color:var(--gold-text)">황금도 ${escHtml(k.goldenScore||'')}</span>
+        </div>
+        <div class="kc-reason">${escHtml(k.why||'')}</div>
+        <button class="btn" style="margin-top:10px;padding:6px 14px;font-size:.78rem;background:var(--navy-mid);color:#fff;border:none;border-radius:8px;cursor:pointer;width:100%"
+          onclick="generateDraft('${escHtml(k.keyword).replace(/'/g,"\\'")}','')">✍️ 이 키워드로 대본 생성</button>
+      </div>`).join('');
+    resultEl.innerHTML = kwCards ? `
+      <div class="card result-fade" style="margin-top:0">
+        <div class="card-title">📝 추출된 키워드</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:10px">${kwCards}</div>
+      </div>
+      ${(data.missingKeywords||[]).length ? `<div class="card result-fade" style="margin-top:0"><div class="card-title">➕ 추가하면 좋을 키워드</div><div style="display:flex;flex-wrap:wrap;gap:8px">${data.missingKeywords.map(k=>`<span class="badge">${escHtml(k)}</span>`).join('')}</div></div>` : ''}
+      ${(data.seoTips||[]).length ? `<div class="card result-fade" style="margin-top:0"><div class="card-title">💡 SEO 개선 포인트</div><ul class="tips-list">${data.seoTips.map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul></div>` : ''}` : '';
+  } catch(e) {
+    resultEl.innerHTML = `<div class="card" style="color:var(--red-text)">오류: ${escHtml(e.message)}</div>`;
+  }
+}
+
+async function runNsKeywordToDraft(topic) {
+  const keyword = document.getElementById('ns-kw-input').value.trim();
+  if (!keyword) { alert('키워드를 입력해주세요.'); return; }
+  await generateDraft(keyword, topic);
 }
 
 // ═══════════════════════════════════════════
