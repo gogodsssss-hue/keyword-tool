@@ -373,23 +373,44 @@ Level 10: 최고권위(2000개+, 네이버 인플루언서 최상위)
 
 입력된 현황 수치가 있으면 그것을 최우선으로 레벨 판단. 없으면 URL로 추정.
 
+[분석 원칙]
+- 충분히 클 수 있는데 못 크고 있는 이유를 구체적으로 진단하라.
+- "열심히 하세요" 같은 추상적 조언 금지.
+- 수치를 인용하며 "이 수치가 이 레벨 평균 대비 낮다/높다"는 식으로 비교 분석.
+- growthBlockers는 가장 치명적인 성장 방해 요인 3가지. 각각 원인+구체적 해결책.
+
 순수 JSON만 반환:
 {
-  "estimatedLevel": 0~10,
-  "levelReason": "레벨 추정 근거 — 입력된 수치 기반으로 구체적으로 (1~2문장)",
+  "estimatedLevel": 0,
+  "levelReason": "레벨 근거 — 수치 직접 인용 (1~2문장)",
   "scores": [
-    {"label":"콘텐츠 품질","value":"A~F","sub":"한줄평가"},
-    {"label":"업로드 주기","value":"A~F","sub":"한줄평가"},
-    {"label":"이웃/방문자","value":"A~F","sub":"실제 수치 언급"},
-    {"label":"키워드 최적화","value":"A~F","sub":"한줄평가"},
-    {"label":"SEO 구조","value":"A~F","sub":"한줄평가"}
+    {"label":"콘텐츠 품질","value":"A~F","sub":"구체적 한줄 평가"},
+    {"label":"업로드 주기","value":"A~F","sub":"몇 개월에 몇 개 수준인지"},
+    {"label":"이웃/방문자","value":"A~F","sub":"실제 수치 vs 레벨 평균"},
+    {"label":"키워드 최적화","value":"A~F","sub":"구체적 개선 포인트"},
+    {"label":"SEO 구조","value":"A~F","sub":"구체적 개선 포인트"}
+  ],
+  "growthBlockers": [
+    {"rank":1,"title":"성장을 막는 가장 큰 원인 제목","diagnosis":"왜 문제인지 수치 근거 포함 2문장","action":"당장 이번 주 할 수 있는 구체적 행동 1가지"},
+    {"rank":2,"title":"두 번째 원인","diagnosis":"","action":""},
+    {"rank":3,"title":"세 번째 원인","diagnosis":"","action":""}
   ],
   "nextLevelTips": ["다음 레벨 달성 조건 3가지 (구체적 수치 포함)"],
-  "summary": "종합 분석 (2~3문장, 입력된 수치 반영)",
-  "tips": ["지수 향상 전략 6가지"]
+  "summary": "종합 브리핑 — 이 블로그가 충분히 클 수 있는 이유와 현재 못 크는 핵심 이유 (3~4문장)",
+  "tips": ["지수 향상 전략 5가지 (각각 구체적 행동 포함)"]
 }`,
         `블로그 주소: ${blogUrl}\n주제 분야: ${topic || '부동산/금융/경제'}\n\n[현황 수치]\n${statsCtx}`
       );
+
+      // 링크는 Claude가 지어내지 않도록 백엔드에서 직접 고정 삽입
+      const topicEncoded = encodeURIComponent((topic || '부동산 금융 재테크') + ' 블로그');
+      result.references = [
+        { title: '네이버 서치어드바이저', desc: '내 블로그 검색 유입·색인 현황 공식 확인', url: 'https://searchadvisor.naver.com' },
+        { title: '네이버 데이터랩', desc: '내 주제 키워드 트렌드 실시간 확인', url: 'https://datalab.naver.com' },
+        { title: '네이버 인플루언서 센터', desc: '파워블로거 다음 단계 인플루언서 기준 확인', url: 'https://in.naver.com' },
+        { title: '내 분야 상위 블로그 벤치마킹', desc: `${topic || '부동산'} 분야 상위 노출 블로그 직접 분석`, url: `https://search.naver.com/search.naver?where=blog&query=${topicEncoded}&st=rel` },
+        { title: '네이버 블로그 공식 운영 가이드', desc: '네이버가 권장하는 블로그 운영 방법', url: 'https://blog.naver.com/naverblog/221186401631' }
+      ];
     }
 
     // ⑥ 블로그 지수 심플 (Level 포함)
