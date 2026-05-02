@@ -219,7 +219,7 @@ export default async function handler(req, res) {
       }
 
       result = await claude(CLAUDE_KEY,
-        `한국 블로그 SEO 전문가. 부동산·금융·경제 특화. 순수 JSON만 반환.
+        `한국 블로그 SEO 전문가. ${topic ? topic + ' 분야 특화.' : '전 분야 대응.'} 순수 JSON만 반환.
 ${naverContext ? '아래 네이버 실데이터를 반영해 분석하세요.' : ''}
 
 {
@@ -388,7 +388,7 @@ mainKeywords 5개, longtailKeywords 10개. 플랫폼이 "네이버 블로그만"
       }
 
       result = await claude(CLAUDE_KEY,
-        `한국 블로그 SEO 전문가. 부동산·금융·경제 특화. 순수 JSON만 반환.
+        `한국 블로그 SEO 전문가. ${topic ? topic + ' 분야 특화.' : '전 분야 대응.'} 순수 JSON만 반환.
 
 [키워드마스터 기준 블로그 레벨]
 Level 0: 신생(포스팅 0~5개, 방문자 거의 없음)
@@ -431,16 +431,16 @@ Level 10: 최고권위(2000개+, 네이버 인플루언서 최상위)
   "summary": "종합 브리핑 — 이 블로그가 충분히 클 수 있는 이유와 현재 못 크는 핵심 이유 (3~4문장)",
   "tips": ["지수 향상 전략 5가지 (각각 구체적 행동 포함)"]
 }`,
-        `블로그 주소: ${blogUrl}\n주제 분야: ${topic || '부동산/금융/경제'}\n\n[현황 수치]\n${statsCtx}`
+        `블로그 주소: ${blogUrl}\n주제 분야: ${topic || '미입력'}\n\n[현황 수치]\n${statsCtx}`
       );
 
       // 링크는 Claude가 지어내지 않도록 백엔드에서 직접 고정 삽입
-      const topicEncoded = encodeURIComponent((topic || '부동산 금융 재테크') + ' 블로그');
+      const topicEncoded = encodeURIComponent((topic || '블로그') + ' 블로그');
       result.references = [
         { title: '네이버 서치어드바이저', desc: '내 블로그 검색 유입·색인 현황 공식 확인', url: 'https://searchadvisor.naver.com' },
         { title: '네이버 데이터랩', desc: '내 주제 키워드 트렌드 실시간 확인', url: 'https://datalab.naver.com' },
         { title: '네이버 인플루언서 센터', desc: '파워블로거 다음 단계 인플루언서 기준 확인', url: 'https://in.naver.com' },
-        { title: '내 분야 상위 블로그 벤치마킹', desc: `${topic || '부동산'} 분야 상위 노출 블로그 직접 분석`, url: `https://search.naver.com/search.naver?where=blog&query=${topicEncoded}&st=rel` },
+        { title: '내 분야 상위 블로그 벤치마킹', desc: `${topic || '내 분야'} 상위 노출 블로그 직접 분석`, url: `https://search.naver.com/search.naver?where=blog&query=${topicEncoded}&st=rel` },
         { title: '네이버 블로그 공식 운영 가이드', desc: '네이버가 권장하는 블로그 운영 방법', url: 'https://blog.naver.com/naverblog/221186401631' }
       ];
       result._fromImage = extractedFromImage;
@@ -545,7 +545,7 @@ keywords 10개. 오늘 날짜 기준 해당 분야 이슈 키워드.`,
     // ⑪ 유튜브 분석기
     else if (mode === 'youtube-analyze') {
       result = await claude(CLAUDE_KEY,
-        `한국 유튜브 SEO 전문가. 부동산·금융·경제 특화. 순수 JSON만 반환.
+        `한국 유튜브 SEO 전문가. ${topic ? topic + ' 분야 특화.' : '전 분야 대응.'} 순수 JSON만 반환.
 {
   "channelAnalysis": {"level":"신규|성장|중급|전문가|파워채널","reason":"채널 수준 분석 1~2문장"},
   "keywordAnalysis": {"searchVolume":"높음|중간|낮음","competition":"높음|중간|낮음","trending":"상승|유지|하락"},
@@ -592,7 +592,7 @@ goldenKeywords 3개, competitionMatrix 3개, contentPlan 4개, quickWins 4개.`,
     // ⑬ 무한 키워드
     else if (mode === 'infinite-keyword') {
       result = await claude(CLAUDE_KEY,
-        `한국 블로그 SEO 전문가. 부동산·금융·경제 특화. 순수 JSON만 반환.
+        `한국 블로그 SEO 전문가. ${topic ? topic + ' 분야 특화.' : '전 분야 대응.'} 순수 JSON만 반환.
 {"keywords":[{"keyword":"","type":"메인|세부|롱테일","searchVolume":"높음|중간|낮음","competition":"높음|중간|낮음"}],"totalCount":0,"summary":""}
 주어진 주제에서 메인 키워드 10개 + 세부 키워드 20개 + 롱테일 키워드 20개 = 총 50개 추출.
 keywords 배열에 50개 모두 포함. totalCount는 50.`,
@@ -647,7 +647,7 @@ keywords 배열에 50개 모두 포함. totalCount는 50.`,
         }
       ];
 
-      const systemPrompt = `당신은 한국 블로그 SEO 전문 코치입니다. 부동산·금융·경제 분야 특화.
+      const systemPrompt = `당신은 한국 블로그 SEO 전문 코치입니다. ${topic ? topic + ' 분야 특화.' : '모든 분야 대응.'}
 
 [핵심 원칙]
 - 키워드 검색량, 경쟁도, 황금 키워드에 관한 질문은 반드시 도구를 먼저 호출해 실데이터를 확인하세요.
@@ -833,7 +833,7 @@ JSON 없이 자연스러운 한국어 대화체로 답하세요.`;
     // 키워드 → 대본 생성
     else if (mode === 'keyword-to-draft') {
       result = await claude(CLAUDE_KEY,
-        `한국 블로그 SEO 전문 작가. 부동산·금융·경제 특화. 순수 JSON만 반환.
+        `한국 블로그 SEO 전문 작가. ${topic ? topic + ' 분야 특화.' : '전 분야 대응.'} 순수 JSON만 반환.
 {"draft":"완성된 블로그 대본(제목 포함, 단락 구분은 \\n\\n 사용)","usedKeywords":["SEO 키워드 5개"],"seoTips":["체크리스트 4가지"]}
 대본 원칙: 첫 문장에 핵심 키워드, 소제목으로 구조화, 검색 표현 자연스럽게 삽입, 글 길이: ${length||'중간 (800~1200자)'}, 친근하고 전문적인 한국어.`,
         `키워드: ${keyword}\n분야: ${topic||'부동산/금융/경제'}`
