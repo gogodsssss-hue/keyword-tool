@@ -1129,13 +1129,17 @@ async function analyzeAll() {
 async function generateDraft(keyword, topic) {
   document.getElementById('bindex-draft-result').innerHTML = `
     <div class="card result-fade" style="margin-top:0">
-      <div class="card-title">✍️ 대본 생성 중...</div>
-      <div style="color:var(--text-light);font-size:.85rem">「${escHtml(keyword)}」 키워드로 대본을 작성하고 있습니다...</div>
+      <div class="card-title">✍️ 대본 + 황금 키워드 분석 중...</div>
+      <div style="color:var(--text-light);font-size:.85rem">「${escHtml(keyword)}」 키워드로 대본 작성 & 네이버 황금 키워드 조회 중...</div>
     </div>`;
   document.getElementById('bindex-draft-result').scrollIntoView({behavior:'smooth', block:'nearest'});
   try {
-    const data = await callApi({ mode: 'keyword-to-draft', keyword, topic, length: '중간 (800~1200자)' });
+    const [data, goldenData] = await Promise.all([
+      callApi({ mode: 'keyword-to-draft', keyword, topic, length: '중간 (800~1200자)' }),
+      callApi({ mode: 'golden-keyword', topic: keyword })
+    ]);
     const draft = data.draft || '';
+    const goldenCards = (goldenData.goldenKeywords || []).slice(0, 6).map(k => renderGoldenCard(k, keyword)).join('');
     document.getElementById('bindex-draft-result').innerHTML = `
       <div class="card result-fade" style="margin-top:0">
         <div class="card-title">✍️ 대본 초안 — <span style="font-weight:400;color:var(--text-mid)">${escHtml(keyword)}</span></div>
@@ -1145,6 +1149,7 @@ async function generateDraft(keyword, topic) {
           <button class="copy-btn" style="padding:8px 18px;font-size:.82rem" onclick="navigator.clipboard.writeText(document.querySelector('#bindex-draft-result .draft-script').textContent).then(()=>{this.textContent='✓ 복사됨';setTimeout(()=>this.textContent='📋 대본 복사',1800)})">📋 대본 복사</button>
         </div>
       </div>
+      ${goldenCards ? `<div class="card result-fade" style="margin-top:0"><div class="card-title">🥇 관련 황금 키워드 (네이버 실데이터)</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:4px">${goldenCards}</div></div>` : ''}
       ${(data.seoTips||[]).length ? `<div class="card result-fade" style="margin-top:0"><div class="card-title">💡 포스팅 전 체크리스트</div><ul class="tips-list">${data.seoTips.map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul></div>` : ''}`;
   } catch(e) {
     document.getElementById('bindex-draft-result').innerHTML = `<div class="card" style="color:var(--red-text)">대본 생성 오류: ${escHtml(e.message)}</div>`;
@@ -1487,8 +1492,13 @@ async function runKeywordToDraft() {
   showLoading('kw-draft');
   hideResult('kw-draft');
   try {
-    const data = await callApi({ mode: 'keyword-to-draft', keyword, topic, length: getDraftLen() });
+    // 대본 생성 + 황금 키워드 동시 조회
+    const [data, goldenData] = await Promise.all([
+      callApi({ mode: 'keyword-to-draft', keyword, topic, length: getDraftLen() }),
+      callApi({ mode: 'golden-keyword', topic: keyword })
+    ]);
     const draft = data.draft || '';
+    const goldenCards = (goldenData.goldenKeywords || []).slice(0, 6).map(k => renderGoldenCard(k, keyword)).join('');
     showResult('kw-draft', `
       <div class="card result-fade">
         <div class="card-title">✍️ 대본 초안 — <span style="font-weight:400;color:var(--text-mid)">${escHtml(keyword)}</span></div>
@@ -1501,6 +1511,11 @@ async function runKeywordToDraft() {
           <button class="copy-btn" style="padding:8px 18px;font-size:.82rem" onclick="copyDraft()">📋 대본 복사</button>
         </div>
       </div>
+      ${goldenCards ? `
+      <div class="card result-fade">
+        <div class="card-title">🥇 이 키워드 관련 황금 키워드 (네이버 실데이터)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:4px">${goldenCards}</div>
+      </div>` : ''}
       ${data.seoTips?.length ? `
       <div class="card result-fade">
         <div class="card-title">💡 포스팅 전 체크리스트</div>

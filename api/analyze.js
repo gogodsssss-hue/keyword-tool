@@ -161,7 +161,7 @@ async function claude(apiKey, system, user, maxTokens = 2500) {
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-haiku-4-5',
       max_tokens: maxTokens,
       system,
       messages: [{ role: 'user', content: user }]
@@ -357,7 +357,7 @@ mainKeywords 5개, longtailKeywords 10개. 플랫폼이 "네이버 블로그만"
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-api-key': CLAUDE_KEY, 'anthropic-version': '2023-06-01' },
           body: JSON.stringify({
-            model: 'claude-haiku-4-5-20251001',
+            model: 'claude-haiku-4-5',
             max_tokens: 400,
             messages: [{
               role: 'user',
@@ -666,7 +666,7 @@ keywords 배열에 50개 모두 포함. totalCount는 50.`,
         const res2 = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-api-key': CLAUDE_KEY, 'anthropic-version': '2023-06-01' },
-          body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1024, system: systemPrompt, tools, messages: msgs })
+          body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 1024, system: systemPrompt, tools, messages: msgs })
         });
         if (!res2.ok) { const e = await res2.json(); return res.status(res2.status).json({ error: e.error?.message || 'API 오류' }); }
         const d = await res2.json();
@@ -761,7 +761,7 @@ JSON 없이 자연스러운 한국어 대화체로 답하세요.`;
           'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
+          model: 'claude-haiku-4-5',
           max_tokens: 600,
           system: systemPrompt,
           messages: messages.map(m => ({ role: m.role, content: m.content }))
@@ -835,11 +835,13 @@ JSON 없이 자연스러운 한국어 대화체로 답하세요.`;
 
     // 키워드 → 대본 생성
     else if (mode === 'keyword-to-draft') {
+      const currentYear = new Date().getFullYear();
       result = await claude(CLAUDE_KEY,
         `한국 블로그 SEO 전문 작가. ${topic ? topic + ' 분야 특화.' : '전 분야 대응.'} 순수 JSON만 반환.
 {"draft":"완성된 블로그 대본(제목 포함, 단락 구분은 \\n\\n 사용)","usedKeywords":["SEO 키워드 5개"],"seoTips":["체크리스트 4가지"]}
-대본 원칙: 첫 문장에 핵심 키워드, 소제목으로 구조화, 검색 표현 자연스럽게 삽입, 글 길이: ${length||'중간 (800~1200자)'}, 친근하고 전문적인 한국어.`,
-        `키워드: ${keyword}\n분야: ${topic||'부동산/금융/경제'}`
+대본 원칙: 첫 문장에 핵심 키워드, 소제목으로 구조화, 검색 표현 자연스럽게 삽입, 글 길이: ${length||'중간 (800~1200자)'}, 친근하고 전문적인 한국어.
+⚠️ 연도 규칙: 글에서 연도를 언급할 때 반드시 ${currentYear}년 기준으로 작성. "${currentYear-1}년" 또는 이전 연도는 과거 사례로만 사용.`,
+        `키워드: ${keyword}\n분야: ${topic||'미입력'}\n현재연도: ${currentYear}년`
       );
     }
 
