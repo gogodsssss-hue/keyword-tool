@@ -311,6 +311,10 @@ textarea.form-control{resize:vertical;min-height:100px}
 }
 
 /* ── 대본 도우미 ── */
+.sc-bubble{padding:12px 16px;border-radius:14px;font-size:.87rem;line-height:1.7;max-width:85%;word-break:break-word;white-space:pre-wrap}
+.sc-user{background:var(--navy);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.sc-ai{background:var(--bg);color:var(--text);align-self:flex-start;border-bottom-left-radius:4px}
+.sc-thinking{background:var(--bg);color:var(--text-light);align-self:flex-start;border-bottom-left-radius:4px;font-style:italic;font-size:.82rem}
 .ns-tab{background:#fff;border:2px solid var(--border);border-radius:12px;padding:14px 8px;cursor:pointer;text-align:center;transition:all .18s;font-family:inherit;color:var(--text)}
 .ns-tab:hover{border-color:var(--navy-mid);color:var(--navy-mid)}
 .ns-tab.active{border-color:var(--navy-mid);background:var(--navy);color:#fff}
@@ -347,6 +351,7 @@ textarea.form-control{resize:vertical;min-height:100px}
 <!-- ── SIDEBAR ── -->
 <nav class="sidebar" id="sidebar">
   <div class="sidebar-section">분석</div>
+  <div class="sidebar-item" data-page="smart-chat"><span class="si-icon">🤖</span>AI 데이터 채팅</div>
   <div class="sidebar-item" data-page="kw-checker"><span class="si-icon">🔬</span>키워드 실데이터 조회</div>
   <div class="sidebar-item" data-page="blog-missing"><span class="si-icon">🔎</span>블로그 누락 검사</div>
   <div class="sidebar-item active" data-page="blog-index"><span class="si-icon">🩺</span>블로그 진단</div>
@@ -367,6 +372,34 @@ textarea.form-control{resize:vertical;min-height:100px}
 
 <!-- =================== 1. BLOG MISSING =================== -->
 <!-- =================== 키워드 실데이터 조회 =================== -->
+<!-- =================== AI 데이터 채팅 =================== -->
+<div class="page" id="page-smart-chat">
+  <div class="page-header">
+    <h2>🤖 AI 데이터 채팅</h2>
+    <p>키워드를 물어보면 Claude가 네이버 API를 직접 조회해 실데이터로 답합니다. 추측 없음.</p>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column;height:520px">
+    <div id="sc-messages" style="flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:12px">
+      <div class="sc-bubble sc-ai">
+        안녕하세요! 키워드 검색량이나 황금 키워드가 궁금하면 물어보세요.<br>
+        네이버 API를 직접 조회해서 실제 숫자로 답해드려요.<br><br>
+        예시:<br>
+        · "아파트 리모델링 검색량 얼마야?"<br>
+        · "부동산 투자 관련 황금 키워드 찾아줘"<br>
+        · "전세 사기 vs 월세 전환 어느 쪽이 더 검색 많아?"
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding:12px;display:flex;gap:8px;align-items:flex-end">
+      <textarea id="sc-input" class="form-control" rows="2"
+        style="flex:1;resize:none;font-size:.88rem;min-height:42px;max-height:120px"
+        placeholder="키워드나 질문을 입력하세요..."
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendSmartChat()}"
+        oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+      <button class="btn btn-primary" style="height:42px;white-space:nowrap" onclick="sendSmartChat()">전송</button>
+    </div>
+  </div>
+</div>
+
 <div class="page" id="page-kw-checker">
   <div class="page-header">
     <h2>🔬 키워드 실데이터 조회</h2>
@@ -1387,6 +1420,45 @@ function copyDraft() {
 }
 
 function hideResult(id) { const el = document.getElementById(id+'-result'); if(el) el.innerHTML=''; }
+
+// ═══════════════════════════════════════════
+//  AI 데이터 채팅 (Tool Use — 네이버 실데이터)
+// ═══════════════════════════════════════════
+const scMessages = [];
+
+function scAppend(role, text) {
+  const box = document.getElementById('sc-messages');
+  const div = document.createElement('div');
+  div.className = 'sc-bubble ' + (role === 'user' ? 'sc-user' : role === 'thinking' ? 'sc-thinking' : 'sc-ai');
+  div.textContent = text;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+  return div;
+}
+
+async function sendSmartChat() {
+  const input = document.getElementById('sc-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  input.style.height = 'auto';
+
+  scAppend('user', text);
+  scMessages.push({ role: 'user', content: text });
+
+  const thinking = scAppend('thinking', '🔍 네이버 API 조회 중...');
+
+  try {
+    const data = await callApi({ mode: 'smart-chat', messages: scMessages });
+    thinking.remove();
+    const reply = data.reply || '답변을 받지 못했습니다.';
+    scAppend('ai', reply);
+    scMessages.push({ role: 'assistant', content: reply });
+  } catch(e) {
+    thinking.remove();
+    scAppend('ai', '오류가 발생했습니다: ' + e.message);
+  }
+}
 
 // ═══════════════════════════════════════════
 //  키워드 실데이터 조회 (AI 없음)

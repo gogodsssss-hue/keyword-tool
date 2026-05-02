@@ -563,6 +563,102 @@ keywords 배열에 50개 모두 포함. totalCount는 50.`,
       );
     }
 
+    // ⑮-a 스마트 채팅 (Tool Use — 네이버 API 실시간 조회)
+    else if (mode === 'smart-chat') {
+      const { messages } = req.body;
+      if (!messages?.length) return res.status(400).json({ error: '메시지가 없습니다.' });
+
+      const tools = [
+        {
+          name: 'naver_keyword_data',
+          description: '네이버 API로 키워드의 실제 월간 검색량(PC+모바일)과 블로그 경쟁 포스트 수를 조회합니다. 키워드 데이터가 필요할 때 반드시 이 도구를 사용하세요.',
+          input_schema: {
+            type: 'object',
+            properties: {
+              keyword: { type: 'string', description: '조회할 키워드' }
+            },
+            required: ['keyword']
+          }
+        },
+        {
+          name: 'naver_related_keywords',
+          description: '네이버 API로 주제 관련 실제 연관 검색어 목록과 각각의 검색량을 가져옵니다. 황금 키워드를 찾을 때 사용하세요.',
+          input_schema: {
+            type: 'object',
+            properties: {
+              topic: { type: 'string', description: '연관 키워드를 찾을 주제' }
+            },
+            required: ['topic']
+          }
+        }
+      ];
+
+      const systemPrompt = `당신은 한국 블로그 SEO 전문 코치입니다. 부동산·금융·경제 분야 특화.
+
+[핵심 원칙]
+- 키워드 검색량, 경쟁도, 황금 키워드에 관한 질문은 반드시 도구를 먼저 호출해 실데이터를 확인하세요.
+- 절대 추측하거나 어림잡은 수치를 말하지 마세요.
+- 도구 결과를 받은 뒤 실제 숫자를 명시하며 답하세요.
+- 데이터 없이 답할 수 없는 질문에는 "도구로 조회해볼게요"라고 말하고 즉시 호출하세요.
+- 자연스러운 한국어 대화체로 답하세요.`;
+
+      let msgs = messages.map(m => ({ role: m.role, content: m.content }));
+      let finalReply = '';
+
+      for (let i = 0; i < 5; i++) {
+        const res2 = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': CLAUDE_KEY, 'anthropic-version': '2023-06-01' },
+          body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1024, system: systemPrompt, tools, messages: msgs })
+        });
+        if (!res2.ok) { const e = await res2.json(); return res.status(res2.status).json({ error: e.error?.message || 'API 오류' }); }
+        const d = await res2.json();
+
+        if (d.stop_reason === 'end_turn') {
+          finalReply = d.content?.find(c => c.type === 'text')?.text || '';
+          break;
+        }
+
+        if (d.stop_reason === 'tool_use') {
+          const toolUseBlocks = d.content.filter(c => c.type === 'tool_use');
+          msgs.push({ role: 'assistant', content: d.content });
+
+          const toolResults = await Promise.all(toolUseBlocks.map(async block => {
+            let output = '';
+            if (block.name === 'naver_keyword_data') {
+              const kw = block.input.keyword;
+              const [vol, bc] = await Promise.all([
+                hasAds   ? naverSearchVolume(kw, AD_KEY, AD_SECRET, AD_CUSTOMER) : Promise.resolve(null),
+                hasNaver ? naverBlogSearch(kw, NAVER_CID, NAVER_CSEC)            : Promise.resolve(null)
+              ]);
+              const score = (() => {
+                const v = vol?.total||0, c = bc||999999, r = v/(c+1);
+                if(r>=1&&v>=5000)return'A+'; if(r>=0.5&&v>=2000)return'A';
+                if(r>=0.2&&v>=1000)return'B+'; if(r>=0.1)return'B'; if(v>=5000)return'B'; return'C';
+              })();
+              output = vol
+                ? `키워드: ${kw}\n월간검색량(합): ${vol.total.toLocaleString()}회\nPC: ${vol.pc.toLocaleString()}회\n모바일: ${vol.mobile.toLocaleString()}회\n블로그경쟁포스트수: ${bc?.toLocaleString() ?? '조회불가'}개\n황금도: ${score}`
+                : `키워드: ${kw}\n데이터 없음 (검색량 매우 낮음 또는 API 오류)`;
+            } else if (block.name === 'naver_related_keywords') {
+              const list = await naverRelatedKeywords(block.input.topic, AD_KEY, AD_SECRET, AD_CUSTOMER);
+              const top = list.filter(k => k.total >= 300).sort((a,b) => b.total - a.total).slice(0, 15);
+              output = top.length
+                ? `주제 "${block.input.topic}" 연관 키워드:\n` + top.map(k => `- ${k.keyword}: 월 ${k.total.toLocaleString()}회`).join('\n')
+                : '연관 키워드 데이터 없음';
+            }
+            return { type: 'tool_result', tool_use_id: block.id, content: output };
+          }));
+
+          msgs.push({ role: 'user', content: toolResults });
+        } else {
+          finalReply = d.content?.find(c => c.type === 'text')?.text || '';
+          break;
+        }
+      }
+
+      return res.status(200).json({ reply: finalReply });
+    }
+
     // ⑮ 대화형 블로그 코칭 챗
     else if (mode === 'chat') {
       const { messages, blogContext } = req.body;
