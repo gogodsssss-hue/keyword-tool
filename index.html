@@ -309,6 +309,23 @@ textarea.form-control{resize:vertical;min-height:100px}
   main{padding:16px}
   .matrix-grid{grid-template-columns:1fr}
 }
+
+/* ── 대본 도우미 ── */
+.draft-tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px}
+.draft-tab{padding:10px 22px;font-size:.85rem;font-weight:600;color:var(--text-light);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit}
+.draft-tab.active{color:var(--navy-mid);border-bottom-color:var(--navy-mid)}
+.draft-tab:hover{color:var(--navy-mid)}
+.draft-panel{display:none}.draft-panel.active{display:block}
+.draft-textarea{width:100%;min-height:180px;padding:14px 16px;border:2px solid var(--border);border-radius:var(--radius);font-family:inherit;font-size:.88rem;line-height:1.7;color:var(--text);resize:vertical;outline:none;transition:border-color .2s}
+.draft-textarea:focus{border-color:var(--navy-mid)}
+.char-count{font-size:.73rem;color:var(--text-light);text-align:right;margin-top:4px}
+.draft-result-kw{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:4px}
+.draft-kw-card{border:1.5px solid var(--border);border-radius:12px;padding:14px;background:#fff}
+.draft-kw-name{font-size:1rem;font-weight:700;color:var(--navy);margin-bottom:8px}
+.draft-kw-why{font-size:.8rem;color:var(--text-mid);line-height:1.5}
+.draft-script{background:#f7fafc;border:1.5px solid var(--border);border-radius:var(--radius);padding:18px 20px;font-size:.88rem;line-height:1.85;white-space:pre-wrap;color:var(--text)}
+.draft-script h3{color:var(--navy);font-size:.95rem;margin:14px 0 6px}
+.draft-copy-row{display:flex;justify-content:flex-end;margin-top:10px}
 </style>
 </head>
 <body>
@@ -345,6 +362,9 @@ textarea.form-control{resize:vertical;min-height:100px}
   <div class="sidebar-section">전문 분석</div>
   <div class="sidebar-item" data-page="km-seller"><span class="si-icon">🛒</span>셀러마스터</div>
   <div class="sidebar-item" data-page="youtube-analyze"><span class="si-icon">📺</span>유튜브 분석기</div>
+
+  <div class="sidebar-section">콘텐츠 제작</div>
+  <div class="sidebar-item" data-page="draft-helper"><span class="si-icon">✍️</span>대본 도우미</div>
 </nav>
 
 <!-- ── MAIN ── -->
@@ -702,6 +722,66 @@ textarea.form-control{resize:vertical;min-height:100px}
   </div>
   <div class="loading" id="yt-loading"><div class="spinner"></div><div class="loading-text">유튜브 전략을 분석 중...</div></div>
   <div class="result-area" id="yt-result"></div>
+</div>
+
+<!-- =================== DRAFT HELPER =================== -->
+<div class="page" id="page-draft-helper">
+  <div class="page-header">
+    <h2>✍️ 대본 도우미</h2>
+    <p>대본에서 황금 키워드를 뽑거나, 키워드로 대본 초안을 만들어 드립니다.</p>
+  </div>
+
+  <div class="draft-tabs">
+    <button class="draft-tab active" onclick="switchDraftTab('to-keyword')">📄 대본 → 키워드 추출</button>
+    <button class="draft-tab" onclick="switchDraftTab('to-draft')">🥇 키워드 → 대본 생성</button>
+  </div>
+
+  <!-- 탭 1: 대본 → 키워드 -->
+  <div class="draft-panel active" id="draft-panel-to-keyword">
+    <div class="card">
+      <div class="form-group">
+        <label>작성할 블로그 대본 (초안)</label>
+        <textarea class="draft-textarea" id="draft-text-input" placeholder="여기에 블로그 글 초안을 붙여넣으세요.&#10;&#10;예) 오늘은 2025년 부동산 전망에 대해 이야기해볼게요. 금리 인상 이후 아파트 거래량이 감소하면서..." oninput="updateCharCount()"></textarea>
+        <div class="char-count"><span id="draft-char-count">0</span>자</div>
+      </div>
+      <div class="form-group">
+        <label>플랫폼</label>
+        <div class="platform-group" id="pg-draft-kw">
+          <button class="platform-btn active" data-val="둘 다">둘 다</button>
+          <button class="platform-btn" data-val="네이버 블로그">네이버</button>
+          <button class="platform-btn" data-val="티스토리">티스토리</button>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="runDraftToKeyword()">🔍 이 글에서 황금 키워드 추출</button>
+    </div>
+    <div class="loading" id="draft-kw-loading"><div class="spinner"></div><div class="loading-text">대본을 분석해 키워드를 추출 중...</div></div>
+    <div class="result-area" id="draft-kw-result"></div>
+  </div>
+
+  <!-- 탭 2: 키워드 → 대본 -->
+  <div class="draft-panel" id="draft-panel-to-draft">
+    <div class="card">
+      <div class="form-group">
+        <label>키워드 또는 주제</label>
+        <input type="text" class="form-control" id="kw-to-draft-input" placeholder="예) 아파트 전세 계약 주의사항, 금리 인상 영향" />
+      </div>
+      <div class="form-group">
+        <label>블로그 분야 (선택)</label>
+        <input type="text" class="form-control" id="kw-to-draft-topic" placeholder="예) 부동산, 재테크, 경제 이슈" />
+      </div>
+      <div class="form-group">
+        <label>글 길이</label>
+        <div class="platform-group" id="pg-draft-len">
+          <button class="platform-btn active" data-val="중간 (800~1200자)">중간</button>
+          <button class="platform-btn" data-val="짧게 (500자 내외)">짧게</button>
+          <button class="platform-btn" data-val="길게 (1500자 이상)">길게</button>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="runKeywordToDraft()">✍️ 대본 초안 생성</button>
+    </div>
+    <div class="loading" id="kw-draft-loading"><div class="spinner"></div><div class="loading-text">대본 초안을 작성 중...</div></div>
+    <div class="result-area" id="kw-draft-result"></div>
+  </div>
 </div>
 
 </main>
@@ -1592,6 +1672,124 @@ async function analyzeYoutube() {
     `);
   } catch(e) { showError('yt', e.message); }
 }
+
+// ═══════════════════════════════════════════
+//  DRAFT HELPER
+// ═══════════════════════════════════════════
+
+function switchDraftTab(tab) {
+  document.querySelectorAll('.draft-tab').forEach((t,i) => t.classList.toggle('active', i === (tab==='to-keyword'?0:1)));
+  document.getElementById('draft-panel-to-keyword').classList.toggle('active', tab==='to-keyword');
+  document.getElementById('draft-panel-to-draft').classList.toggle('active', tab==='to-draft');
+}
+
+function updateCharCount() {
+  const len = document.getElementById('draft-text-input').value.length;
+  document.getElementById('draft-char-count').textContent = len.toLocaleString();
+}
+
+// 플랫폼 버튼 (대본 탭용)
+document.querySelectorAll('#pg-draft-kw .platform-btn, #pg-draft-len .platform-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.platform-group').querySelectorAll('.platform-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+function getDraftPlatform() {
+  return document.querySelector('#pg-draft-kw .platform-btn.active')?.dataset.val || '둘 다';
+}
+function getDraftLen() {
+  return document.querySelector('#pg-draft-len .platform-btn.active')?.dataset.val || '중간 (800~1200자)';
+}
+
+async function runDraftToKeyword() {
+  const draft = document.getElementById('draft-text-input').value.trim();
+  if (!draft) { alert('대본을 입력해주세요.'); return; }
+  if (draft.length < 50) { alert('대본이 너무 짧습니다. 50자 이상 입력해주세요.'); return; }
+  showLoading('draft-kw');
+  hideResult('draft-kw');
+  try {
+    const data = await callApi({ mode: 'draft-to-keyword', draft, platform: getDraftPlatform() });
+    const kwCards = (data.keywords || []).map(k => `
+      <div class="draft-kw-card">
+        <div class="draft-kw-name">🥇 ${escHtml(k.keyword)}</div>
+        <div class="badge-row" style="margin-bottom:8px">
+          ${renderBadge('검색량 '+(k.searchVolume||''), k.searchVolume)}
+          ${renderBadge('경쟁도 '+(k.competition||''), k.competition)}
+          <span class="badge" style="background:var(--gold-bg);color:var(--gold-text)">황금도 ${escHtml(k.goldenScore||'')}</span>
+        </div>
+        <div class="draft-kw-why">${escHtml(k.why||'')}</div>
+      </div>`).join('');
+    showResult('draft-kw', `
+      <div class="card result-fade">
+        <div class="card-title">🥇 이 글에서 추출한 황금 키워드</div>
+        <div class="draft-result-kw">${kwCards}</div>
+      </div>
+      ${data.missingKeywords?.length ? `
+      <div class="card result-fade">
+        <div class="card-title">💡 추가하면 좋을 키워드</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          ${data.missingKeywords.map(k=>`<span class="tag">${escHtml(k)}</span>`).join('')}
+        </div>
+        <p style="font-size:.8rem;color:var(--text-light);margin-top:10px">클릭하면 키워드 → 대본 탭으로 이동합니다</p>
+      </div>` : ''}
+      ${data.seoTips?.length ? `
+      <div class="card result-fade">
+        <div class="card-title">📝 이 글의 SEO 개선 포인트</div>
+        <ul class="tips-list">${data.seoTips.map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul>
+      </div>` : ''}
+    `);
+    // 추가 키워드 태그 클릭 → 키워드→대본 탭으로 이동
+    document.querySelectorAll('#draft-kw-result .tag').forEach(tag => {
+      tag.onclick = () => {
+        document.getElementById('kw-to-draft-input').value = tag.textContent;
+        switchDraftTab('to-draft');
+      };
+    });
+  } catch(e) { showError('draft-kw', e.message); }
+}
+
+async function runKeywordToDraft() {
+  const keyword = document.getElementById('kw-to-draft-input').value.trim();
+  const topic   = document.getElementById('kw-to-draft-topic').value.trim();
+  if (!keyword) { alert('키워드를 입력해주세요.'); return; }
+  showLoading('kw-draft');
+  hideResult('kw-draft');
+  try {
+    const data = await callApi({ mode: 'keyword-to-draft', keyword, topic, length: getDraftLen() });
+    const draft = data.draft || '';
+    showResult('kw-draft', `
+      <div class="card result-fade">
+        <div class="card-title">✍️ 대본 초안 — <span style="font-weight:400;color:var(--text-mid)">${escHtml(keyword)}</span></div>
+        ${data.usedKeywords?.length ? `
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
+          ${data.usedKeywords.map(k=>`<span class="badge" style="background:var(--gold-bg);color:var(--gold-text)">🥇 ${escHtml(k)}</span>`).join('')}
+        </div>` : ''}
+        <div class="draft-script">${escHtml(draft)}</div>
+        <div class="draft-copy-row">
+          <button class="copy-btn" style="padding:8px 18px;font-size:.82rem" onclick="copyDraft()">📋 대본 복사</button>
+        </div>
+      </div>
+      ${data.seoTips?.length ? `
+      <div class="card result-fade">
+        <div class="card-title">💡 포스팅 전 체크리스트</div>
+        <ul class="tips-list">${data.seoTips.map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul>
+      </div>` : ''}
+    `);
+  } catch(e) { showError('kw-draft', e.message); }
+}
+
+function copyDraft() {
+  const text = document.querySelector('.draft-script')?.textContent || '';
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.draft-copy-row .copy-btn');
+    btn.textContent = '✓ 복사됨';
+    setTimeout(() => btn.textContent = '📋 대본 복사', 1800);
+  });
+}
+
+function hideResult(id) { const el = document.getElementById(id+'-result'); if(el) el.innerHTML=''; }
 </script>
 </body>
 </html>

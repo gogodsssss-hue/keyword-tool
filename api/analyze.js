@@ -172,7 +172,8 @@ export default async function handler(req, res) {
   if (!CLAUDE_KEY) return res.status(500).json({ error: 'Claude API 키가 없습니다.' });
 
   const { mode, topic, platform, keyword, blogUrl,
-          neighbors, todayVisitors, totalVisitors, avgVisitors, postCount, isInfluencer } = req.body;
+          neighbors, todayVisitors, totalVisitors, avgVisitors, postCount, isInfluencer,
+          draft, length, imageData, imageType, message } = req.body;
   const hasNaver = !!(NAVER_CID && NAVER_CSEC);
   const hasAds   = !!(AD_KEY && AD_SECRET && AD_CUSTOMER);
 
@@ -572,6 +573,33 @@ JSON 없이 자연스러운 한국어 대화체로 답하세요.`;
       }
       const chatData = await chatRes.json();
       return res.status(200).json({ reply: chatData.content?.[0]?.text || '' });
+    }
+
+    // 대본 → 키워드 추출
+    else if (mode === 'draft-to-keyword') {
+      let naverContext = '';
+      if (hasNaver) {
+        const words = draft.replace(/[^가-힣a-z0-9\s]/gi,'').split(/\s+/).filter(w=>w.length>1).slice(0,5);
+        const counts = await Promise.all(words.map(w => naverBlogSearch(w, NAVER_CID, NAVER_CSEC)));
+        counts.forEach((c,i) => { if(c!==null) naverContext += `\n"${words[i]}" 블로그 검색결과: ${c.toLocaleString()}개`; });
+      }
+      result = await claude(CLAUDE_KEY,
+        `한국 블로그 SEO 전문가. 부동산·금융·경제 특화. 순수 JSON만 반환.
+${naverContext ? '아래 네이버 실데이터를 참고해 분석하세요.\n'+naverContext : ''}
+{"keywords":[{"keyword":"","searchVolume":"높음|중간|낮음","competition":"높음|중간|낮음","goldenScore":"A~F","why":""}],"missingKeywords":[""],"seoTips":[""]}
+keywords: 글에서 추출한 황금 키워드 5~7개. goldenScore는 검색량 높고 경쟁 낮을수록 A. missingKeywords: 추가하면 좋을 키워드 5개. seoTips: SEO 개선 포인트 4가지.`,
+        `플랫폼: ${platform||'둘 다'}\n\n[블로그 대본]\n${draft.slice(0,3000)}`
+      );
+    }
+
+    // 키워드 → 대본 생성
+    else if (mode === 'keyword-to-draft') {
+      result = await claude(CLAUDE_KEY,
+        `한국 블로그 SEO 전문 작가. 부동산·금융·경제 특화. 순수 JSON만 반환.
+{"draft":"완성된 블로그 대본(제목 포함, 단락 구분은 \\n\\n 사용)","usedKeywords":["SEO 키워드 5개"],"seoTips":["체크리스트 4가지"]}
+대본 원칙: 첫 문장에 핵심 키워드, 소제목으로 구조화, 검색 표현 자연스럽게 삽입, 글 길이: ${length||'중간 (800~1200자)'}, 친근하고 전문적인 한국어.`,
+        `키워드: ${keyword}\n분야: ${topic||'부동산/금융/경제'}`
+      );
     }
 
     else {
