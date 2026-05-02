@@ -521,23 +521,34 @@ keywords 배열에 50개 모두 포함. totalCount는 50.`,
       if (!messages?.length) return res.status(400).json({ error: '메시지가 없습니다.' });
 
       const ctx = blogContext || {};
+      const statsLines = [
+        ctx.postCount      ? `포스팅 수: ${ctx.postCount}개`          : '',
+        ctx.neighbors      ? `이웃수: ${ctx.neighbors}명`              : '',
+        ctx.todayVisitors  ? `오늘 방문자: ${ctx.todayVisitors}명`     : '',
+        ctx.avgVisitors    ? `평균 방문자: ${ctx.avgVisitors}명/일`    : '',
+        ctx.totalVisitors  ? `전체 방문자: ${ctx.totalVisitors}명`     : '',
+        ctx.isInfluencer === '있음' ? '인플루언서: YES'               : ''
+      ].filter(Boolean).join(' / ');
+
       const systemPrompt = `당신은 한국 블로그 SEO 전문 코치입니다. 부동산·금융·경제 분야 블로그 특화.
 
-분석된 블로그:
+[분석된 블로그 정보]
 - 주소: ${ctx.blogUrl || '미입력'}
 - 분야: ${ctx.topic || '부동산/금융/경제'}
 - 현재 레벨: Level ${ctx.estimatedLevel ?? '?'} / 10
 - 레벨 근거: ${ctx.levelReason || ''}
+- 현황 수치: ${statsLines || '미입력'}
 - 분석 요약: ${ctx.summary || ''}
 - 다음 레벨 조건: ${(ctx.nextLevelTips || []).join(' / ')}
 
-대화 원칙:
+[대화 원칙]
 1. 짧고 명확하게. 3~5문장 이내.
-2. 구체적 숫자·행동 지침 제시.
+2. 구체적 숫자·행동 지침 제시 (예: "이웃수 307명이면 Level 1 정상, 500명 넘기면 Level 2 가능").
 3. 부동산·금융·경제 블로그 특성 반영.
 4. 네이버·티스토리 차이 구분 설명.
 5. 정직한 선배처럼 솔직하게.
-6. 마지막에 다음 질문 유도 한마디.
+6. 블로그 분석을 안 했어도 일반 SEO 질문에 답변 가능.
+7. 마지막에 다음 질문 유도 한마디.
 
 JSON 없이 자연스러운 한국어 대화체로 답하세요.`;
 

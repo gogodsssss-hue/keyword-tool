@@ -383,14 +383,38 @@ goldenKeywords 3개, competitionMatrix 3개, contentPlan 4개, quickWins 4개.''
 
     # 대화형 챗
     elif mode == "chat":
-        msgs    = payload.get("messages", [])
-        ctx     = payload.get("blogContext", {})
-        system  = f"""한국 블로그 SEO 전문 코치. 부동산·금융·경제 특화.
-블로그: {ctx.get('blogUrl','미입력')} / 분야: {ctx.get('topic','부동산/금융/경제')}
-현재 Level {ctx.get('estimatedLevel','?')} / 근거: {ctx.get('levelReason','')}
-다음레벨 조건: {' / '.join(ctx.get('nextLevelTips',[]))}
-3~5문장, 구체적 수치, 솔직하게, 마지막에 다음 질문 유도."""
-        reply   = call_claude_chat(system, msgs)
+        msgs = payload.get("messages", [])
+        ctx  = payload.get("blogContext", {})
+        stats_parts = list(filter(None, [
+            f"포스팅 수: {ctx.get('postCount')}개"       if ctx.get('postCount')     else "",
+            f"이웃수: {ctx.get('neighbors')}명"           if ctx.get('neighbors')     else "",
+            f"오늘 방문자: {ctx.get('todayVisitors')}명"  if ctx.get('todayVisitors') else "",
+            f"평균 방문자: {ctx.get('avgVisitors')}명/일" if ctx.get('avgVisitors')   else "",
+            f"전체 방문자: {ctx.get('totalVisitors')}명"  if ctx.get('totalVisitors') else "",
+            "인플루언서: YES" if ctx.get('isInfluencer') == "있음" else ""
+        ]))
+        stats_str = " / ".join(stats_parts) if stats_parts else "미입력"
+        system = f"""당신은 한국 블로그 SEO 전문 코치입니다. 부동산·금융·경제 분야 블로그 특화.
+
+[분석된 블로그 정보]
+- 주소: {ctx.get('blogUrl','미입력')}
+- 분야: {ctx.get('topic','부동산/금융/경제')}
+- 현재 레벨: Level {ctx.get('estimatedLevel','?')} / 10
+- 레벨 근거: {ctx.get('levelReason','')}
+- 현황 수치: {stats_str}
+- 분석 요약: {ctx.get('summary','')}
+- 다음 레벨 조건: {' / '.join(ctx.get('nextLevelTips',[]))}
+
+[대화 원칙]
+1. 짧고 명확하게. 3~5문장 이내.
+2. 구체적 숫자·행동 지침 제시.
+3. 부동산·금융·경제 블로그 특성 반영.
+4. 블로그 분석을 안 했어도 일반 SEO 질문에 답변 가능.
+5. 정직한 선배처럼 솔직하게.
+6. 마지막에 다음 질문 유도 한마디.
+
+JSON 없이 자연스러운 한국어 대화체로 답하세요."""
+        reply = call_claude_chat(system, msgs)
         return {"reply": reply}
 
     else:

@@ -866,8 +866,16 @@ async function analyzeBlogIndex() {
       neighbors, todayVisitors, totalVisitors, avgVisitors, postCount, isInfluencer
     });
     state.blogIndexData = data;
-    state.blogContext = {url, topic, level: data.estimatedLevel, summary: data.summary,
-      neighbors, todayVisitors, totalVisitors, postCount};
+    // 채팅에 전달할 컨텍스트 — 필드명 API와 일치시킴
+    state.blogContext = {
+      blogUrl: url,
+      topic,
+      estimatedLevel: data.estimatedLevel,
+      levelReason:    data.levelReason || '',
+      nextLevelTips:  data.nextLevelTips || [],
+      summary:        data.summary || '',
+      neighbors, todayVisitors, totalVisitors, avgVisitors, postCount, isInfluencer
+    };
     state.chatMessages = [];
 
     const level = data.estimatedLevel || 0;
