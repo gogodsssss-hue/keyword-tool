@@ -485,6 +485,158 @@
     }
     .next-level-tips li::before { content: '→ '; font-weight: 700; }
 
+    /* ── 대화형 코칭 챗 ── */
+    .chat-section {
+      display: none;
+      margin-top: 20px;
+    }
+
+    .chat-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #ebf4ff;
+    }
+
+    .chat-header-icon {
+      width: 34px; height: 34px;
+      background: linear-gradient(135deg, #1a365d, #2b6cb0);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .chat-header-text h3 { font-size: 0.95rem; font-weight: 700; color: #1a365d; }
+    .chat-header-text p  { font-size: 0.78rem; color: #718096; margin-top: 2px; }
+
+    .chat-messages {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 400px;
+      overflow-y: auto;
+      margin-bottom: 16px;
+      padding-right: 4px;
+    }
+
+    .chat-messages::-webkit-scrollbar { width: 4px; }
+    .chat-messages::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 4px; }
+
+    .chat-bubble {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .chat-bubble.user { flex-direction: row-reverse; }
+
+    .bubble-avatar {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+
+    .bubble-avatar.ai   { background: #1a365d; color: white; }
+    .bubble-avatar.user { background: #e2e8f0; color: #4a5568; }
+
+    .bubble-text {
+      max-width: 80%;
+      padding: 11px 14px;
+      border-radius: 14px;
+      font-size: 0.875rem;
+      line-height: 1.65;
+    }
+
+    .chat-bubble.ai   .bubble-text { background: #f7fafc; border: 1.5px solid #e2e8f0; color: #2d3748; border-top-left-radius: 4px; }
+    .chat-bubble.user .bubble-text { background: #1a365d; color: white; border-top-right-radius: 4px; }
+
+    .chat-typing {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+    }
+
+    .typing-dots {
+      display: flex; gap: 4px;
+      padding: 10px 14px;
+      background: #f7fafc;
+      border-radius: 14px;
+      border: 1.5px solid #e2e8f0;
+    }
+
+    .typing-dots span {
+      width: 6px; height: 6px;
+      background: #a0aec0;
+      border-radius: 50%;
+      animation: bounce 1.2s infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-6px); }
+    }
+
+    .chat-quick-btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 12px;
+    }
+
+    .quick-btn {
+      background: #ebf4ff;
+      color: #2b6cb0;
+      border: 1.5px solid #bee3f8;
+      border-radius: 20px;
+      padding: 6px 13px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+
+    .quick-btn:hover { background: #bee3f8; }
+
+    .chat-input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .chat-input {
+      flex: 1;
+      padding: 11px 14px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .chat-input:focus { border-color: #2b6cb0; }
+
+    .chat-send-btn {
+      padding: 11px 18px;
+      background: #1a365d;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+
+    .chat-send-btn:hover    { opacity: 0.88; }
+    .chat-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
     /* ── 네이버 실데이터 뱃지 ── */
     .data-source-badge {
       display: inline-flex;
@@ -625,6 +777,41 @@
         <div class="card">
           <div class="card-title">개선 전략</div>
           <ul class="tips-list" id="blogindex-tips"></ul>
+        </div>
+
+        <!-- 대화형 코칭 -->
+        <div class="card chat-section" id="blogindex-chat">
+          <div class="chat-header">
+            <div class="chat-header-icon">💬</div>
+            <div class="chat-header-text">
+              <h3>블로그 지수 코칭</h3>
+              <p>레벨 올리는 방법을 대화로 물어보세요</p>
+            </div>
+          </div>
+
+          <div class="chat-messages" id="blogindex-chat-messages">
+            <div class="chat-bubble ai">
+              <div class="bubble-avatar ai">🤖</div>
+              <div class="bubble-text">안녕하세요! 블로그 분석이 완료됐습니다. 레벨을 올리는 방법이나 궁금한 점을 물어보세요. 뭐든 솔직하게 답해드릴게요 😊</div>
+            </div>
+          </div>
+
+          <div class="chat-typing" id="blogindex-typing">
+            <div class="bubble-avatar ai" style="width:30px;height:30px;background:#1a365d;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem;">🤖</div>
+            <div class="typing-dots"><span></span><span></span><span></span></div>
+          </div>
+
+          <div class="chat-quick-btns">
+            <button class="quick-btn" onclick="sendQuick('blogindex', '레벨을 빨리 올리려면 뭐가 제일 중요해요?')">🚀 레벨 올리는 핵심은?</button>
+            <button class="quick-btn" onclick="sendQuick('blogindex', '하루에 포스팅을 몇 개 해야 효과적인가요?')">📝 하루 포스팅 몇 개?</button>
+            <button class="quick-btn" onclick="sendQuick('blogindex', '부동산 블로그에서 제일 노출 잘 되는 키워드 유형은?')">🔑 노출 잘 되는 키워드?</button>
+            <button class="quick-btn" onclick="sendQuick('blogindex', '지금 내 블로그에서 가장 먼저 고쳐야 할 것은?')">⚡ 지금 당장 고칠 것?</button>
+          </div>
+
+          <div class="chat-input-row">
+            <input type="text" class="chat-input" id="blogindex-chat-input" placeholder="궁금한 점을 입력하세요..." />
+            <button class="chat-send-btn" id="blogindex-chat-send" onclick="sendChat('blogindex')">전송</button>
+          </div>
         </div>
       </div>
     </div>
@@ -944,6 +1131,17 @@
       ` : ''}
     `;
     document.getElementById('blogindex-tips').innerHTML = (data.tips || []).map(t => `<li>${t}</li>`).join('');
+
+    // 대화형 코칭 초기화
+    const blogUrl = document.getElementById('blogindex-url').value.trim();
+    const topic   = document.getElementById('blogindex-topic').value.trim();
+    initChat('blogindex', {
+      blogUrl, topic,
+      estimatedLevel: data.estimatedLevel,
+      levelReason: data.levelReason,
+      summary: data.summary,
+      nextLevelTips: data.nextLevelTips || []
+    });
   }
 
   function renderSimpleIndex(data) {
@@ -1146,6 +1344,86 @@
     document.getElementById('rec-structure').innerHTML = (data.contentStructure || []).map((tip, i) => `
       <li><span class="step-num">${i+1}</span>${tip}</li>
     `).join('');
+  }
+
+  /* ── 대화형 코칭 ── */
+  const chatState = {
+    blogindex: { messages: [], context: null }
+  };
+
+  function initChat(prefix, context) {
+    chatState[prefix] = { messages: [], context };
+    const msgEl = document.getElementById(prefix + '-chat-messages');
+    msgEl.innerHTML = `
+      <div class="chat-bubble ai">
+        <div class="bubble-avatar ai">🤖</div>
+        <div class="bubble-text">블로그 분석이 완료됐습니다! <strong>현재 Level ${context.estimatedLevel}</strong>이에요.<br>레벨을 올리는 방법이나 궁금한 점을 편하게 물어보세요 😊</div>
+      </div>`;
+    document.getElementById(prefix + '-chat').style.display = 'block';
+  }
+
+  function sendQuick(prefix, text) {
+    document.getElementById(prefix + '-chat-input').value = text;
+    sendChat(prefix);
+  }
+
+  async function sendChat(prefix) {
+    const input = document.getElementById(prefix + '-chat-input');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+
+    const state = chatState[prefix];
+    state.messages.push({ role: 'user', content: text });
+
+    appendBubble(prefix, 'user', text);
+
+    const sendBtn = document.getElementById(prefix + '-chat-send');
+    sendBtn.disabled = true;
+    input.disabled = true;
+    document.getElementById(prefix + '-typing').style.display = 'flex';
+    scrollChat(prefix);
+
+    try {
+      const res = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'chat',
+          messages: state.messages,
+          blogContext: state.context
+        })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      state.messages.push({ role: 'assistant', content: data.reply });
+      appendBubble(prefix, 'ai', data.reply);
+    } catch(e) {
+      appendBubble(prefix, 'ai', '오류가 발생했습니다: ' + e.message);
+    } finally {
+      sendBtn.disabled = false;
+      input.disabled = false;
+      document.getElementById(prefix + '-typing').style.display = 'none';
+      input.focus();
+      scrollChat(prefix);
+    }
+  }
+
+  function appendBubble(prefix, role, text) {
+    const el = document.getElementById(prefix + '-chat-messages');
+    const div = document.createElement('div');
+    div.className = 'chat-bubble ' + role;
+    div.innerHTML = `
+      <div class="bubble-avatar ${role}">${role === 'ai' ? '🤖' : '👤'}</div>
+      <div class="bubble-text">${text.replace(/\n/g, '<br>')}</div>`;
+    el.appendChild(div);
+    scrollChat(prefix);
+  }
+
+  function scrollChat(prefix) {
+    const el = document.getElementById(prefix + '-chat-messages');
+    el.scrollTop = el.scrollHeight;
   }
 
   /* ── 유틸 ── */
