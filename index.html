@@ -710,7 +710,7 @@ textarea.form-control{resize:vertical;min-height:100px}
     <div class="card">
       <div class="form-group">
         <label>키워드 또는 주제</label>
-        <input type="text" class="form-control" id="kw-to-draft-input" placeholder="예) 아파트 전세 계약 주의사항, 금리 인상 영향" />
+        <input type="text" class="form-control" id="kw-to-draft-input" placeholder="예) 전세자금대출 조건, 미국 기준금리 동결, 아파트 청약 방법" />
       </div>
       <div class="form-group">
         <label>블로그 분야 (선택)</label>
@@ -1848,11 +1848,12 @@ async function runKeywordToDraft() {
           <button class="copy-btn" style="padding:8px 18px;font-size:.82rem" onclick="copyDraft()">📋 대본 복사</button>
         </div>
       </div>
-      ${goldenCards ? `
       <div class="card result-fade">
-        <div class="card-title">🥇 이 키워드 관련 황금 키워드 (네이버 실데이터)</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:4px">${goldenCards}</div>
-      </div>` : ''}
+        <div class="card-title">🥇 관련 황금 키워드 (네이버 실데이터)</div>
+        ${goldenCards
+          ? `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:4px">${goldenCards}</div>`
+          : `<div style="font-size:.82rem;color:var(--text-light);padding:8px 0">검색량 500회 이상 황금 키워드가 없습니다. 더 넓은 주제로 시도해보세요.<br><span style="font-size:.75rem">예) "전세자금대출" → "전세" 또는 "대출"로 입력</span></div>`}
+      </div>
       ${data.seoTips?.length ? `
       <div class="card result-fade">
         <div class="card-title">💡 포스팅 전 체크리스트</div>
