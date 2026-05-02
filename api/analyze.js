@@ -949,7 +949,10 @@ JSON 없이 자연스러운 한국어 대화체로 답하세요.`;
       const keywords = (req.body.keywords || []).slice(0, 10);
       if (!keywords.length) return res.status(400).json({ error: '키워드를 입력해주세요.' });
 
-      const rows = await Promise.all(keywords.map(async kw => {
+      const sleep = ms => new Promise(r => setTimeout(r, ms));
+      const rows = [];
+      for (const kw of keywords) {
+        // 블로그 경쟁 수는 병렬, Ad API는 순차 (Rate Limit 방지)
         const [vol, bc] = await Promise.all([
           hasAds   ? naverSearchVolume(kw, AD_KEY, AD_SECRET, AD_CUSTOMER) : Promise.resolve(null),
           hasNaver ? naverBlogSearch(kw, NAVER_CID, NAVER_CSEC)            : Promise.resolve(null)
@@ -965,8 +968,9 @@ JSON 없이 자연스러운 한국어 대화체로 답하세요.`;
           if (v >= 5000)             return 'B';
           return 'C';
         })();
-        return { keyword: kw, pc: vol?.pc ?? null, mobile: vol?.mobile ?? null, total, blogCount: comp, score };
-      }));
+        rows.push({ keyword: kw, pc: vol?.pc ?? null, mobile: vol?.mobile ?? null, total, blogCount: comp, score });
+        await sleep(300); // 네이버 API Rate Limit 방지
+      }
 
       result = { rows };
     }
