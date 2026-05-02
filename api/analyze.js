@@ -910,8 +910,15 @@ JSON 없이 자연스러운 한국어 대화체로 답하세요.`;
           ...(fullDesc.match(/#([가-힣a-zA-Z0-9_]+)/g) || []).map(h => h.slice(1)),
           ...(desc.match(/#([가-힣a-zA-Z0-9_]+)/g) || []).map(h => h.slice(1))
         ])].slice(0, 8);
-        // 제목에서 키워드 추출 (2글자 이상 한국어 단어)
-        const titleKeywords = (title.match(/[가-힣]{2,8}/g) || []).slice(0, 4);
+        // 제목에서 의미있는 명사 키워드 추출
+        // 토씨(은/는/이/가/을/를/의/에/로/도/만/와/과/서/며/나/랑) 제거, 2글자 이상 순수 명사만
+        const stopWords = new Set(['이다','있다','없다','하다','되다','오다','가다','보다','주다','받다','알다','모르다','오늘','내일','어제','이번','다음','그냥','아직','정말','매우','너무','가장','많이','조금','그리고','하지만','그래서','때문','따라','위해','통해','대해','관해','함께','이후','이전','이상','이하','미만','부터','까지','동안','사이','경우','정도','수준','방법','방식','과정','결과','원인','이유','문제','해결','현재','현황','상황','분석','정리','총정리','완벽','최신','심층','바로','바뀐','바뀌','변화','변경','확인','방문','감사','공유','내용','발표','보완','대책']);
+        const particles = /[은는이가을를의에로도만와과서며나랑에서으로부터까지에게한테께서]/;
+        const rawWords = title.split(/[\s,·[\]「」『』【】《》<>()（）""''!?!?…·•\/\\|@#$%^&*+=~`]+/).filter(Boolean);
+        const titleKeywords = rawWords
+          .map(w => w.replace(/^[^가-힣a-zA-Z0-9]+|[^가-힣a-zA-Z0-9]+$/g, '')) // 앞뒤 특수문자 제거
+          .filter(w => w.length >= 2 && /[가-힣]/.test(w) && !stopWords.has(w))
+          .slice(0, 5);
         return { title, link, pubDate, desc, hashtags, titleKeywords };
       });
 
@@ -922,14 +929,16 @@ JSON 없이 자연스러운 한국어 대화체로 답하세요.`;
         posts.flatMap(p => [...p.hashtags, ...p.titleKeywords]).filter(k => k.length >= 2)
       )].slice(0, 30);
 
-      // 검색량 조회 (최대 15개, Ad API 있을 때만)
+      // 검색량 조회 (최대 12개, 순차 처리로 Rate Limit 방지)
       let volumeMap = {};
       if (hasAds && allKeywords.length > 0) {
-        const kwsToCheck = allKeywords.slice(0, 15);
-        const volResults = await Promise.all(
-          kwsToCheck.map(kw => naverSearchVolume(kw, AD_KEY, AD_SECRET, AD_CUSTOMER))
-        );
-        kwsToCheck.forEach((kw, i) => { if (volResults[i]) volumeMap[kw] = volResults[i]; });
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+        const kwsToCheck = allKeywords.slice(0, 12);
+        for (const kw of kwsToCheck) {
+          const vol = await naverSearchVolume(kw, AD_KEY, AD_SECRET, AD_CUSTOMER);
+          if (vol) volumeMap[kw] = vol;
+          await sleep(250);
+        }
       }
 
       // 각 포스트에 검색량 붙이기
