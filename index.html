@@ -361,6 +361,7 @@ textarea.form-control{resize:vertical;min-height:100px}
   <div class="sidebar-item" data-page="youtube-analyze"><span class="si-icon">📺</span>유튜브 분석기</div>
 
   <div class="sidebar-section">블로그 관리</div>
+  <div class="sidebar-item" data-page="rank-checker"><span class="si-icon">🏆</span>순위 체커</div>
   <div class="sidebar-item" data-page="post-tracker"><span class="si-icon">📌</span>포스트 추적기</div>
 
   <div class="sidebar-section">콘텐츠 제작</div>
@@ -552,6 +553,30 @@ textarea.form-control{resize:vertical;min-height:100px}
   </div>
   <div class="loading" id="yt-loading"><div class="spinner"></div><div class="loading-text">유튜브 전략을 분석 중...</div></div>
   <div class="result-area" id="yt-result"></div>
+</div>
+
+<!-- =================== 순위 체커 =================== -->
+<div class="page" id="page-rank-checker">
+  <div class="page-header">
+    <h2>🏆 순위 체커</h2>
+    <p>키워드 검색 시 내 블로그가 네이버에서 몇 위에 노출되는지 실시간 확인합니다.</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>확인할 키워드</label>
+      <input type="text" class="form-control" id="rank-keyword" placeholder="예) 전세자금대출 조건, 아파트 매매 절차" />
+    </div>
+    <div class="form-group">
+      <label>내 블로그 URL 또는 ID</label>
+      <input type="text" class="form-control" id="rank-blogurl" placeholder="예) https://blog.naver.com/myid 또는 myid" />
+    </div>
+    <div style="background:#f0f7ff;border:1px solid #bee3f8;border-radius:8px;padding:10px 14px;font-size:.8rem;color:#2c5282;margin-bottom:14px">
+      💡 상위 30개 결과 내 순위를 확인합니다. 30위 밖이면 "미노출"로 표시됩니다.
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="checkMyRank()">🏆 순위 확인</button>
+  </div>
+  <div class="loading" id="rank-loading"><div class="spinner"></div><div class="loading-text">네이버에서 순위 확인 중...</div></div>
+  <div class="result-area" id="rank-result"></div>
 </div>
 
 <!-- =================== 포스트 추적기 =================== -->
@@ -1267,6 +1292,83 @@ async function loadGoldenKeywords(topic) {
   } catch(e) {
     kwResult.innerHTML = `<div class="card" style="color:var(--red-text)">황금 키워드 오류: ${escHtml(e.message)}</div>`;
   }
+}
+
+// ═══════════════════════════════════════════
+//  순위 체커
+// ═══════════════════════════════════════════
+
+async function checkMyRank() {
+  const keyword = document.getElementById('rank-keyword').value.trim();
+  const blogUrl = document.getElementById('rank-blogurl').value.trim();
+  if (!keyword) { alert('키워드를 입력해주세요.'); return; }
+  if (!blogUrl) { alert('블로그 URL 또는 ID를 입력해주세요.'); return; }
+
+  showLoading('rank');
+  hideResult('rank');
+  try {
+    const data = await callApi({ mode: 'rank-checker', keyword, blogUrl });
+
+    // 순위 배지 색상
+    const rankBadgeStyle = (rank) => {
+      if (!rank) return 'background:#fed7d7;color:#742a2a';
+      if (rank <= 3)  return 'background:linear-gradient(135deg,#d4af37,#f0c040);color:#5a3e0a';
+      if (rank <= 10) return 'background:#c6f6d5;color:#22543d';
+      return 'background:#e2e8f0;color:#4a5568';
+    };
+    const rankLabel = (rank) => {
+      if (!rank) return '미노출';
+      if (rank === 1) return '🥇 1위';
+      if (rank === 2) return '🥈 2위';
+      if (rank === 3) return '🥉 3위';
+      return `${rank}위`;
+    };
+
+    const topList = (data.items || []).map(item => `
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);${item.isMe ? 'background:#fffbeb;margin:0 -8px;padding:10px 8px;border-radius:8px;border-color:transparent' : ''}">
+        <span style="min-width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;flex-shrink:0;${item.rank<=3?'background:linear-gradient(135deg,#d4af37,#f0c040);color:#5a3e0a':'background:var(--navy);color:#fff'}">${item.rank}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:${item.isMe?'700':'500'};font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+            ${item.isMe ? '⭐ ' : ''}${escHtml(item.title) || '(제목 없음)'}
+          </div>
+          <div style="font-size:.75rem;color:var(--text-light);margin-top:2px">
+            ${escHtml(item.bloggerName)} ${item.postDate ? '· ' + item.postDate.slice(0,4) + '.' + item.postDate.slice(4,6) + '.' + item.postDate.slice(6) : ''}
+            ${item.isMe ? '<span style="background:#fef3c7;color:#92400e;font-weight:700;padding:1px 7px;border-radius:10px;margin-left:6px">내 블로그</span>' : ''}
+          </div>
+        </div>
+        <a href="${escHtml(item.link)}" target="_blank" rel="noopener" style="font-size:.72rem;color:var(--navy-mid);white-space:nowrap;text-decoration:none;flex-shrink:0">보기 →</a>
+      </div>`).join('');
+
+    showResult('rank', `
+      <div class="card result-fade">
+        <div style="text-align:center;padding:20px 0 14px">
+          <div style="font-size:.85rem;color:var(--text-light);margin-bottom:8px">「${escHtml(data.keyword)}」 검색 시 내 블로그 순위</div>
+          <div style="display:inline-block;padding:14px 32px;border-radius:16px;font-size:2rem;font-weight:900;${rankBadgeStyle(data.myRank)}">
+            ${rankLabel(data.myRank)}
+          </div>
+          <div style="margin-top:10px;font-size:.82rem;color:var(--text-mid)">${escHtml(data.message)}</div>
+          <div style="font-size:.75rem;color:var(--text-light);margin-top:4px">전체 블로그 포스트 ${(data.totalResults||0).toLocaleString()}개 중 상위 ${data.checkedCount}개 확인</div>
+        </div>
+      </div>
+      ${topList ? `
+      <div class="card result-fade">
+        <div class="card-title">📋 상위 ${data.items?.length || 0}개 결과</div>
+        <div style="font-size:.78rem;color:var(--text-light);margin-bottom:10px">⭐ 표시가 내 블로그입니다</div>
+        ${topList}
+      </div>` : ''}
+      ${!data.myRank ? `
+      <div class="card result-fade" style="border-left:3px solid #e53e3e">
+        <div class="card-title" style="color:#c53030">📌 미노출 원인 & 개선 방법</div>
+        <ul class="tips-list">
+          <li>이 키워드로 작성한 포스트가 있는지 확인하세요</li>
+          <li>포스트 제목에 키워드가 정확히 포함되어 있는지 확인하세요</li>
+          <li>글 발행 후 24~48시간 내 색인이 안 됐을 수 있습니다</li>
+          <li>경쟁 포스트가 너무 많으면 30위 밖으로 밀릴 수 있습니다 — 롱테일 키워드로 변경을 검토하세요</li>
+          <li>블로그 지수 → 블로그 지수 분석으로 C-Rank 수준을 간접 확인하세요</li>
+        </ul>
+      </div>` : ''}
+    `);
+  } catch(e) { showError('rank', e.message); }
 }
 
 // ═══════════════════════════════════════════

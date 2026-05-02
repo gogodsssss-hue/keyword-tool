@@ -16,6 +16,20 @@ async function naverBlogSearch(query, cid, csec) {
   } catch { return null; }
 }
 
+// 네이버 블로그 검색 — 실제 결과 목록 반환 (순위 체커용)
+async function naverBlogSearchItems(query, cid, csec, display = 30) {
+  if (!cid || !csec) return null;
+  try {
+    const res = await fetch(
+      `https://openapi.naver.com/v1/search/blog.json?query=${encodeURIComponent(query)}&display=${display}&sort=sim`,
+      { headers: { 'X-Naver-Client-Id': cid, 'X-Naver-Client-Secret': csec } }
+    );
+    if (!res.ok) return null;
+    const d = await res.json();
+    return { total: d.total ?? 0, items: d.items ?? [] };
+  } catch { return null; }
+}
+
 // 네이버 데이터랩 (검색 트렌드)
 async function naverDataLab(keyword, cid, csec) {
   if (!cid || !csec) return null;
@@ -955,6 +969,52 @@ JSON 없이 자연스러운 한국어 대화체로 답하세요.`;
       }));
 
       result = { rows };
+    }
+
+    // ⑱ 순위 체커 — 키워드 검색 시 내 블로그 몇 위?
+    else if (mode === 'rank-checker') {
+      if (!hasNaver) return res.status(400).json({ error: '네이버 API가 설정되지 않았습니다.' });
+      if (!keyword || !blogUrl) return res.status(400).json({ error: '키워드와 블로그 URL을 입력해주세요.' });
+
+      // 블로그 ID 추출 (blog.naver.com/ID 또는 ID만)
+      const blogId = blogUrl
+        .replace(/^https?:\/\//i, '')
+        .replace(/^blog\.naver\.com\//i, '')
+        .replace(/\/$/, '')
+        .split('/')[0]
+        .toLowerCase();
+
+      const searchResult = await naverBlogSearchItems(keyword, NAVER_CID, NAVER_CSEC, 30);
+      if (!searchResult) return res.status(500).json({ error: '네이버 검색 API 오류' });
+
+      const strip = s => (s || '').replace(/<[^>]*>/g, '').trim();
+      const items = searchResult.items.map((item, idx) => {
+        const link = item.link || item.bloggerlink || '';
+        const bloggerlink = item.bloggerlink || '';
+        const isMe = bloggerlink.toLowerCase().includes(blogId) || link.toLowerCase().includes(blogId);
+        return {
+          rank: idx + 1,
+          title: strip(item.title),
+          bloggerName: item.bloggername || '',
+          bloggerLink: bloggerlink,
+          link,
+          postDate: item.postdate || '',
+          isMe
+        };
+      });
+
+      const myRank = items.find(i => i.isMe);
+      result = {
+        keyword,
+        blogId,
+        myRank: myRank ? myRank.rank : null,
+        totalResults: searchResult.total,
+        checkedCount: items.length,
+        items: items.slice(0, 10), // 상위 10개만 프론트에 전달
+        message: myRank
+          ? `"${keyword}" 검색 시 상위 ${items.length}개 중 ${myRank.rank}위 노출`
+          : `"${keyword}" 검색 상위 ${items.length}개 안에 미노출`
+      };
     }
 
     else {
