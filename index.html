@@ -943,24 +943,26 @@ async function generateDraft(keyword, topic) {
 
 function renderNextStepPanel(topic) {
   const t = (topic || '부동산 금융 재테크').replace(/'/g, "\\'");
-  document.getElementById('bindex-kw-result').innerHTML = `
+  const kwEl = document.getElementById('bindex-kw-result');
+  kwEl.classList.add('show');
+  kwEl.innerHTML = `
     <div class="card result-fade" style="margin-top:0" id="next-step-card">
       <div class="card-title" style="margin-bottom:14px">📌 다음 단계 — 무엇을 도와드릴까요?</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px">
-        <button id="nstab-1" class="ns-tab active" onclick="switchNsTab(1,'${t}')">
+      <div style="display:flex;gap:10px;margin-bottom:18px">
+        <button id="nstab-1" class="ns-tab active" style="flex:1" onclick="switchNsTab(1,'${t}')">
           <div style="font-size:1.3rem;margin-bottom:4px">📝</div>
           <div style="font-weight:600;font-size:.82rem">대본 → 키워드</div>
-          <div style="font-size:.72rem;color:var(--text-light);margin-top:3px">쓴 글에서 키워드 추출</div>
+          <div style="font-size:.72rem;margin-top:3px">쓴 글에서 키워드 추출</div>
         </button>
-        <button id="nstab-2" class="ns-tab" onclick="switchNsTab(2,'${t}')">
+        <button id="nstab-2" class="ns-tab" style="flex:1" onclick="switchNsTab(2,'${t}')">
           <div style="font-size:1.3rem;margin-bottom:4px">🔑</div>
           <div style="font-weight:600;font-size:.82rem">키워드 → 대본</div>
-          <div style="font-size:.72rem;color:var(--text-light);margin-top:3px">키워드로 대본 초안 생성</div>
+          <div style="font-size:.72rem;margin-top:3px">키워드로 대본 초안 생성</div>
         </button>
-        <button id="nstab-3" class="ns-tab" onclick="switchNsTab(3,'${t}')">
+        <button id="nstab-3" class="ns-tab" style="flex:1" onclick="switchNsTab(3,'${t}')">
           <div style="font-size:1.3rem;margin-bottom:4px">🥇</div>
           <div style="font-weight:600;font-size:.82rem">키워드 추천</div>
-          <div style="font-size:.72rem;color:var(--text-light);margin-top:3px">황금 키워드 찾아주기</div>
+          <div style="font-size:.72rem;margin-top:3px">황금 키워드 찾아주기</div>
         </button>
       </div>
       <div id="nspanel-1">
