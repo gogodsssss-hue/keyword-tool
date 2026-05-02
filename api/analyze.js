@@ -73,6 +73,30 @@ async function naverSearchVolume(keyword, apiKey, secretKey, customerId) {
   } catch { return null; }
 }
 
+// 네이버 검색광고 API - 연관 키워드 전체 목록
+async function naverRelatedKeywords(hint, apiKey, secretKey, customerId) {
+  if (!apiKey || !secretKey || !customerId) return [];
+  try {
+    const ts  = Date.now().toString();
+    const sig = crypto.createHmac('sha256', secretKey)
+                      .update(`${ts}_GET_/keywordstool`)
+                      .digest('base64');
+    const res = await fetch(
+      `https://api.naver.com/keywordstool?hintKeywords=${encodeURIComponent(hint)}&showDetail=1`,
+      { headers: { 'X-Timestamp': ts, 'X-API-KEY': apiKey, 'X-Customer': customerId, 'X-Signature': sig } }
+    );
+    if (!res.ok) return [];
+    const d = await res.json();
+    return (d.keywordList || []).map(kw => ({
+      keyword: kw.relKeyword,
+      pc:      Number(kw.monthlyPcQcCnt)     || 0,
+      mobile:  Number(kw.monthlyMobileQcCnt) || 0,
+      total:   (Number(kw.monthlyPcQcCnt) || 0) + (Number(kw.monthlyMobileQcCnt) || 0),
+      compIdx: kw.compIdx
+    }));
+  } catch { return []; }
+}
+
 // 네이버 뉴스 검색 (실시간 뉴스)
 async function naverNewsSearch(query, cid, csec) {
   if (!cid || !csec) return null;
@@ -214,31 +238,27 @@ mainKeywords 5개, longtailKeywords 10개. 플랫폼이 "네이버 블로그만"
 
     // ② 황금 키워드 추출
     else if (mode === 'golden-keyword') {
-      // 1단계: Claude가 후보 키워드 15개 생성
-      const candidates = await claude(CLAUDE_KEY,
-        `한국 블로그 SEO 전문가. 순수 JSON만 반환.
-{"candidates":["키워드1","키워드2","키워드3","키워드4","키워드5","키워드6","키워드7","키워드8","키워드9","키워드10","키워드11","키워드12","키워드13","키워드14","키워드15"]}
-주어진 주제에서 블로그 포스팅 후보 키워드 15개. 단어조합 다양하게.`,
-        `주제: ${topic}\n플랫폼: ${platform}`
-      );
+      // 1단계: 네이버 Ad API에서 실제 연관 키워드 가져오기 (AI 생성 아님)
+      const relKws = hasAds
+        ? await naverRelatedKeywords(topic, AD_KEY, AD_SECRET, AD_CUSTOMER)
+        : [];
 
-      let enriched = (candidates.candidates || []).map(k => ({ keyword: k, blogCount: null, trend: null, vol: null }));
+      // 2단계: 검색량 500 이상만 필터링 후 경쟁도(블로그 수) 조회
+      const candidates = relKws
+        .filter(k => k.total >= 500)
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 20);
 
-      // 2단계: 실제 네이버 데이터 조회
-      const apiResults = await Promise.all(
-        enriched.map(async item => {
-          const [bc, tr] = await Promise.all([
-            hasNaver ? naverBlogSearch(item.keyword, NAVER_CID, NAVER_CSEC) : Promise.resolve(null),
-            hasNaver ? naverDataLab(item.keyword, NAVER_CID, NAVER_CSEC)    : Promise.resolve(null)
-          ]);
-          const vol = hasAds ? await naverSearchVolume(item.keyword, AD_KEY, AD_SECRET, AD_CUSTOMER) : null;
-          return { ...item, blogCount: bc, trend: tr, vol };
+      const withBlogCount = await Promise.all(
+        candidates.map(async k => {
+          const bc = hasNaver
+            ? await naverBlogSearch(k.keyword, NAVER_CID, NAVER_CSEC)
+            : null;
+          return { ...k, blogCount: bc };
         })
       );
 
-      // 3단계: 실제 수치로 직접 계산 (AI 추측 없음)
-      const volLabel  = v => v >= 10000 ? '높음' : v >= 2000 ? '중간' : v >= 500 ? '낮음' : '매우낮음';
-      const compLabel = c => c <= 5000  ? '낮음' : c <= 30000 ? '중간' : '높음';
+      // 3단계: 황금도 계산 (검색량 / 경쟁 포스트 수 비율)
       const goldenScore = (vol, comp) => {
         const v = vol  || 0;
         const c = comp || 999999;
@@ -250,24 +270,24 @@ mainKeywords 5개, longtailKeywords 10개. 플랫폼이 "네이버 블로그만"
         if (v >= 5000)                  return 'B';
         return 'C';
       };
+      const volLabel  = v => v >= 10000 ? '높음' : v >= 2000 ? '중간' : '낮음';
+      const compLabel = c => c <= 5000  ? '낮음' : c <= 30000 ? '중간' : '높음';
 
-      const scored = apiResults
-        .filter(k => k.vol?.total > 0 || k.blogCount !== null)
+      const scored = withBlogCount
         .map(k => ({
-          keyword:      k.keyword,
-          searchVolume: k.vol ? volLabel(k.vol.total) : '조회불가',
-          competition:  k.blogCount !== null ? compLabel(k.blogCount) : '조회불가',
-          goldenScore:  goldenScore(k.vol?.total, k.blogCount),
-          monthlyPc:    k.vol?.pc    ?? null,
-          monthlyMobile: k.vol?.mobile ?? null,
-          monthlyTotal: k.vol?.total ?? null,
-          blogCount:    k.blogCount  ?? null,
-          trendAvg:     k.trend?.avg ?? null,
-          reason: `월검색 ${(k.vol?.total ?? 0).toLocaleString()}회 · 블로그 ${(k.blogCount ?? 0).toLocaleString()}개`
+          keyword:       k.keyword,
+          searchVolume:  volLabel(k.total),
+          competition:   k.blogCount !== null ? compLabel(k.blogCount) : '조회불가',
+          goldenScore:   goldenScore(k.total, k.blogCount),
+          monthlyPc:     k.pc,
+          monthlyMobile: k.mobile,
+          monthlyTotal:  k.total,
+          blogCount:     k.blogCount,
+          reason: `월검색 ${k.total.toLocaleString()}회 · 블로그 ${(k.blogCount ?? 0).toLocaleString()}개`
         }))
         .sort((a, b) => {
-          const scoreOrder = {'A+':0,'A':1,'B+':2,'B':3,'C':4};
-          return (scoreOrder[a.goldenScore] ?? 5) - (scoreOrder[b.goldenScore] ?? 5);
+          const order = { 'A+':0, 'A':1, 'B+':2, 'B':3, 'C':4 };
+          return (order[a.goldenScore] ?? 5) - (order[b.goldenScore] ?? 5);
         })
         .slice(0, 8);
 
