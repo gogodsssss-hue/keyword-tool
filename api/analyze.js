@@ -345,15 +345,47 @@ mainKeywords 5개, longtailKeywords 10개. 플랫폼이 "네이버 블로그만"
 
     // ⑤ 블로그 지수 조회 (Level 0~10 포함)
     else if (mode === 'blog-index') {
-      const statsLines = [
-        postCount      ? `총 포스팅 수: ${Number(postCount).toLocaleString()}개`    : '',
-        neighbors      ? `이웃수: ${Number(neighbors).toLocaleString()}명`           : '',
-        todayVisitors  ? `오늘 방문자: ${Number(todayVisitors).toLocaleString()}명`  : '',
-        avgVisitors    ? `평균 방문자: ${Number(avgVisitors).toLocaleString()}명/일` : '',
-        totalVisitors  ? `전체 방문자: ${Number(totalVisitors).toLocaleString()}명`  : '',
-        isInfluencer === '있음' ? '인플루언서: YES' : ''
-      ].filter(Boolean);
-      const statsCtx = statsLines.length ? statsLines.join('\n') : '수치 미입력(URL 기반 추정)';
+      // 스크린샷이 있으면 Vision으로 실제 수치 추출
+      let statsCtx = '수치 미입력(URL 기반 추정)';
+      let extractedFromImage = false;
+
+      if (imageData && imageType) {
+        const visionRes = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': CLAUDE_KEY, 'anthropic-version': '2023-06-01' },
+          body: JSON.stringify({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 400,
+            messages: [{
+              role: 'user',
+              content: [
+                { type: 'image', source: { type: 'base64', media_type: imageType, data: imageData } },
+                { type: 'text', text: '이 네이버 블로그 통계 스크린샷에서 숫자만 추출해. 다음 형식으로만 답해:\n총 포스팅 수: N개\n이웃수: N명\n오늘 방문자: N명\n전체 방문자: N명\n일 평균 방문자: N명\n없는 항목은 생략.' }
+              ]
+            }]
+          })
+        });
+        if (visionRes.ok) {
+          const vd = await visionRes.json();
+          const extracted = vd.content?.[0]?.text || '';
+          if (extracted && extracted.includes('명') || extracted.includes('개')) {
+            statsCtx = extracted.trim();
+            extractedFromImage = true;
+          }
+        }
+      }
+
+      if (!extractedFromImage) {
+        const statsLines = [
+          postCount     ? `총 포스팅 수: ${Number(postCount).toLocaleString()}개`    : '',
+          neighbors     ? `이웃수: ${Number(neighbors).toLocaleString()}명`           : '',
+          todayVisitors ? `오늘 방문자: ${Number(todayVisitors).toLocaleString()}명`  : '',
+          avgVisitors   ? `평균 방문자: ${Number(avgVisitors).toLocaleString()}명/일` : '',
+          totalVisitors ? `전체 방문자: ${Number(totalVisitors).toLocaleString()}명`  : '',
+          isInfluencer === '있음' ? '인플루언서: YES' : ''
+        ].filter(Boolean);
+        if (statsLines.length) statsCtx = statsLines.join('\n');
+      }
 
       result = await claude(CLAUDE_KEY,
         `한국 블로그 SEO 전문가. 부동산·금융·경제 특화. 순수 JSON만 반환.
@@ -411,6 +443,7 @@ Level 10: 최고권위(2000개+, 네이버 인플루언서 최상위)
         { title: '내 분야 상위 블로그 벤치마킹', desc: `${topic || '부동산'} 분야 상위 노출 블로그 직접 분석`, url: `https://search.naver.com/search.naver?where=blog&query=${topicEncoded}&st=rel` },
         { title: '네이버 블로그 공식 운영 가이드', desc: '네이버가 권장하는 블로그 운영 방법', url: 'https://blog.naver.com/naverblog/221186401631' }
       ];
+      result._fromImage = extractedFromImage;
     }
 
     // ⑥ 블로그 지수 심플 (Level 포함)

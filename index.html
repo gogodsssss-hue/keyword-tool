@@ -451,7 +451,28 @@ textarea.form-control{resize:vertical;min-height:100px}
       <label>블로그 주제</label>
       <input type="text" class="form-control" id="bindex-topic" placeholder="예) 부동산, 금융, 재테크" />
     </div>
-    <button class="btn btn-primary" style="margin-top:14px;width:100%" onclick="analyzeAll()">📊 블로그 지수 시작</button>
+    <!-- 통계 스크린샷 첨부 -->
+    <div class="form-group" style="margin-top:4px">
+      <label style="display:flex;align-items:center;justify-content:space-between">
+        <span>내 블로그 통계 스크린샷 <span style="font-weight:400;color:var(--text-light)">(선택 — 붙이면 100% 실데이터 분석)</span></span>
+        <span id="bindex-img-clear" style="display:none;font-size:.75rem;color:var(--red-text);cursor:pointer" onclick="bindexClearImg()">✕ 제거</span>
+      </label>
+      <div id="bindex-img-drop"
+        style="border:2px dashed var(--border);border-radius:10px;padding:18px;text-align:center;cursor:pointer;transition:border-color .2s;font-size:.83rem;color:var(--text-light)"
+        onclick="document.getElementById('bindex-img-file').click()"
+        onpaste="bindexHandlePaste(event)"
+        ondragover="event.preventDefault();this.style.borderColor='var(--navy-mid)'"
+        ondragleave="this.style.borderColor='var(--border)'"
+        ondrop="event.preventDefault();bindexHandleFile(event.dataTransfer.files[0])">
+        📸 Ctrl+V 붙여넣기 또는 클릭해서 업로드<br>
+        <span style="font-size:.75rem">네이버 블로그 관리 → 통계 페이지 캡처</span>
+      </div>
+      <input type="file" id="bindex-img-file" accept="image/*" style="display:none" onchange="bindexHandleFile(this.files[0])">
+      <div id="bindex-img-preview" style="margin-top:8px;display:none">
+        <img id="bindex-img-thumb" style="max-width:100%;max-height:160px;border-radius:8px;border:1px solid var(--border)">
+      </div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:14px;width:100%" onclick="analyzeAll()">📊 블로그 지수 분석</button>
   </div>
   <div class="loading" id="bindex-loading"><div class="spinner"></div><div class="loading-text">블로그 레벨 분석 중...</div></div>
   <div class="result-area" id="bindex-result"></div>
@@ -901,15 +922,61 @@ async function sendQuick(question) {
 }
 
 // ── 채팅 이미지 첨부 ──
-let _chatImg = null; // { data: base64, type: 'image/jpeg', src: dataUrl }
+let _chatImg   = null; // 채팅 이미지
+let _bindexImg = null; // 블로그 지수 통계 스크린샷
 
 document.addEventListener('paste', e => {
+  // 블로그 지수 드롭존이 포커스됐을 때
+  if (document.activeElement?.closest('#bindex-img-drop') ||
+      document.getElementById('page-blog-index')?.classList.contains('active')) {
+    for (const item of (e.clipboardData?.items || [])) {
+      if (item.type.startsWith('image/')) { bindexHandleFile(item.getAsFile()); e.preventDefault(); return; }
+    }
+  }
+  // 채팅 영역
   const chatWrap = document.getElementById('bindex-chat-wrap');
   if (!chatWrap || chatWrap.style.display === 'none') return;
   for (const item of (e.clipboardData?.items || [])) {
     if (item.type.startsWith('image/')) { chatLoadFile(item.getAsFile()); break; }
   }
 });
+
+function bindexHandlePaste(e) {
+  for (const item of (e.clipboardData?.items || [])) {
+    if (item.type.startsWith('image/')) { bindexHandleFile(item.getAsFile()); e.preventDefault(); break; }
+  }
+}
+
+function bindexHandleFile(file) {
+  if (!file) return;
+  const img = new Image();
+  const url = URL.createObjectURL(file);
+  img.onload = () => {
+    let w = img.width, h = img.height;
+    if (w > 1400) { h = Math.round(h * 1400 / w); w = 1400; }
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    URL.revokeObjectURL(url);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    _bindexImg = { data: dataUrl.split(',')[1], type: 'image/jpeg', src: dataUrl };
+    document.getElementById('bindex-img-thumb').src = dataUrl;
+    document.getElementById('bindex-img-preview').style.display = 'block';
+    document.getElementById('bindex-img-clear').style.display = 'inline';
+    document.getElementById('bindex-img-drop').style.borderColor = 'var(--naver)';
+    document.getElementById('bindex-img-drop').innerHTML = '✅ 스크린샷 첨부됨 — 분석 시 실제 수치를 읽어드려요';
+  };
+  img.src = url;
+}
+
+function bindexClearImg() {
+  _bindexImg = null;
+  document.getElementById('bindex-img-preview').style.display = 'none';
+  document.getElementById('bindex-img-clear').style.display = 'none';
+  document.getElementById('bindex-img-drop').style.borderColor = 'var(--border)';
+  document.getElementById('bindex-img-drop').innerHTML = '📸 Ctrl+V 붙여넣기 또는 클릭해서 업로드<br><span style="font-size:.75rem">네이버 블로그 관리 → 통계 페이지 캡처</span>';
+  document.getElementById('bindex-img-file').value = '';
+}
 
 function chatHandleFile(e) {
   if (e.target.files[0]) chatLoadFile(e.target.files[0]);
@@ -998,7 +1065,13 @@ async function analyzeAll() {
 
   try {
     // 블로그 레벨 분석
-    const indexData = await callApi({ mode: 'blog-index', blogUrl: url, topic });
+    if (_bindexImg) {
+      document.getElementById('bindex-loading').querySelector('.loading-text').textContent = '통계 스크린샷 읽는 중...';
+    }
+    const indexData = await callApi({
+      mode: 'blog-index', blogUrl: url, topic,
+      ..._bindexImg ? { imageData: _bindexImg.data, imageType: _bindexImg.type } : {}
+    });
 
     state.blogContext = { blogUrl: url, topic, estimatedLevel: indexData.estimatedLevel, levelReason: indexData.levelReason || '', nextLevelTips: indexData.nextLevelTips || [], summary: indexData.summary || '' };
     state.chatMessages = [];
@@ -1032,6 +1105,7 @@ async function analyzeAll() {
       </a>`).join('');
 
     showResult('bindex', `
+      ${indexData._fromImage ? `<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:#ebf8f0;border:1.5px solid #38a169;border-radius:10px;margin-bottom:12px;font-size:.82rem;font-weight:700;color:#22543d">📸 스크린샷 실데이터 분석 — 입력 수치 100% 정확</div>` : ''}
       <div class="card result-fade">${renderLevelViz(level, indexData.levelReason)}</div>
       ${scores ? `<div class="card result-fade"><div class="card-title">📋 세부 점수</div><div class="scores-grid">${scores}</div></div>` : ''}
       ${indexData.summary ? `<div class="summary-box result-fade">${escHtml(indexData.summary)}</div>` : ''}
