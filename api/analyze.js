@@ -214,41 +214,68 @@ mainKeywords 5개, longtailKeywords 10개. 플랫폼이 "네이버 블로그만"
 
     // ② 황금 키워드 추출
     else if (mode === 'golden-keyword') {
+      // 1단계: Claude가 후보 키워드 15개 생성
       const candidates = await claude(CLAUDE_KEY,
         `한국 블로그 SEO 전문가. 순수 JSON만 반환.
-{"candidates":["키워드1","키워드2","키워드3","키워드4","키워드5","키워드6","키워드7","키워드8","키워드9","키워드10"]}
-부동산·금융·경제 분야에서 검색량 높고 경쟁 낮을 것 같은 후보 키워드 10개만 반환.`,
-        `주제: ${topic}`
+{"candidates":["키워드1","키워드2","키워드3","키워드4","키워드5","키워드6","키워드7","키워드8","키워드9","키워드10","키워드11","키워드12","키워드13","키워드14","키워드15"]}
+주어진 주제에서 블로그 포스팅 후보 키워드 15개. 단어조합 다양하게.`,
+        `주제: ${topic}\n플랫폼: ${platform}`
       );
 
       let enriched = (candidates.candidates || []).map(k => ({ keyword: k, blogCount: null, trend: null, vol: null }));
 
-      if (hasNaver) {
-        const results = await Promise.all(
-          enriched.map(async item => {
-            const [bc, tr] = await Promise.all([
-              naverBlogSearch(item.keyword, NAVER_CID, NAVER_CSEC),
-              naverDataLab(item.keyword, NAVER_CID, NAVER_CSEC)
-            ]);
-            const vol = hasAds ? await naverSearchVolume(item.keyword, AD_KEY, AD_SECRET, AD_CUSTOMER) : null;
-            return { ...item, blogCount: bc, trend: tr, vol };
-          })
-        );
-        enriched = results;
-        // 경쟁도 낮은 순 정렬
-        enriched.sort((a, b) => (a.blogCount || 999999) - (b.blogCount || 999999));
-      }
-
-      const dataCtx = enriched.map(k =>
-        `- ${k.keyword}: 블로그수 ${k.blogCount ?? '?'}개, 트렌드점수 ${k.trend?.avg ?? '?'}, 월검색량 ${k.vol?.total ?? '?'}`
-      ).join('\n');
-
-      result = await claude(CLAUDE_KEY,
-        `한국 블로그 SEO 전문가. 순수 JSON만 반환.
-{"goldenKeywords":[{"keyword":"","searchVolume":"높음|중간|낮음","competition":"낮음|중간","goldenScore":"★~★★★★★","reason":""}],"tips":[""],"dataSource":""}
-goldenKeywords 8개, 황금도는 ★1~5개. dataSource는 실데이터 사용 여부 표기.`,
-        `주제: ${topic}\n플랫폼: ${platform}\n\n네이버 실데이터:\n${dataCtx}`
+      // 2단계: 실제 네이버 데이터 조회
+      const apiResults = await Promise.all(
+        enriched.map(async item => {
+          const [bc, tr] = await Promise.all([
+            hasNaver ? naverBlogSearch(item.keyword, NAVER_CID, NAVER_CSEC) : Promise.resolve(null),
+            hasNaver ? naverDataLab(item.keyword, NAVER_CID, NAVER_CSEC)    : Promise.resolve(null)
+          ]);
+          const vol = hasAds ? await naverSearchVolume(item.keyword, AD_KEY, AD_SECRET, AD_CUSTOMER) : null;
+          return { ...item, blogCount: bc, trend: tr, vol };
+        })
       );
+
+      // 3단계: 실제 수치로 직접 계산 (AI 추측 없음)
+      const volLabel  = v => v >= 10000 ? '높음' : v >= 2000 ? '중간' : v >= 500 ? '낮음' : '매우낮음';
+      const compLabel = c => c <= 5000  ? '낮음' : c <= 30000 ? '중간' : '높음';
+      const goldenScore = (vol, comp) => {
+        const v = vol  || 0;
+        const c = comp || 999999;
+        const ratio = v / (c + 1);
+        if (ratio >= 1   && v >= 5000)  return 'A+';
+        if (ratio >= 0.5 && v >= 2000)  return 'A';
+        if (ratio >= 0.2 && v >= 1000)  return 'B+';
+        if (ratio >= 0.1)               return 'B';
+        if (v >= 5000)                  return 'B';
+        return 'C';
+      };
+
+      const scored = apiResults
+        .filter(k => k.vol?.total > 0 || k.blogCount !== null)
+        .map(k => ({
+          keyword:      k.keyword,
+          searchVolume: k.vol ? volLabel(k.vol.total) : '조회불가',
+          competition:  k.blogCount !== null ? compLabel(k.blogCount) : '조회불가',
+          goldenScore:  goldenScore(k.vol?.total, k.blogCount),
+          monthlyPc:    k.vol?.pc    ?? null,
+          monthlyMobile: k.vol?.mobile ?? null,
+          monthlyTotal: k.vol?.total ?? null,
+          blogCount:    k.blogCount  ?? null,
+          trendAvg:     k.trend?.avg ?? null,
+          reason: `월검색 ${(k.vol?.total ?? 0).toLocaleString()}회 · 블로그 ${(k.blogCount ?? 0).toLocaleString()}개`
+        }))
+        .sort((a, b) => {
+          const scoreOrder = {'A+':0,'A':1,'B+':2,'B':3,'C':4};
+          return (scoreOrder[a.goldenScore] ?? 5) - (scoreOrder[b.goldenScore] ?? 5);
+        })
+        .slice(0, 8);
+
+      result = {
+        goldenKeywords: scored,
+        tips: [],
+        dataSource: hasAds ? '네이버 검색광고 API 실데이터' : 'API 미설정'
+      };
     }
 
     // ③ 키워드 지수 조회

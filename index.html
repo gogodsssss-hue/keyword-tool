@@ -702,6 +702,47 @@ function renderBadge(label, val) {
   return `<span class="badge ${getBadgeClass(val)}">${escHtml(label||val)}</span>`;
 }
 
+function renderGoldenCard(k, topic) {
+  const scoreColor = {'A+':'#22543d','A':'#276749','B+':'#2b6cb0','B':'#4a5568','C':'#742a2a'};
+  const scoreBg    = {'A+':'#c6f6d5','A':'#c6f6d5','B+':'#bee3f8','B':'#e2e8f0','C':'#fed7d7'};
+  const sc = k.goldenScore || 'C';
+  const hasRealData = k.monthlyTotal !== null && k.monthlyTotal !== undefined;
+  const volColor  = k.monthlyTotal >= 10000 ? '#22543d' : k.monthlyTotal >= 2000 ? '#744210' : '#4a5568';
+  const volBg     = k.monthlyTotal >= 10000 ? '#c6f6d5'  : k.monthlyTotal >= 2000 ? '#fefcbf'  : '#e2e8f0';
+  const compColor = k.blogCount <= 5000  ? '#22543d' : k.blogCount <= 30000 ? '#744210' : '#742a2a';
+  const compBg    = k.blogCount <= 5000  ? '#c6f6d5'  : k.blogCount <= 30000 ? '#fefcbf'  : '#fed7d7';
+  const t = (topic||'').replace(/'/g,"\\'");
+  return `
+    <div class="keyword-card">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px">
+        <div class="kc-word" style="margin:0">🥇 ${escHtml(k.keyword)}</div>
+        <span style="background:${scoreBg[sc]||'#e2e8f0'};color:${scoreColor[sc]||'#4a5568'};font-weight:700;font-size:.85rem;padding:2px 10px;border-radius:20px">${sc}</span>
+      </div>
+      ${hasRealData ? `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+        <div style="background:${volBg};border-radius:8px;padding:6px 10px;text-align:center">
+          <div style="font-size:.65rem;color:${volColor};font-weight:600;margin-bottom:2px">월간 검색량</div>
+          <div style="font-size:.9rem;font-weight:700;color:${volColor}">${(k.monthlyTotal||0).toLocaleString()}</div>
+          <div style="font-size:.62rem;color:${volColor};opacity:.8">PC ${(k.monthlyPc||0).toLocaleString()} + 모바일 ${(k.monthlyMobile||0).toLocaleString()}</div>
+        </div>
+        <div style="background:${compBg};border-radius:8px;padding:6px 10px;text-align:center">
+          <div style="font-size:.65rem;color:${compColor};font-weight:600;margin-bottom:2px">블로그 경쟁</div>
+          <div style="font-size:.9rem;font-weight:700;color:${compColor}">${(k.blogCount||0).toLocaleString()}</div>
+          <div style="font-size:.62rem;color:${compColor};opacity:.8">개 포스트</div>
+        </div>
+      </div>` : `
+      <div class="kc-meta">
+        ${renderBadge('검색량 '+(k.searchVolume||''), k.searchVolume)}
+        ${renderBadge('경쟁도 '+(k.competition||''), k.competition)}
+      </div>`}
+      ${k.reason ? `<div class="kc-reason">${escHtml(k.reason)}</div>` : ''}
+      <button class="btn" style="margin-top:10px;padding:6px 14px;font-size:.78rem;background:var(--navy-mid);color:#fff;border:none;border-radius:8px;cursor:pointer;width:100%"
+        onclick="switchDraftTab('to-draft');document.getElementById('kw-to-draft-input').value='${escHtml(k.keyword).replace(/'/g,"\\'")}';document.getElementById('kw-to-draft-topic').value='${t}';document.querySelector('[data-page=draft-helper]')?.click()">
+        ✍️ 이 키워드로 대본 생성
+      </button>
+    </div>`;
+}
+
 // ═══════════════════════════════════════════
 //  1. BLOG MISSING
 // ═══════════════════════════════════════════
@@ -1066,25 +1107,14 @@ async function loadGoldenKeywords(topic) {
   kwResult.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   try {
     const kwData = await callApi({ mode: 'golden-keyword', topic: topic || '부동산 금융 재테크', platform: '둘 다' });
-    const kwCards = (kwData.goldenKeywords||[]).map(k => `
-      <div class="keyword-card">
-        <div class="kc-word">🥇 ${escHtml(k.keyword)}</div>
-        <div class="kc-meta">
-          ${renderBadge('검색량 '+escHtml(k.searchVolume||''), k.searchVolume)}
-          ${renderBadge('경쟁도 '+escHtml(k.competition||''), k.competition)}
-          <span class="badge" style="background:var(--gold-bg);color:var(--gold-text)">황금도 ${escHtml(k.goldenScore||'')}</span>
-        </div>
-        <div class="kc-reason">${escHtml(k.reason||'')}</div>
-        <button class="btn" style="margin-top:10px;padding:6px 14px;font-size:.78rem;background:var(--navy-mid);color:#fff;border:none;border-radius:8px;cursor:pointer;width:100%"
-          onclick="generateDraft('${escHtml(k.keyword).replace(/'/g,"\\'")}','${escHtml(topic).replace(/'/g,"\\'")}')">
-          ✍️ 이 키워드로 대본 생성
-        </button>
-      </div>`).join('');
+    const kwCards = (kwData.goldenKeywords||[]).map(k => renderGoldenCard(k, topic)).join('');
     kwResult.innerHTML = kwCards ? `
       <div class="card result-fade" style="margin-top:0">
-        <div class="card-title">🥇 황금 키워드</div>
-        ${kwData._hasNaver ? '<span style="font-size:.72rem;color:var(--naver);font-weight:600">🟢 네이버 실데이터 반영</span>' : ''}
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:10px">${kwCards}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div class="card-title" style="margin:0">🥇 황금 키워드</div>
+          <span style="font-size:.72rem;color:var(--naver);font-weight:600">🟢 네이버 실데이터</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">${kwCards}</div>
       </div>` : '';
   } catch(e) {
     kwResult.innerHTML = `<div class="card" style="color:var(--red-text)">황금 키워드 오류: ${escHtml(e.message)}</div>`;
@@ -1364,24 +1394,14 @@ async function runGoldenKeyword() {
   hideResult('golden-kw');
   try {
     const data = await callApi({ mode: 'golden-keyword', topic, platform });
-    const kwCards = (data.goldenKeywords||[]).map(k => `
-      <div class="keyword-card">
-        <div class="kc-word">🥇 ${escHtml(k.keyword)}</div>
-        <div class="kc-meta">
-          ${renderBadge('검색량 '+escHtml(k.searchVolume||''), k.searchVolume)}
-          ${renderBadge('경쟁도 '+escHtml(k.competition||''), k.competition)}
-          <span class="badge" style="background:var(--gold-bg);color:var(--gold-text)">황금도 ${escHtml(k.goldenScore||'')}</span>
-        </div>
-        <div class="kc-reason">${escHtml(k.reason||'')}</div>
-        <button class="btn" style="margin-top:10px;padding:6px 14px;font-size:.78rem;background:var(--navy-mid);color:#fff;border:none;border-radius:8px;cursor:pointer;width:100%"
-          onclick="switchDraftTab('to-draft');document.getElementById('kw-to-draft-input').value='${escHtml(k.keyword).replace(/'/g,"\\'")}';document.getElementById('kw-to-draft-topic').value='${escHtml(topic).replace(/'/g,"\\'")}'"
-        >✍️ 이 키워드로 대본 생성</button>
-      </div>`).join('');
+    const kwCards = (data.goldenKeywords||[]).map(k => renderGoldenCard(k, topic)).join('');
     showResult('golden-kw', kwCards ? `
       <div class="card result-fade" style="margin-top:0">
-        <div class="card-title">💡 황금 키워드 추천</div>
-        ${data._hasNaver ? '<span style="font-size:.72rem;color:var(--naver);font-weight:600">🟢 네이버 실데이터 반영</span>' : ''}
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:10px">${kwCards}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div class="card-title" style="margin:0">💡 황금 키워드 추천</div>
+          <span style="font-size:.72rem;color:var(--naver);font-weight:600">🟢 네이버 실데이터</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">${kwCards}</div>
       </div>` : '<div class="card">결과가 없습니다.</div>');
   } catch(e) { showError('golden-kw', e.message); }
 }
