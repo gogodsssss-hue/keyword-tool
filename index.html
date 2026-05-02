@@ -1,2627 +1,1477 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>블로그 SEO 분석기</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', -apple-system, sans-serif;
-      background: #f0f4f8;
-      color: #2d3748;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* ── 헤더 ── */
-    header {
-      background: linear-gradient(135deg, #1a365d 0%, #2b6cb0 100%);
-      color: white;
-      padding: 16px 24px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-
-    header h1 { font-size: 1.15rem; font-weight: 700; }
-    header p  { font-size: 0.8rem; opacity: 0.8; margin-top: 2px; }
-
-    /* ── 레이아웃 ── */
-    .layout {
-      display: flex;
-      flex: 1;
-    }
-
-    /* ── 사이드바 ── */
-    .sidebar {
-      width: 200px;
-      min-width: 200px;
-      background: #1a365d;
-      padding: 20px 0;
-      min-height: calc(100vh - 57px);
-    }
-
-    .sidebar-section {
-      padding: 8px 16px 4px;
-      font-size: 0.7rem;
-      font-weight: 700;
-      color: #90cdf4;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-    }
-
-    .menu-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 11px 20px;
-      color: #bee3f8;
-      font-size: 0.88rem;
-      cursor: pointer;
-      transition: all 0.15s;
-      border-left: 3px solid transparent;
-    }
-
-    .menu-item:hover { background: rgba(255,255,255,0.08); color: white; }
-
-    .menu-item.active {
-      background: rgba(255,255,255,0.12);
-      color: white;
-      border-left-color: #63b3ed;
-      font-weight: 600;
-    }
-
-    .menu-icon { font-size: 1rem; width: 20px; text-align: center; }
-
-    /* ── 메인 콘텐츠 ── */
-    .main {
-      flex: 1;
-      padding: 28px 32px;
-      overflow-y: auto;
-    }
-
-    .page { display: none; }
-    .page.active { display: block; }
-
-    .page-title {
-      font-size: 1.35rem;
-      font-weight: 700;
-      color: #1a365d;
-      margin-bottom: 6px;
-    }
-
-    .page-desc {
-      font-size: 0.87rem;
-      color: #718096;
-      margin-bottom: 24px;
-      line-height: 1.5;
-    }
-
-    /* ── 카드 ── */
-    .card {
-      background: white;
-      border-radius: 14px;
-      padding: 24px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
-      margin-bottom: 20px;
-    }
-
-    .card-title {
-      font-size: 0.95rem;
-      font-weight: 700;
-      color: #1a365d;
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 2px solid #ebf4ff;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    /* ── 폼 요소 ── */
-    label {
-      display: block;
-      font-size: 0.83rem;
-      font-weight: 600;
-      color: #4a5568;
-      margin-bottom: 7px;
-    }
-
-    input[type="text"] {
-      width: 100%;
-      padding: 11px 15px;
-      border: 2px solid #e2e8f0;
-      border-radius: 10px;
-      font-size: 0.95rem;
-      color: #2d3748;
-      transition: border-color 0.2s;
-      outline: none;
-    }
-
-    input[type="text"]:focus { border-color: #2b6cb0; }
-
-    .platform-group { display: flex; gap: 10px; margin-top: 4px; }
-
-    .platform-btn {
-      flex: 1;
-      padding: 10px;
-      border: 2px solid #e2e8f0;
-      border-radius: 9px;
-      background: white;
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: #718096;
-      cursor: pointer;
-      transition: all 0.2s;
-      text-align: center;
-    }
-
-    .platform-btn.active { border-color: #2b6cb0; background: #ebf4ff; color: #2b6cb0; }
-    .platform-btn:hover  { border-color: #2b6cb0; }
-
-    .btn-run {
-      width: 100%;
-      padding: 13px;
-      background: linear-gradient(135deg, #1a365d 0%, #2b6cb0 100%);
-      color: white;
-      border: none;
-      border-radius: 10px;
-      font-size: 1rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: opacity 0.2s;
-      margin-top: 18px;
-    }
-
-    .btn-run:hover    { opacity: 0.9; }
-    .btn-run:disabled { opacity: 0.45; cursor: not-allowed; }
-
-    /* ── 로딩 ── */
-    .loading {
-      display: none;
-      text-align: center;
-      padding: 36px;
-      color: #718096;
-    }
-
-    .spinner {
-      width: 38px; height: 38px;
-      border: 4px solid #e2e8f0;
-      border-top-color: #2b6cb0;
-      border-radius: 50%;
-      animation: spin 0.75s linear infinite;
-      margin: 0 auto 14px;
-    }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ── 에러 ── */
-    .error-box {
-      background: #fff5f5;
-      border: 1.5px solid #fed7d7;
-      border-radius: 10px;
-      padding: 14px 18px;
-      color: #c53030;
-      font-size: 0.88rem;
-      display: none;
-      margin-bottom: 16px;
-    }
-
-    /* ── 결과 공통 ── */
-    .result-section { display: none; }
-
-    .keyword-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 12px;
-    }
-
-    .keyword-card {
-      border: 1.5px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 15px;
-    }
-
-    .keyword-name { font-size: 1rem; font-weight: 700; color: #1a365d; margin-bottom: 9px; }
-
-    .badge-row { display: flex; gap: 6px; margin-bottom: 9px; flex-wrap: wrap; }
-
-    .badge { font-size: 0.7rem; font-weight: 700; padding: 3px 8px; border-radius: 20px; }
-
-    .badge-vol-high  { background: #c6f6d5; color: #22543d; }
-    .badge-vol-mid   { background: #fefcbf; color: #744210; }
-    .badge-vol-low   { background: #fed7d7; color: #742a2a; }
-    .badge-comp-high { background: #fed7d7; color: #742a2a; }
-    .badge-comp-mid  { background: #fefcbf; color: #744210; }
-    .badge-comp-low  { background: #c6f6d5; color: #22543d; }
-    .badge-gold      { background: #fef3c7; color: #92400e; }
-
-    .keyword-tip { font-size: 0.8rem; color: #718096; line-height: 1.5; }
-
-    .tag-cloud { display: flex; flex-wrap: wrap; gap: 8px; }
-
-    .tag {
-      background: #ebf4ff;
-      color: #2b6cb0;
-      padding: 6px 13px;
-      border-radius: 20px;
-      font-size: 0.85rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-
-    .tag:hover { background: #bee3f8; }
-
-    .title-list { list-style: none; display: flex; flex-direction: column; gap: 9px; }
-
-    .title-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 13px 15px;
-      background: #f7fafc;
-      border-radius: 10px;
-      border: 1.5px solid #e2e8f0;
-    }
-
-    .title-text { font-size: 0.92rem; font-weight: 500; flex: 1; line-height: 1.5; }
-
-    .copy-btn {
-      background: #e2e8f0;
-      border: none;
-      border-radius: 6px;
-      padding: 5px 10px;
-      font-size: 0.75rem;
-      cursor: pointer;
-      color: #4a5568;
-      white-space: nowrap;
-    }
-
-    .copy-btn:hover { background: #bee3f8; color: #2b6cb0; }
-
-    .strategy-summary {
-      font-size: 0.88rem;
-      color: #4a5568;
-      margin-bottom: 12px;
-      line-height: 1.6;
-      padding: 12px 14px;
-      background: #f7fafc;
-      border-radius: 8px;
-      border-left: 3px solid #2b6cb0;
-    }
-
-    .tips-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
-
-    .tips-list li {
-      display: flex;
-      gap: 9px;
-      font-size: 0.85rem;
-      color: #4a5568;
-      line-height: 1.6;
-    }
-
-    .tips-list li::before { content: '✓'; color: #48bb78; font-weight: 700; flex-shrink: 0; }
-
-    .divider { height: 1px; background: #e2e8f0; margin: 18px 0; }
-
-    .structure-list { list-style: none; display: flex; flex-direction: column; gap: 9px; }
-
-    .structure-list li {
-      display: flex;
-      gap: 11px;
-      align-items: flex-start;
-      font-size: 0.85rem;
-      color: #4a5568;
-      line-height: 1.6;
-    }
-
-    .step-num {
-      min-width: 22px; height: 22px;
-      background: #1a365d;
-      color: white;
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.7rem;
-      font-weight: 700;
-      flex-shrink: 0;
-    }
-
-    /* ── 블로그 누락 검사 전용 ── */
-    .check-links { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
-
-    .check-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 9px 16px;
-      border-radius: 8px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      text-decoration: none;
-      transition: opacity 0.15s;
-      cursor: pointer;
-      border: none;
-    }
-
-    .check-link:hover { opacity: 0.85; }
-    .check-link-naver { background: #03c75a; color: white; }
-    .check-link-google { background: #4285f4; color: white; }
-
-    /* ── 지수 스코어 카드 ── */
-    .score-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-
-    .score-card {
-      text-align: center;
-      padding: 18px 12px;
-      border-radius: 12px;
-      border: 1.5px solid #e2e8f0;
-    }
-
-    .score-label { font-size: 0.78rem; color: #718096; margin-bottom: 8px; font-weight: 600; }
-    .score-value { font-size: 1.6rem; font-weight: 800; color: #1a365d; }
-    .score-sub   { font-size: 0.75rem; color: #a0aec0; margin-top: 4px; }
-
-    .info-box {
-      background: #fffbeb;
-      border: 1.5px solid #f6e05e;
-      border-radius: 10px;
-      padding: 13px 16px;
-      font-size: 0.83rem;
-      color: #744210;
-      line-height: 1.6;
-      margin-bottom: 14px;
-    }
-
-    .platform-badge-inline {
-      display: inline-block;
-      padding: 3px 10px;
-      border-radius: 20px;
-      font-size: 0.78rem;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
-
-    .naver-badge { background: #03c75a1a; color: #03c75a; border: 1.5px solid #03c75a40; }
-    .tistory-badge { background: #ff69001a; color: #e05a00; border: 1.5px solid #ff690040; }
-
-    /* ── Level 0~10 시스템 ── */
-    .level-display {
-      margin-bottom: 20px;
-      grid-column: 1 / -1;
-    }
-
-    .level-current {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 16px;
-      padding: 18px 20px;
-      border-radius: 12px;
-      border: 2px solid #e2e8f0;
-      background: #f7fafc;
-    }
-
-    .level-big-badge {
-      font-size: 1.4rem;
-      font-weight: 800;
-      color: white;
-      padding: 10px 18px;
-      border-radius: 10px;
-      white-space: nowrap;
-      min-width: 96px;
-      text-align: center;
-    }
-
-    .level-reason {
-      font-size: 0.88rem;
-      color: #4a5568;
-      line-height: 1.6;
-    }
-
-    .level-scale {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-
-    .level-pip {
-      padding: 5px 10px;
-      border-radius: 6px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: white;
-      opacity: 0.45;
-      transition: opacity 0.2s;
-    }
-
-    .level-pip.active { opacity: 1; transform: scale(1.1); }
-
-    /* Level 색상 */
-    .lv0  { background: #9e9e9e; }
-    .lv1  { background: #66bb6a; }
-    .lv2  { background: #43a047; }
-    .lv3  { background: #00897b; }
-    .lv4  { background: #1565c0; }
-    .lv5  { background: #1976d2; }
-    .lv6  { background: #5e35b1; }
-    .lv7  { background: #7b1fa2; }
-    .lv8  { background: #ad1457; }
-    .lv9  { background: #c62828; }
-    .lv10 { background: #b71c1c; }
-
-    .next-level-box {
-      background: #fffbeb;
-      border: 1.5px solid #f6e05e;
-      border-radius: 10px;
-      padding: 13px 16px;
-      margin-top: 14px;
-    }
-
-    .next-level-title {
-      font-size: 0.82rem;
-      font-weight: 700;
-      color: #744210;
-      margin-bottom: 8px;
-    }
-
-    .next-level-tips { list-style: none; }
-    .next-level-tips li {
-      font-size: 0.82rem;
-      color: #744210;
-      padding: 3px 0;
-    }
-    .next-level-tips li::before { content: '→ '; font-weight: 700; }
-
-    /* ── 대화형 코칭 챗 ── */
-    .chat-section {
-      display: none;
-      margin-top: 20px;
-    }
-
-    .chat-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 2px solid #ebf4ff;
-    }
-
-    .chat-header-icon {
-      width: 34px; height: 34px;
-      background: linear-gradient(135deg, #1a365d, #2b6cb0);
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1rem;
-      flex-shrink: 0;
-    }
-
-    .chat-header-text h3 { font-size: 0.95rem; font-weight: 700; color: #1a365d; }
-    .chat-header-text p  { font-size: 0.78rem; color: #718096; margin-top: 2px; }
-
-    .chat-messages {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      max-height: 400px;
-      overflow-y: auto;
-      margin-bottom: 16px;
-      padding-right: 4px;
-    }
-
-    .chat-messages::-webkit-scrollbar { width: 4px; }
-    .chat-messages::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 4px; }
-
-    .chat-bubble {
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
-    }
-
-    .chat-bubble.user { flex-direction: row-reverse; }
-
-    .bubble-avatar {
-      width: 30px; height: 30px;
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.85rem;
-      flex-shrink: 0;
-    }
-
-    .bubble-avatar.ai   { background: #1a365d; color: white; }
-    .bubble-avatar.user { background: #e2e8f0; color: #4a5568; }
-
-    .bubble-text {
-      max-width: 80%;
-      padding: 11px 14px;
-      border-radius: 14px;
-      font-size: 0.875rem;
-      line-height: 1.65;
-    }
-
-    .chat-bubble.ai   .bubble-text { background: #f7fafc; border: 1.5px solid #e2e8f0; color: #2d3748; border-top-left-radius: 4px; }
-    .chat-bubble.user .bubble-text { background: #1a365d; color: white; border-top-right-radius: 4px; }
-
-    .chat-typing {
-      display: none;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 0;
-    }
-
-    .typing-dots {
-      display: flex; gap: 4px;
-      padding: 10px 14px;
-      background: #f7fafc;
-      border-radius: 14px;
-      border: 1.5px solid #e2e8f0;
-    }
-
-    .typing-dots span {
-      width: 6px; height: 6px;
-      background: #a0aec0;
-      border-radius: 50%;
-      animation: bounce 1.2s infinite;
-    }
-    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
-    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
-
-    @keyframes bounce {
-      0%, 60%, 100% { transform: translateY(0); }
-      30% { transform: translateY(-6px); }
-    }
-
-    .chat-quick-btns {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 7px;
-      margin-bottom: 12px;
-    }
-
-    .quick-btn {
-      background: #ebf4ff;
-      color: #2b6cb0;
-      border: 1.5px solid #bee3f8;
-      border-radius: 20px;
-      padding: 6px 13px;
-      font-size: 0.8rem;
-      cursor: pointer;
-      transition: background 0.15s;
-      white-space: nowrap;
-    }
-
-    .quick-btn:hover { background: #bee3f8; }
-
-    .chat-input-row {
-      display: flex;
-      gap: 8px;
-    }
-
-    .chat-input {
-      flex: 1;
-      padding: 11px 14px;
-      border: 2px solid #e2e8f0;
-      border-radius: 10px;
-      font-size: 0.9rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    .chat-input:focus { border-color: #2b6cb0; }
-
-    .chat-send-btn {
-      padding: 11px 18px;
-      background: #1a365d;
-      color: white;
-      border: none;
-      border-radius: 10px;
-      font-size: 0.9rem;
-      cursor: pointer;
-      transition: opacity 0.2s;
-      white-space: nowrap;
-    }
-
-    .chat-send-btn:hover    { opacity: 0.88; }
-    .chat-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-    /* ── 네이버 실데이터 뱃지 ── */
-    .data-source-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      background: #ebf4ff;
-      color: #2b6cb0;
-      border: 1.5px solid #bee3f8;
-      border-radius: 20px;
-      padding: 3px 10px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      margin-bottom: 14px;
-    }
-
-    .naver-data-box {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 10px;
-      margin-bottom: 16px;
-    }
-
-    .naver-stat {
-      background: #f0fff4;
-      border: 1.5px solid #c6f6d5;
-      border-radius: 10px;
-      padding: 12px;
-      text-align: center;
-    }
-
-    .naver-stat-label { font-size: 0.72rem; color: #718096; margin-bottom: 5px; font-weight: 600; }
-    .naver-stat-value { font-size: 1.2rem; font-weight: 800; color: #22543d; }
-    .naver-stat-sub   { font-size: 0.7rem; color: #a0aec0; margin-top: 2px; }
-
-    /* ── 키워드마스터 ── */
-    textarea {
-      width: 100%;
-      padding: 11px 15px;
-      border: 2px solid #e2e8f0;
-      border-radius: 10px;
-      font-size: 0.9rem;
-      color: #2d3748;
-      transition: border-color 0.2s;
-      outline: none;
-      resize: vertical;
-      font-family: inherit;
-      min-height: 130px;
-      line-height: 1.6;
-    }
-    textarea:focus { border-color: #2b6cb0; }
-
-    .stat-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-      gap: 10px;
-      margin-bottom: 16px;
-    }
-    .stat-box {
-      background: #f7fafc;
-      border: 1.5px solid #e2e8f0;
-      border-radius: 10px;
-      padding: 14px 10px;
-      text-align: center;
-    }
-    .stat-box-label { font-size: 0.72rem; color: #718096; margin-bottom: 5px; font-weight: 600; }
-    .stat-box-value { font-size: 1.3rem; font-weight: 800; color: #1a365d; }
-    .stat-box-sub   { font-size: 0.68rem; color: #a0aec0; margin-top: 2px; }
-
-    .morpheme-table { width: 100%; border-collapse: collapse; }
-    .morpheme-table th, .morpheme-table td {
-      padding: 9px 12px;
-      text-align: left;
-      border-bottom: 1px solid #e2e8f0;
-      font-size: 0.83rem;
-    }
-    .morpheme-table th { background: #f7fafc; font-weight: 700; color: #4a5568; font-size: 0.78rem; }
-    .morpheme-table tr:last-child td { border-bottom: none; }
-
-    .sentiment-bar { height: 8px; border-radius: 4px; background: #e2e8f0; margin: 8px 0; overflow: hidden; }
-    .sentiment-fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
-    .sentiment-pos { background: #48bb78; }
-    .sentiment-neg { background: #fc8181; }
-    .sentiment-neu { background: #a0aec0; }
-
-    .realtime-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
-    .realtime-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 15px;
-      background: #f7fafc;
-      border-radius: 9px;
-      border: 1.5px solid #e2e8f0;
-    }
-    .realtime-rank { font-size: 1rem; font-weight: 800; color: #1a365d; min-width: 28px; }
-    .realtime-keyword { font-size: 0.92rem; font-weight: 600; flex: 1; }
-    .realtime-trend { font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
-    .trend-up   { background: #fed7d7; color: #c53030; }
-    .trend-new  { background: #fefcbf; color: #744210; }
-    .trend-keep { background: #e2e8f0; color: #718096; }
-
-    .category-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
-    .category-btn {
-      padding: 8px 16px;
-      border: 2px solid #e2e8f0;
-      border-radius: 20px;
-      background: white;
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: #718096;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .category-btn.active { border-color: #2b6cb0; background: #ebf4ff; color: #2b6cb0; }
-    .category-btn:hover  { border-color: #2b6cb0; }
-
-    /* ── 유튜브 분석기 ── */
-    .yt-level-badge {
-      display: inline-block;
-      padding: 6px 18px;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 800;
-      color: white;
-      background: #ff0000;
-      margin-bottom: 10px;
-    }
-
-    /* ── 블로그 매트릭스 ── */
-    .matrix-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 20px;
-    }
-    @media (max-width: 600px) { .matrix-grid { grid-template-columns: 1fr; } }
-
-    .matrix-card {
-      background: white;
-      border-radius: 14px;
-      padding: 20px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
-      border: 1.5px solid #e2e8f0;
-    }
-    .matrix-card-title {
-      font-size: 0.82rem;
-      font-weight: 700;
-      color: #718096;
-      margin-bottom: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .matrix-big-value {
-      font-size: 2rem;
-      font-weight: 800;
-      color: #1a365d;
-      line-height: 1;
-      margin-bottom: 6px;
-    }
-    .matrix-sub { font-size: 0.8rem; color: #a0aec0; }
-
-    .competition-table { width: 100%; border-collapse: collapse; }
-    .competition-table th, .competition-table td {
-      padding: 9px 12px;
-      text-align: left;
-      border-bottom: 1px solid #e2e8f0;
-      font-size: 0.83rem;
-    }
-    .competition-table th { background: #f7fafc; font-weight: 700; color: #4a5568; font-size: 0.78rem; }
-    .competition-table tr:last-child td { border-bottom: none; }
-
-    /* ── 반응형 ── */
-    @media (max-width: 700px) {
-      .sidebar { width: 52px; min-width: 52px; }
-      .menu-item span:not(.menu-icon) { display: none; }
-      .sidebar-section { display: none; }
-      .main { padding: 20px 16px; }
-    }
-  </style>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
-  <style>
-    /* ════════════════════════════════════════
-       REDESIGN — 모던 프리미엄 대시보드
-    ════════════════════════════════════════ */
-    :root {
-      --bg:        #eef2ff;
-      --primary:   #2563eb;
-      --primary-l: #eff6ff;
-      --accent:    #f59e0b;
-      --success:   #10b981;
-      --danger:    #ef4444;
-      --text:      #1e293b;
-      --muted:     #64748b;
-      --border:    #e2e8f0;
-      --card:      #ffffff;
-      --shadow:    0 2px 16px rgba(37,99,235,0.07);
-      --shadow-lg: 0 8px 32px rgba(37,99,235,0.13);
-      --r:         14px;
-      --r-sm:      10px;
-    }
-
-    *, *::before, *::after {
-      font-family: 'Pretendard', 'Noto Sans KR', -apple-system, sans-serif !important;
-      box-sizing: border-box;
-    }
-
-    body {
-      background: var(--bg);
-      background-image:
-        radial-gradient(circle at 20% 20%, rgba(37,99,235,0.06) 0%, transparent 50%),
-        radial-gradient(circle at 80% 80%, rgba(245,158,11,0.05) 0%, transparent 50%);
-      color: var(--text);
-    }
-
-    /* ── 헤더 ── */
-    header {
-      background: linear-gradient(135deg, #0f1f4e 0%, #1a3a8f 60%, #2563eb 100%);
-      padding: 0 28px;
-      height: 58px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      box-shadow: 0 4px 20px rgba(15,31,78,0.35);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-
-    header h1 {
-      font-size: 1.05rem;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      color: #fff;
-    }
-
-    header p {
-      font-size: 0.72rem;
-      color: rgba(255,255,255,0.6);
-      margin-top: 2px;
-    }
-
-    /* ── 사이드바 ── */
-    .sidebar {
-      width: 210px;
-      min-width: 210px;
-      background: #0d1b2e;
-      min-height: calc(100vh - 58px);
-      padding: 12px 0 24px;
-      position: sticky;
-      top: 58px;
-      height: calc(100vh - 58px);
-      overflow-y: auto;
-      border-right: 1px solid rgba(255,255,255,0.04);
-    }
-
-    .sidebar::-webkit-scrollbar { width: 4px; }
-    .sidebar::-webkit-scrollbar-track { background: transparent; }
-    .sidebar::-webkit-scrollbar-thumb { background: #2563eb44; border-radius: 4px; }
-
-    .sidebar-section {
-      padding: 16px 18px 5px;
-      font-size: 0.62rem;
-      font-weight: 700;
-      color: #3b5080;
-      letter-spacing: 1.2px;
-      text-transform: uppercase;
-    }
-
-    .menu-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 9px 18px;
-      color: #7090b8;
-      font-size: 0.84rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.18s;
-      border-left: 3px solid transparent;
-      margin: 1px 6px 1px 0;
-      border-radius: 0 8px 8px 0;
-    }
-
-    .menu-item:hover {
-      background: rgba(37,99,235,0.1);
-      color: #93c5fd;
-    }
-
-    .menu-item.active {
-      background: rgba(37,99,235,0.15);
-      color: #60a5fa;
-      border-left-color: #3b82f6;
-      font-weight: 700;
-    }
-
-    .menu-icon { font-size: 0.95rem; width: 20px; text-align: center; }
-
-    /* ── 메인 영역 ── */
-    .main { padding: 32px 36px; }
-
-    /* ── 페이지 전환 애니메이션 ── */
-    .page.active {
-      animation: slideIn 0.22s cubic-bezier(0.16,1,0.3,1);
-    }
-
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    .page-title {
-      font-size: 1.55rem;
-      font-weight: 800;
-      color: var(--text);
-      margin-bottom: 5px;
-      letter-spacing: -0.04em;
-    }
-
-    .page-desc {
-      font-size: 0.84rem;
-      color: var(--muted);
-      margin-bottom: 28px;
-      line-height: 1.65;
-    }
-
-    /* ── 카드 ── */
-    .card {
-      background: var(--card);
-      border-radius: var(--r);
-      padding: 24px 26px;
-      box-shadow: var(--shadow);
-      margin-bottom: 16px;
-      border: 1px solid rgba(37,99,235,0.07);
-      transition: box-shadow 0.2s, transform 0.2s;
-    }
-
-    .card:hover { box-shadow: var(--shadow-lg); }
-
-    .card-title {
-      font-size: 0.9rem;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 1.5px solid #f1f5f9;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      letter-spacing: -0.02em;
-    }
-
-    /* ── 폼 ── */
-    label {
-      display: block;
-      font-size: 0.78rem;
-      font-weight: 700;
-      color: var(--muted);
-      margin-bottom: 7px;
-      letter-spacing: 0.02em;
-      text-transform: uppercase;
-    }
-
-    input[type="text"], textarea {
-      width: 100%;
-      padding: 12px 15px;
-      border: 1.5px solid var(--border);
-      border-radius: var(--r-sm);
-      font-size: 0.93rem;
-      color: var(--text);
-      transition: all 0.2s;
-      outline: none;
-      background: #fafcff;
-    }
-
-    input[type="text"]:focus, textarea:focus {
-      border-color: var(--primary);
-      background: #fff;
-      box-shadow: 0 0 0 4px rgba(37,99,235,0.09);
-    }
-
-    textarea {
-      resize: vertical;
-      min-height: 130px;
-      line-height: 1.65;
-    }
-
-    /* ── 플랫폼 버튼 ── */
-    .platform-btn {
-      flex: 1;
-      padding: 10px;
-      border: 1.5px solid var(--border);
-      border-radius: var(--r-sm);
-      background: #fafcff;
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: var(--muted);
-      cursor: pointer;
-      transition: all 0.18s;
-    }
-
-    .platform-btn.active {
-      border-color: var(--primary);
-      background: var(--primary-l);
-      color: var(--primary);
-    }
-
-    .platform-btn:hover { border-color: var(--primary); }
-
-    /* ── 실행 버튼 ── */
-    .btn-run {
-      width: 100%;
-      padding: 14px;
-      background: linear-gradient(135deg, #0f1f4e 0%, #2563eb 100%);
-      color: white;
-      border: none;
-      border-radius: var(--r-sm);
-      font-size: 0.97rem;
-      font-weight: 800;
-      cursor: pointer;
-      transition: all 0.2s;
-      margin-top: 18px;
-      letter-spacing: -0.01em;
-      box-shadow: 0 4px 16px rgba(37,99,235,0.38);
-    }
-
-    .btn-run:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(37,99,235,0.48);
-    }
-
-    .btn-run:active { transform: translateY(0); }
-    .btn-run:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
-    }
-
-    /* ── 로딩 ── */
-    .spinner {
-      width: 34px;
-      height: 34px;
-      border: 3px solid #e2e8f0;
-      border-top-color: var(--primary);
-      border-radius: 50%;
-      margin: 0 auto 14px;
-    }
-
-    /* ── 에러 ── */
-    .error-box {
-      background: #fff1f2;
-      border: 1.5px solid #fecdd3;
-      border-radius: var(--r-sm);
-      padding: 13px 17px;
-      color: #e11d48;
-    }
-
-    /* ── 키워드 카드 ── */
-    .keyword-card {
-      border: 1.5px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
-      background: #fafcff;
-      transition: all 0.2s;
-    }
-
-    .keyword-card:hover {
-      border-color: #93c5fd;
-      box-shadow: 0 4px 16px rgba(37,99,235,0.1);
-      transform: translateY(-2px);
-    }
-
-    /* ── 배지 ── */
-    .badge {
-      font-size: 0.68rem;
-      font-weight: 800;
-      padding: 3px 9px;
-      border-radius: 20px;
-      letter-spacing: 0.02em;
-    }
-
-    .badge-vol-high  { background: #d1fae5; color: #065f46; }
-    .badge-vol-mid   { background: #fef9c3; color: #713f12; }
-    .badge-vol-low   { background: #fee2e2; color: #7f1d1d; }
-    .badge-comp-high { background: #fee2e2; color: #7f1d1d; }
-    .badge-comp-mid  { background: #fef9c3; color: #713f12; }
-    .badge-comp-low  { background: #d1fae5; color: #065f46; }
-    .badge-gold      { background: #fef3c7; color: #78350f; }
-
-    /* ── 태그 ── */
-    .tag {
-      background: var(--primary-l);
-      color: var(--primary);
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 0.82rem;
-      font-weight: 600;
-      cursor: pointer;
-      border: 1px solid rgba(37,99,235,0.15);
-      transition: all 0.15s;
-    }
-
-    .tag:hover {
-      background: #dbeafe;
-      border-color: rgba(37,99,235,0.3);
-      transform: translateY(-1px);
-    }
-
-    /* ── 제목 목록 ── */
-    .title-item {
-      padding: 13px 16px;
-      background: #f8faff;
-      border-radius: var(--r-sm);
-      border: 1.5px solid var(--border);
-      transition: border-color 0.18s;
-    }
-
-    .title-item:hover { border-color: #93c5fd; }
-
-    .copy-btn {
-      background: #f1f5f9;
-      border: none;
-      border-radius: 6px;
-      padding: 5px 11px;
-      font-size: 0.72rem;
-      cursor: pointer;
-      color: var(--muted);
-      font-weight: 600;
-      transition: all 0.15s;
-    }
-
-    .copy-btn:hover { background: var(--primary-l); color: var(--primary); }
-
-    /* ── 전략 박스 ── */
-    .strategy-summary {
-      font-size: 0.86rem;
-      color: #334155;
-      line-height: 1.72;
-      padding: 14px 16px;
-      background: linear-gradient(135deg, #f8faff, #eff6ff);
-      border-radius: var(--r-sm);
-      border-left: 3px solid var(--primary);
-      margin-bottom: 12px;
-    }
-
-    /* ── 팁 목록 ── */
-    .tips-list li {
-      font-size: 0.84rem;
-      color: #334155;
-      line-height: 1.65;
-    }
-
-    .tips-list li::before { color: var(--success); }
-
-    /* ── 스텝 번호 ── */
-    .step-num {
-      background: linear-gradient(135deg, #0f1f4e, #2563eb);
-      box-shadow: 0 2px 8px rgba(37,99,235,0.3);
-    }
-
-    /* ── 확인 링크 버튼 ── */
-    .check-link {
-      border-radius: var(--r-sm);
-      font-weight: 700;
-      transition: all 0.2s;
-    }
-
-    .check-link:hover { transform: translateY(-2px); opacity: 0.9; }
-    .check-link-naver  { box-shadow: 0 3px 12px rgba(3,199,90,0.3); }
-    .check-link-google { box-shadow: 0 3px 12px rgba(66,133,244,0.3); }
-
-    /* ── 스코어 카드 ── */
-    .score-card {
-      background: #fafcff;
-      border: 1.5px solid var(--border);
-      border-radius: 12px;
-      transition: all 0.2s;
-    }
-
-    .score-card:hover {
-      border-color: #93c5fd;
-      transform: translateY(-2px);
-    }
-
-    .score-label { color: var(--muted); font-weight: 700; letter-spacing: 0.02em; }
-    .score-value { color: var(--text); }
-
-    /* ── 정보 박스 ── */
-    .info-box {
-      background: #fffbeb;
-      border: 1.5px solid #fde68a;
-      border-radius: var(--r-sm);
-      color: #78350f;
-    }
-
-    /* ── 플랫폼 인라인 배지 ── */
-    .naver-badge   { background: rgba(3,199,90,0.08);  color: #059669; border: 1.5px solid rgba(3,199,90,0.2); }
-    .tistory-badge { background: rgba(255,105,0,0.08); color: #c2410c; border: 1.5px solid rgba(255,105,0,0.2); }
-
-    /* ── 레벨 시스템 ── */
-    .level-current {
-      background: linear-gradient(135deg, #f8faff, #eff6ff);
-      border: 1.5px solid rgba(37,99,235,0.12);
-      border-radius: 14px;
-    }
-
-    .level-big-badge {
-      box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-      border-radius: 12px;
-    }
-
-    .level-pip { border-radius: 8px; }
-    .level-pip.active { box-shadow: 0 3px 10px rgba(0,0,0,0.25); }
-
-    .next-level-box {
-      background: linear-gradient(135deg, #fffbeb, #fef3c7);
-      border: 1.5px solid #fde68a;
-      border-radius: 12px;
-    }
-
-    /* ── 데이터 소스 배지 ── */
-    .data-source-badge {
-      background: var(--primary-l);
-      color: var(--primary);
-      border: 1.5px solid rgba(37,99,235,0.18);
-      border-radius: 20px;
-    }
-
-    /* ── 네이버 스탯 ── */
-    .naver-stat {
-      background: linear-gradient(135deg, #f0fdf4, #dcfce7);
-      border: 1.5px solid #bbf7d0;
-      border-radius: 12px;
-    }
-
-    .naver-stat-value { color: #14532d; }
-
-    /* ── stat-box ── */
-    .stat-box {
-      background: #fafcff;
-      border: 1.5px solid var(--border);
-      border-radius: 12px;
-      transition: all 0.2s;
-    }
-
-    .stat-box:hover { border-color: #93c5fd; transform: translateY(-2px); }
-    .stat-box-label { color: var(--muted); }
-    .stat-box-value { color: var(--text); }
-
-    /* ── 형태소 테이블 ── */
-    .morpheme-table th { background: #f8faff; color: var(--muted); }
-    .morpheme-table tr:hover td { background: #f8faff; }
-
-    /* ── 실시간 검색어 ── */
-    .realtime-item {
-      background: #f8faff;
-      border: 1.5px solid var(--border);
-      border-radius: 12px;
-      transition: all 0.18s;
-    }
-
-    .realtime-item:hover { border-color: #93c5fd; background: #eff6ff; }
-    .realtime-rank { color: var(--primary); font-weight: 800; font-size: 1.05rem; }
-
-    .trend-up   { background: #fee2e2; color: #dc2626; }
-    .trend-new  { background: #fef9c3; color: #78350f; }
-    .trend-keep { background: #f1f5f9; color: #64748b; }
-
-    /* ── 카테고리 버튼 ── */
-    .category-btn {
-      border: 1.5px solid var(--border);
-      border-radius: 20px;
-      background: white;
-      color: var(--muted);
-      font-weight: 600;
-      transition: all 0.18s;
-    }
-
-    .category-btn.active { border-color: var(--primary); background: var(--primary-l); color: var(--primary); }
-    .category-btn:hover  { border-color: var(--primary); }
-
-    /* ── 블로그 매트릭스 카드 ── */
-    .matrix-card {
-      background: white;
-      border-radius: var(--r);
-      box-shadow: var(--shadow);
-      border: 1px solid rgba(37,99,235,0.07);
-    }
-
-    .matrix-card-title { color: var(--muted); letter-spacing: 0.8px; }
-    .matrix-big-value  { color: var(--text); letter-spacing: -0.04em; }
-    .matrix-sub        { color: #94a3b8; }
-
-    .competition-table th { background: #f8faff; color: var(--muted); }
-
-    /* ── 반응형 ── */
-    @media (max-width: 700px) {
-      .sidebar { width: 52px; min-width: 52px; }
-      .main { padding: 20px 14px; }
-      .page-title { font-size: 1.25rem; }
-    }
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>블로그 SEO 분석기</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&display=swap');
+
+:root {
+  --navy-deep: #0d1f3c;
+  --navy: #1a365d;
+  --navy-mid: #2b6cb0;
+  --navy-light: #3182ce;
+  --sky: #63b3ed;
+  --sky-pale: #bee3f8;
+  --bg: #eef2f7;
+  --bg-card: #ffffff;
+  --text: #1a202c;
+  --text-mid: #4a5568;
+  --text-light: #718096;
+  --border: #e2e8f0;
+  --red-bg: #fed7d7; --red-text: #742a2a;
+  --yellow-bg: #fefcbf; --yellow-text: #744210;
+  --green-bg: #c6f6d5; --green-text: #22543d;
+  --gold-bg: #fef3c7; --gold-text: #92400e;
+  --naver: #03c75a; --naver-dark: #028a3d;
+  --tistory: #ff6900; --tistory-dark: #cc5500;
+  --radius: 14px;
+  --shadow: 0 2px 10px rgba(0,0,0,0.07);
+  --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;font-size:14px;line-height:1.6}
+
+/* ── HEADER ── */
+header{background:linear-gradient(135deg,#0d1f3c 0%,#1a365d 50%,#2b6cb0 100%);color:#fff;padding:0 24px;height:58px;display:flex;align-items:center;gap:14px;box-shadow:0 3px 12px rgba(0,0,0,0.25);position:sticky;top:0;z-index:200}
+.header-icon{width:34px;height:34px;background:linear-gradient(135deg,#63b3ed,#3182ce);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 8px rgba(99,179,237,0.4)}
+.header-title{font-size:1.1rem;font-weight:700;letter-spacing:-0.3px}
+.header-sub{font-size:.72rem;opacity:.7;margin-top:1px}
+.header-badge{margin-left:auto;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.85);font-size:.68rem;padding:3px 10px;border-radius:20px;font-weight:500}
+
+/* ── LAYOUT ── */
+.layout{display:flex;flex:1;min-height:calc(100vh - 58px)}
+
+/* ── SIDEBAR ── */
+.sidebar{width:200px;min-width:200px;background:var(--navy);padding:16px 0 40px;position:sticky;top:58px;height:calc(100vh - 58px);overflow-y:auto;flex-shrink:0}
+.sidebar::-webkit-scrollbar{width:4px}.sidebar::-webkit-scrollbar-track{background:transparent}.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:4px}
+.sidebar-section{padding:16px 14px 6px;font-size:.65rem;font-weight:700;letter-spacing:1.2px;color:rgba(190,227,248,.5);text-transform:uppercase}
+.sidebar-item{display:flex;align-items:center;gap:9px;padding:9px 16px;cursor:pointer;color:#bee3f8;font-size:.8rem;font-weight:500;transition:all .18s;border-left:3px solid transparent;user-select:none}
+.sidebar-item:hover{background:rgba(255,255,255,.07);color:#fff}
+.sidebar-item.active{background:rgba(255,255,255,.1);color:#fff;border-left-color:#63b3ed;font-weight:600}
+.sidebar-item .si-icon{width:20px;text-align:center;font-size:14px;flex-shrink:0}
+
+/* ── MAIN ── */
+main{flex:1;padding:28px;overflow-y:auto;max-width:900px}
+.page{display:none}.page.active{display:block}
+
+/* ── PAGE HEADER ── */
+.page-header{margin-bottom:22px}
+.page-header h2{font-size:1.35rem;font-weight:700;color:var(--navy);letter-spacing:-0.4px}
+.page-header p{color:var(--text-mid);font-size:.82rem;margin-top:4px}
+
+/* ── CARD ── */
+.card{background:var(--bg-card);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;margin-bottom:18px;border:1px solid rgba(0,0,0,.04)}
+.card-title{font-size:.8rem;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card-title::before{content:'';width:3px;height:14px;background:var(--navy-mid);border-radius:2px;display:block}
+
+/* ── FORM ── */
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:.8rem;font-weight:600;color:var(--navy);margin-bottom:6px}
+.form-control{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:.87rem;font-family:inherit;color:var(--text);background:#fff;transition:border .2s,box-shadow .2s;outline:none}
+.form-control:focus{border-color:var(--navy-light);box-shadow:0 0 0 3px rgba(49,130,206,.12)}
+textarea.form-control{resize:vertical;min-height:100px}
+
+/* ── PLATFORM BUTTONS ── */
+.platform-group{display:flex;gap:8px;flex-wrap:wrap}
+.platform-btn{padding:7px 16px;border:1.5px solid var(--border);border-radius:20px;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .18s;background:#fff;color:var(--text-mid);font-family:inherit}
+.platform-btn:hover{border-color:var(--navy-mid);color:var(--navy-mid)}
+.platform-btn.active{background:var(--navy);border-color:var(--navy);color:#fff}
+.platform-btn.naver.active{background:var(--naver);border-color:var(--naver);color:#fff}
+.platform-btn.tistory.active{background:var(--tistory);border-color:var(--tistory);color:#fff}
+
+/* ── BUTTON ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:11px 24px;border-radius:9px;border:none;font-family:inherit;font-size:.87rem;font-weight:700;cursor:pointer;transition:all .2s;outline:none;user-select:none}
+.btn-primary{background:linear-gradient(135deg,var(--navy),var(--navy-mid));color:#fff;box-shadow:0 3px 12px rgba(26,54,93,.3)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 5px 16px rgba(26,54,93,.4)}
+.btn-primary:active{transform:translateY(0)}
+.btn-primary:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.btn-sm{padding:6px 14px;font-size:.75rem;border-radius:6px}
+.btn-outline{background:#fff;border:1.5px solid var(--border);color:var(--text-mid)}
+.btn-outline:hover{border-color:var(--navy-mid);color:var(--navy-mid)}
+.btn-copy{background:var(--bg);border:1px solid var(--border);color:var(--text-mid);padding:5px 12px;font-size:.73rem;border-radius:6px;cursor:pointer;font-family:inherit;font-weight:600;transition:all .15s}
+.btn-copy:hover{background:var(--navy);color:#fff;border-color:var(--navy)}
+.btn-copy.copied{background:var(--green-bg);color:var(--green-text);border-color:var(--green-text)}
+
+/* ── LOADING ── */
+.loading{display:none;flex-direction:column;align-items:center;justify-content:center;padding:48px;gap:14px}
+.loading.show{display:flex}
+.spinner{width:42px;height:42px;border:3px solid var(--border);border-top-color:var(--navy-mid);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{color:var(--text-mid);font-size:.83rem;font-weight:500}
+
+/* ── ERROR ── */
+.error-box{background:#fff5f5;border:1.5px solid #fc8181;border-radius:10px;padding:16px 18px;color:#c53030;font-size:.83rem;display:flex;align-items:flex-start;gap:10px;margin-bottom:16px}
+.error-box::before{content:'⚠️';font-size:16px;flex-shrink:0;margin-top:1px}
+
+/* ── RESULT AREA ── */
+.result-area{display:none}.result-area.show{display:block}
+.result-fade{animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:700}
+.badge-high{background:var(--red-bg);color:var(--red-text)}
+.badge-mid{background:var(--yellow-bg);color:var(--yellow-text)}
+.badge-low{background:var(--green-bg);color:var(--green-text)}
+.badge-gold{background:var(--gold-bg);color:var(--gold-text)}
+.badge-naver{background:#e8fff3;color:var(--naver-dark);border:1px solid #b7efd2}
+.badge-tistory{background:#fff3eb;color:var(--tistory-dark);border:1px solid #ffd0a8}
+.badge-blue{background:#ebf8ff;color:#2c5282;border:1px solid #bee3f8}
+.badge-purple{background:#faf5ff;color:#553c9a;border:1px solid #e9d8fd}
+
+/* ── LEVEL VISUALIZATION ── */
+.level-display{text-align:center;padding:24px 0 16px}
+.level-badge-big{width:80px;height:80px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:2.2rem;font-weight:900;color:#fff;box-shadow:0 6px 24px rgba(0,0,0,.2);margin-bottom:12px;position:relative}
+.level-badge-big::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:3px solid currentColor;opacity:.3}
+.level-label{font-size:1rem;font-weight:700;color:var(--navy);margin-bottom:4px}
+.level-reason{font-size:.8rem;color:var(--text-mid);max-width:340px;margin:0 auto}
+.level-scale{display:flex;gap:5px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+.level-dot{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:rgba(255,255,255,.7);cursor:default;transition:transform .15s;position:relative}
+.level-dot.current{transform:scale(1.3);color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.level-dot.current::after{content:'▼';position:absolute;top:-14px;font-size:.6rem;color:var(--navy)}
+
+/* ── SCORES GRID ── */
+.scores-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.score-card{background:linear-gradient(135deg,#f7faff,#fff);border:1px solid #e2ecf9;border-radius:11px;padding:14px;text-align:center;transition:transform .15s}
+.score-card:hover{transform:translateY(-2px)}
+.score-val{font-size:1.5rem;font-weight:900;color:var(--navy);line-height:1}
+.score-label{font-size:.7rem;color:var(--text-mid);margin-top:4px;font-weight:600}
+.score-sub{font-size:.68rem;color:var(--text-light);margin-top:3px}
+
+/* ── TIPS LIST ── */
+.tips-list{list-style:none;display:flex;flex-direction:column;gap:8px}
+.tips-list li{display:flex;align-items:flex-start;gap:10px;font-size:.83rem;color:var(--text-mid);line-height:1.55}
+.tips-list li::before{content:'✦';color:var(--navy-mid);flex-shrink:0;margin-top:2px;font-size:.7rem}
+
+/* ── KEYWORD CARDS ── */
+.keyword-card{background:linear-gradient(135deg,#f0f7ff,#fff8e1);border:1px solid #d4e8ff;border-radius:11px;padding:14px 16px;transition:all .2s;cursor:default}
+.keyword-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.09)}
+.kc-word{font-size:1rem;font-weight:700;color:var(--navy);margin-bottom:6px}
+.kc-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.kc-score{font-size:.72rem;background:var(--gold-bg);color:var(--gold-text);padding:2px 8px;border-radius:10px;font-weight:700}
+.kc-reason{font-size:.73rem;color:var(--text-mid);margin-top:6px;line-height:1.45}
+
+/* ── TAG CLOUD ── */
+.tag-cloud{display:flex;flex-wrap:wrap;gap:7px}
+.tag{padding:5px 12px;background:var(--bg);border:1px solid var(--border);border-radius:16px;font-size:.77rem;font-weight:600;color:var(--text-mid);cursor:pointer;transition:all .18s;user-select:none}
+.tag:hover{background:var(--navy);color:#fff;border-color:var(--navy);transform:translateY(-1px)}
+.tag.longtail:hover{background:var(--navy-mid);border-color:var(--navy-mid);color:#fff}
+
+/* ── TABLE ── */
+.data-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.data-table th{background:linear-gradient(135deg,#1a365d,#2b6cb0);color:#fff;padding:10px 13px;text-align:left;font-weight:600;font-size:.75rem;letter-spacing:.4px}
+.data-table th:first-child{border-radius:8px 0 0 0}.data-table th:last-child{border-radius:0 8px 0 0}
+.data-table td{padding:10px 13px;border-bottom:1px solid var(--border);vertical-align:middle}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:#f7faff}
+.rank-num{width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700}
+.rank-num.top3{background:linear-gradient(135deg,#d4af37,#f0c040)}
+.trend-badge{padding:3px 9px;border-radius:10px;font-size:.68rem;font-weight:700}
+.trend-up{background:#e8fff3;color:#22543d}.trend-new{background:#ebf8ff;color:#2c5282}.trend-keep{background:#f7faff;color:#2d3748}
+
+/* ── MORPHEME BAR ── */
+.morpheme-bars{display:flex;flex-direction:column;gap:8px}
+.morpheme-row{display:flex;align-items:center;gap:10px;font-size:.8rem}
+.morpheme-word{width:80px;font-weight:600;color:var(--navy);text-align:right;flex-shrink:0}
+.morpheme-bar-wrap{flex:1;background:var(--bg);border-radius:4px;overflow:hidden;height:20px;position:relative}
+.morpheme-bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--navy),var(--navy-mid));transition:width .6s ease;display:flex;align-items:center;padding:0 8px}
+.morpheme-bar-val{font-size:.67rem;color:rgba(255,255,255,.9);font-weight:700}
+.morpheme-pos{flex-shrink:0;font-size:.68rem;padding:2px 7px;border-radius:8px}
+.pos-noun{background:#e8f4fd;color:#1a5276}.pos-verb{background:#e8f8e8;color:#1a5a1a}.pos-adj{background:#fdf2e8;color:#7d4608}
+
+/* ── SENTIMENT ── */
+.sentiment-card{display:flex;align-items:center;gap:16px;padding:16px;background:linear-gradient(135deg,#f0f7ff,#f7f0ff);border-radius:11px;border:1px solid #d4e8ff}
+.sentiment-emoji{font-size:2.4rem}
+.sentiment-info .s-label{font-size:.72rem;color:var(--text-mid);font-weight:600}
+.sentiment-info .s-val{font-size:1.1rem;font-weight:800;color:var(--navy);margin-top:2px}
+.sentiment-info .s-detail{font-size:.77rem;color:var(--text-mid);margin-top:3px}
+
+/* ── COMBINER OUTPUT ── */
+.combiner-block{background:var(--bg);border-radius:9px;padding:14px;font-size:.82rem;color:var(--text);font-family:monospace;word-break:break-all;line-height:1.7;border:1px solid var(--border);position:relative;min-height:48px}
+.combiner-label{font-size:.7rem;font-weight:700;color:var(--text-mid);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+
+/* ── CHAT ── */
+.chat-wrap{border-radius:var(--radius);border:1.5px solid var(--border);overflow:hidden;background:#fff;box-shadow:var(--shadow)}
+.chat-header{background:linear-gradient(135deg,var(--navy),var(--navy-mid));padding:12px 18px;color:#fff;font-size:.83rem;font-weight:600;display:flex;align-items:center;gap:8px}
+.chat-header::before{content:'🤖';font-size:16px}
+.chat-messages{height:320px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;background:#f8fbff}
+.chat-messages::-webkit-scrollbar{width:4px}.chat-messages::-webkit-scrollbar-track{background:transparent}.chat-messages::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.chat-bubble{max-width:82%;padding:10px 14px;border-radius:14px;font-size:.82rem;line-height:1.55;animation:fadeIn .2s ease}
+.chat-bubble.ai{background:#fff;border:1px solid var(--border);color:var(--text);align-self:flex-start;border-bottom-left-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.chat-bubble.user{background:linear-gradient(135deg,var(--navy),var(--navy-mid));color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.chat-quick{padding:10px 16px;background:#f0f6ff;display:flex;flex-wrap:wrap;gap:6px;border-top:1px solid var(--border)}
+.chat-quick-btn{padding:5px 12px;background:#fff;border:1px solid var(--sky);color:var(--navy-mid);border-radius:12px;font-size:.73rem;cursor:pointer;font-family:inherit;font-weight:600;transition:all .15s}
+.chat-quick-btn:hover{background:var(--navy-mid);color:#fff;border-color:var(--navy-mid)}
+.chat-input-row{display:flex;gap:0;border-top:1.5px solid var(--border)}
+.chat-input{flex:1;padding:11px 16px;border:none;font-family:inherit;font-size:.83rem;color:var(--text);outline:none;background:#fff}
+.chat-send-btn{padding:0 18px;background:linear-gradient(135deg,var(--navy),var(--navy-mid));color:#fff;border:none;font-family:inherit;font-size:.8rem;font-weight:700;cursor:pointer;transition:all .15s}
+.chat-send-btn:hover{background:var(--navy-deep)}
+
+/* ── PRICE RANGE ── */
+.price-bar-wrap{background:linear-gradient(90deg,var(--green-bg),var(--yellow-bg),var(--red-bg));border-radius:8px;height:22px;position:relative;margin:10px 0}
+.price-avg-marker{position:absolute;top:-6px;bottom:-6px;width:3px;background:var(--navy);border-radius:2px;transform:translateX(-50%)}
+.price-avg-marker::after{content:attr(data-label);position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:.62rem;color:var(--navy);font-weight:700;white-space:nowrap}
+.price-labels{display:flex;justify-content:space-between;font-size:.68rem;color:var(--text-light);margin-top:4px}
+
+/* ── INFINITE KEYWORD TABS ── */
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:16px}
+.tab-btn{padding:8px 18px;border:none;background:none;font-family:inherit;font-size:.82rem;font-weight:600;color:var(--text-mid);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .18s}
+.tab-btn.active{color:var(--navy);border-bottom-color:var(--navy-mid)}
+.tab-btn:hover:not(.active){color:var(--navy-light)}
+.tab-panel{display:none}.tab-panel.active{display:block}
+.kw-table{display:flex;flex-direction:column;gap:8px}
+.kw-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f7fbff;border-radius:8px;border:1px solid #e2ecf9;font-size:.82rem;gap:10px;transition:all .15s}
+.kw-row:hover{background:#fff;transform:translateX(3px);box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.kw-row .kw-name{font-weight:600;color:var(--navy);flex:1}
+.kw-row .kw-meta{display:flex;gap:6px;align-items:center;flex-shrink:0}
+
+/* ── MATRIX ── */
+.matrix-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.matrix-item{background:linear-gradient(135deg,#f7fbff,#fff);border:1px solid #d4e8ff;border-radius:10px;padding:13px 15px}
+.matrix-item-title{font-size:.72rem;font-weight:700;color:var(--text-mid);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.matrix-item-val{font-size:.9rem;font-weight:700;color:var(--navy)}
+.matrix-item-sub{font-size:.75rem;color:var(--text-mid);margin-top:3px;line-height:1.45}
+.competitor-row{padding:12px 14px;border-radius:9px;border:1px solid var(--border);background:#fff;margin-bottom:8px}
+.comp-name{font-weight:700;color:var(--navy);font-size:.85rem;margin-bottom:5px}
+.comp-meta{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.comp-strength{font-size:.75rem;color:var(--green-text);background:var(--green-bg);padding:4px 9px;border-radius:6px}
+.comp-weakness{font-size:.75rem;color:var(--red-text);background:var(--red-bg);padding:4px 9px;border-radius:6px}
+.comp-label{font-size:.64rem;font-weight:700;margin-bottom:2px;opacity:.7}
+
+/* ── DIRECT LINKS ── */
+.link-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:9px;font-size:.82rem;font-weight:700;text-decoration:none;transition:all .2s;cursor:pointer;border:none;font-family:inherit}
+.link-naver{background:var(--naver);color:#fff}.link-naver:hover{background:var(--naver-dark)}
+.link-google{background:#4285f4;color:#fff}.link-google:hover{background:#2563eb}
+
+/* ── YOUTUBE ── */
+.yt-section{margin-bottom:14px}
+.yt-section-title{font-size:.75rem;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.yt-section-title::before{content:'';width:12px;height:3px;background:var(--navy-mid);border-radius:2px;display:block}
+.title-chip{background:linear-gradient(135deg,#fff8e1,#fff);border:1px solid #fcd34d;border-radius:8px;padding:9px 13px;font-size:.82rem;color:var(--text);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.tag-chip{background:#e8f4fd;color:#1a5276;border:1px solid #bee3f8;border-radius:12px;padding:4px 11px;font-size:.75rem;font-weight:600;display:inline-flex;align-items:center;gap:4px}
+
+/* ── RAW DATA CARDS ── */
+.raw-data-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
+.raw-card{background:linear-gradient(135deg,#ebf8ff,#fff);border:1px solid #bee3f8;border-radius:10px;padding:12px;text-align:center}
+.raw-val{font-size:1.3rem;font-weight:900;color:var(--navy);line-height:1}
+.raw-label{font-size:.66rem;color:var(--text-light);margin-top:4px;font-weight:600}
+
+/* ── SELLER ── */
+.seller-section{margin-bottom:12px}
+.seller-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-mid);margin-bottom:8px}
+.product-tag{display:inline-flex;align-items:center;padding:5px 12px;background:linear-gradient(135deg,#fff8e1,#fff);border:1px solid #fcd34d;border-radius:14px;font-size:.77rem;font-weight:600;color:#7d4608;margin:3px}
+
+/* ── DIVIDER ── */
+.divider{height:1px;background:var(--border);margin:20px 0;border:none}
+
+/* ── SUMMARY BOX ── */
+.summary-box{background:linear-gradient(135deg,#f0f7ff,#f7f0ff);border:1px solid #d4e0ff;border-radius:10px;padding:15px 17px;font-size:.83rem;color:var(--text);line-height:1.65;margin-bottom:14px}
+.summary-box strong{color:var(--navy)}
+
+/* ── SCROLL AREA ── */
+.scroll-x{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+/* ── UTIL ── */
+.flex{display:flex}.flex-col{flex-direction:column}.items-center{align-items:center}.justify-between{justify-content:space-between}.gap-2{gap:8px}.gap-3{gap:12px}.gap-4{gap:16px}.mt-2{margin-top:8px}.mt-3{margin-top:12px}.mt-4{margin-top:16px}.mb-2{margin-bottom:8px}.mb-3{margin-bottom:12px}.w-full{width:100%}.font-bold{font-weight:700}.text-sm{font-size:.8rem}.text-xs{font-size:.72rem}.text-navy{color:var(--navy)}.text-mid{color:var(--text-mid)}.text-light{color:var(--text-light)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .sidebar{width:0;overflow:hidden;min-width:0;position:fixed;height:100%;top:58px;z-index:100;transition:width .25s}
+  .sidebar.open{width:200px}
+  main{padding:16px}
+  .matrix-grid{grid-template-columns:1fr}
+}
+</style>
 </head>
 <body>
 
-<!-- 헤더 -->
 <header>
+  <div class="header-icon">🔍</div>
   <div>
-    <h1>📊 블로그 SEO 분석기</h1>
-    <p>부동산 · 금융 · 경제 분야 특화</p>
+    <div class="header-title">블로그 SEO 분석기</div>
+    <div class="header-sub">Blog & Keyword Intelligence Tool</div>
   </div>
+  <span class="header-badge">whereispost.com</span>
 </header>
 
 <div class="layout">
+<!-- ── SIDEBAR ── -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-section">블로그 분석</div>
+  <div class="sidebar-item" data-page="blog-missing"><span class="si-icon">🔎</span>블로그 누락 검사</div>
+  <div class="sidebar-item" data-page="blog-index"><span class="si-icon">📈</span>블로그 지수 조회</div>
+  <div class="sidebar-item" data-page="blog-index-simple"><span class="si-icon">⚡</span>블로그 지수 심플</div>
+  <div class="sidebar-item" data-page="blog-matrix"><span class="si-icon">🧩</span>블로그 매트릭스</div>
 
-  <!-- 사이드바 -->
-  <nav class="sidebar">
-    <div class="sidebar-section">블로그 분석</div>
-    <div class="menu-item" data-page="blog-missing" onclick="showPage('blog-missing')">
-      <span class="menu-icon">🔎</span><span>블로그 누락 검사</span>
-    </div>
-    <div class="menu-item" data-page="blog-index" onclick="showPage('blog-index')">
-      <span class="menu-icon">📈</span><span>블로그 지수 조회</span>
-    </div>
-    <div class="menu-item" data-page="blog-index-simple" onclick="showPage('blog-index-simple')">
-      <span class="menu-icon">⚡</span><span>블로그 지수 심플</span>
-    </div>
+  <div class="sidebar-section">키워드 분석</div>
+  <div class="sidebar-item" data-page="keyword-recommend"><span class="si-icon">💡</span>키워드 추천</div>
+  <div class="sidebar-item active" data-page="golden-keyword"><span class="si-icon">🥇</span>황금 키워드 추출</div>
+  <div class="sidebar-item" data-page="keyword-index"><span class="si-icon">📊</span>키워드 지수 조회</div>
+  <div class="sidebar-item" data-page="km-search"><span class="si-icon">🎯</span>키워드마스터</div>
+  <div class="sidebar-item" data-page="infinite-keyword"><span class="si-icon">♾️</span>무한 키워드</div>
+  <div class="sidebar-item" data-page="keyword-combiner"><span class="si-icon">🏷️</span>세부키워드 조합기</div>
 
-    <div class="sidebar-section" style="margin-top:10px;">키워드 분석</div>
-    <div class="menu-item" data-page="keyword-index" onclick="showPage('keyword-index')">
-      <span class="menu-icon">📊</span><span>키워드 지수 조회</span>
-    </div>
-    <div class="menu-item active" data-page="golden-keyword" onclick="showPage('golden-keyword')">
-      <span class="menu-icon">🥇</span><span>황금 키워드 추출</span>
-    </div>
-    <div class="menu-item" data-page="keyword-recommend" onclick="showPage('keyword-recommend')">
-      <span class="menu-icon">💡</span><span>키워드 추천</span>
-    </div>
+  <div class="sidebar-section">트렌드/텍스트</div>
+  <div class="sidebar-item" data-page="km-realtime"><span class="si-icon">📡</span>실시간 검색어</div>
+  <div class="sidebar-item" data-page="km-morpheme"><span class="si-icon">🔬</span>형태소 분석기</div>
 
-    <div class="sidebar-section" style="margin-top:10px;">키워드마스터</div>
-    <div class="menu-item" data-page="km-search" onclick="showPage('km-search')">
-      <span class="menu-icon">🔍</span><span>검색량 조회</span>
-    </div>
-    <div class="menu-item" data-page="km-morpheme" onclick="showPage('km-morpheme')">
-      <span class="menu-icon">🔤</span><span>형태소 분석</span>
-    </div>
-    <div class="menu-item" data-page="km-seller" onclick="showPage('km-seller')">
-      <span class="menu-icon">🛒</span><span>셀러마스터</span>
-    </div>
-    <div class="menu-item" data-page="km-realtime" onclick="showPage('km-realtime')">
-      <span class="menu-icon">📡</span><span>실시간 검색어</span>
-    </div>
+  <div class="sidebar-section">전문 분석</div>
+  <div class="sidebar-item" data-page="km-seller"><span class="si-icon">🛒</span>셀러마스터</div>
+  <div class="sidebar-item" data-page="youtube-analyze"><span class="si-icon">📺</span>유튜브 분석기</div>
+</nav>
 
-    <div class="sidebar-section" style="margin-top:10px;">추가 도구</div>
-    <div class="menu-item" data-page="youtube" onclick="showPage('youtube')">
-      <span class="menu-icon">▶️</span><span>유튜브 분석기</span>
+<!-- ── MAIN ── -->
+<main id="main-content">
+
+<!-- =================== 1. BLOG MISSING =================== -->
+<div class="page" id="page-blog-missing">
+  <div class="page-header">
+    <h2>🔎 블로그 누락 검사</h2>
+    <p>블로그 포스팅이 검색에서 누락된 원인을 분석하고 해결책을 제시합니다.</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>블로그 URL</label>
+      <input type="url" class="form-control" id="missing-url" placeholder="https://blog.naver.com/yourname" />
     </div>
-    <div class="menu-item" data-page="blog-matrix" onclick="showPage('blog-matrix')">
-      <span class="menu-icon">🔲</span><span>블로그 매트릭스</span>
+    <div class="form-group">
+      <label>검색 키워드 <span style="color:var(--text-light);font-weight:400">(선택)</span></label>
+      <input type="text" class="form-control" id="missing-keyword" placeholder="누락된 키워드를 입력하세요" />
     </div>
-  </nav>
+    <button class="btn btn-primary" onclick="analyzeMissing()">🔍 누락 검사 시작</button>
+  </div>
+  <div class="loading" id="missing-loading"><div class="spinner"></div><div class="loading-text">누락 원인을 분석 중입니다...</div></div>
+  <div class="result-area" id="missing-result"></div>
+</div>
 
-  <!-- 메인 -->
-  <main class="main">
-
-    <!-- ① 블로그 누락 검사 -->
-    <div id="page-blog-missing" class="page">
-      <div class="page-title">🔎 블로그 누락 검사</div>
-      <div class="page-desc">블로그 포스트가 네이버·구글 검색에 노출되지 않는지 확인합니다.</div>
-
-      <div class="card">
-        <label>블로그 주소 (URL)</label>
-        <input type="text" id="missing-url" placeholder="예: blog.naver.com/myid  또는  myid.tistory.com" />
-        <label style="margin-top:14px;">확인할 포스트 제목 또는 키워드 (선택)</label>
-        <input type="text" id="missing-keyword" placeholder="예: 아파트 전세 계약 주의사항" />
-        <button class="btn-run" onclick="runMissing()">🔍 누락 검사하기</button>
+<!-- =================== 2. BLOG INDEX =================== -->
+<div class="page" id="page-blog-index">
+  <div class="page-header">
+    <h2>📈 블로그 지수 조회</h2>
+    <p>블로그의 SEO 레벨을 0~10으로 측정하고 맞춤 성장 전략을 제시합니다.</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>블로그 URL</label>
+      <input type="url" class="form-control" id="bindex-url" placeholder="https://blog.naver.com/yourname" />
+    </div>
+    <div class="form-group">
+      <label>블로그 주제</label>
+      <input type="text" class="form-control" id="bindex-topic" placeholder="예) 맛집, 육아, 재테크" />
+    </div>
+    <button class="btn btn-primary" onclick="analyzeBlogIndex()">📈 블로그 지수 분석</button>
+  </div>
+  <div class="loading" id="bindex-loading"><div class="spinner"></div><div class="loading-text">블로그 지수를 측정 중입니다...</div></div>
+  <div class="result-area" id="bindex-result"></div>
+  <div id="bindex-chat-wrap" style="display:none">
+    <div class="card-title" style="margin:0 0 10px">💬 블로그 코칭 챗</div>
+    <div class="chat-wrap">
+      <div class="chat-header">AI 블로그 코치 — 무엇이든 물어보세요!</div>
+      <div class="chat-messages" id="bindex-chat-messages"></div>
+      <div class="chat-quick">
+        <button class="chat-quick-btn" onclick="sendQuick('레벨 올리는 핵심은?')">레벨 올리는 핵심은?</button>
+        <button class="chat-quick-btn" onclick="sendQuick('하루 포스팅 몇 개?')">하루 포스팅 몇 개?</button>
+        <button class="chat-quick-btn" onclick="sendQuick('노출 잘 되는 키워드?')">노출 잘 되는 키워드?</button>
+        <button class="chat-quick-btn" onclick="sendQuick('지금 당장 고칠 것?')">지금 당장 고칠 것?</button>
       </div>
-
-      <div class="error-box" id="missing-error"></div>
-      <div class="loading" id="missing-loading"><div class="spinner"></div><p>분석 중...</p></div>
-
-      <div class="result-section" id="missing-result">
-        <div class="card">
-          <div class="card-title">직접 확인 링크</div>
-          <p style="font-size:0.83rem; color:#718096; margin-bottom:12px;">아래 버튼을 클릭해서 실제 검색 결과를 확인하세요.</p>
-          <div class="check-links">
-            <a id="naver-check-link" href="#" target="_blank" class="check-link check-link-naver">🟢 네이버에서 확인</a>
-            <a id="google-check-link" href="#" target="_blank" class="check-link check-link-google">🔵 구글에서 확인</a>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-title">누락 원인 및 해결 방법</div>
-          <div id="missing-analysis"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ② 블로그 지수 조회 -->
-    <div id="page-blog-index" class="page">
-      <div class="page-title">📈 블로그 지수 조회</div>
-      <div class="page-desc">블로그의 네이버 C-Rank, 구글 도메인 권위도 등 종합 지수를 분석합니다.</div>
-
-      <div class="card">
-        <label>블로그 주소 (URL)</label>
-        <input type="text" id="blogindex-url" placeholder="예: blog.naver.com/myid  또는  myid.tistory.com" />
-        <label style="margin-top:14px;">블로그 주요 주제 분야</label>
-        <input type="text" id="blogindex-topic" placeholder="예: 부동산, 재테크, 경제 이슈" />
-        <button class="btn-run" onclick="runBlogIndex('full')">📊 지수 분석하기</button>
-      </div>
-
-      <div class="error-box" id="blogindex-error"></div>
-      <div class="loading" id="blogindex-loading"><div class="spinner"></div><p>분석 중...</p></div>
-
-      <div class="result-section" id="blogindex-result">
-        <div class="card">
-          <div class="card-title">지수 요소 분석</div>
-          <div id="blogindex-scores" class="score-grid"></div>
-          <div id="blogindex-analysis"></div>
-        </div>
-        <div class="card">
-          <div class="card-title">개선 전략</div>
-          <ul class="tips-list" id="blogindex-tips"></ul>
-        </div>
-
-        <!-- 대화형 코칭 -->
-        <div class="card chat-section" id="blogindex-chat">
-          <div class="chat-header">
-            <div class="chat-header-icon">💬</div>
-            <div class="chat-header-text">
-              <h3>블로그 지수 코칭</h3>
-              <p>레벨 올리는 방법을 대화로 물어보세요</p>
-            </div>
-          </div>
-
-          <div class="chat-messages" id="blogindex-chat-messages">
-            <div class="chat-bubble ai">
-              <div class="bubble-avatar ai">🤖</div>
-              <div class="bubble-text">안녕하세요! 블로그 분석이 완료됐습니다. 레벨을 올리는 방법이나 궁금한 점을 물어보세요. 뭐든 솔직하게 답해드릴게요 😊</div>
-            </div>
-          </div>
-
-          <div class="chat-typing" id="blogindex-typing">
-            <div class="bubble-avatar ai" style="width:30px;height:30px;background:#1a365d;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem;">🤖</div>
-            <div class="typing-dots"><span></span><span></span><span></span></div>
-          </div>
-
-          <div class="chat-quick-btns">
-            <button class="quick-btn" onclick="sendQuick('blogindex', '레벨을 빨리 올리려면 뭐가 제일 중요해요?')">🚀 레벨 올리는 핵심은?</button>
-            <button class="quick-btn" onclick="sendQuick('blogindex', '하루에 포스팅을 몇 개 해야 효과적인가요?')">📝 하루 포스팅 몇 개?</button>
-            <button class="quick-btn" onclick="sendQuick('blogindex', '부동산 블로그에서 제일 노출 잘 되는 키워드 유형은?')">🔑 노출 잘 되는 키워드?</button>
-            <button class="quick-btn" onclick="sendQuick('blogindex', '지금 내 블로그에서 가장 먼저 고쳐야 할 것은?')">⚡ 지금 당장 고칠 것?</button>
-          </div>
-
-          <div class="chat-input-row">
-            <input type="text" class="chat-input" id="blogindex-chat-input" placeholder="궁금한 점을 입력하세요..." />
-            <button class="chat-send-btn" id="blogindex-chat-send" onclick="sendChat('blogindex')">전송</button>
-          </div>
-        </div>
+      <div class="chat-input-row">
+        <input type="text" class="chat-input" id="bindex-chat-input" placeholder="질문을 입력하세요..." onkeydown="if(event.key==='Enter')sendChat()" />
+        <button class="chat-send-btn" onclick="sendChat()">전송 →</button>
       </div>
     </div>
+  </div>
+</div>
 
-    <!-- ③ 블로그 지수 심플 -->
-    <div id="page-blog-index-simple" class="page">
-      <div class="page-title">⚡ 블로그 지수 심플 조회</div>
-      <div class="page-desc">핵심 지수만 빠르게 확인합니다.</div>
+<!-- =================== 3. BLOG INDEX SIMPLE =================== -->
+<div class="page" id="page-blog-index-simple">
+  <div class="page-header">
+    <h2>⚡ 블로그 지수 심플</h2>
+    <p>URL만으로 빠르게 블로그 레벨을 확인합니다.</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>블로그 URL</label>
+      <input type="url" class="form-control" id="bsimple-url" placeholder="https://blog.naver.com/yourname" />
+    </div>
+    <button class="btn btn-primary" onclick="analyzeBlogSimple()">⚡ 빠른 분석</button>
+  </div>
+  <div class="loading" id="bsimple-loading"><div class="spinner"></div><div class="loading-text">블로그를 빠르게 분석 중...</div></div>
+  <div class="result-area" id="bsimple-result"></div>
+</div>
 
-      <div class="card">
-        <label>블로그 주소 (URL)</label>
-        <input type="text" id="simple-url" placeholder="예: blog.naver.com/myid  또는  myid.tistory.com" />
-        <button class="btn-run" onclick="runBlogIndex('simple')">⚡ 빠른 조회</button>
-      </div>
-
-      <div class="error-box" id="simple-error"></div>
-      <div class="loading" id="simple-loading"><div class="spinner"></div><p>분석 중...</p></div>
-
-      <div class="result-section" id="simple-result">
-        <div class="card">
-          <div class="card-title">핵심 지수 요약</div>
-          <div id="simple-analysis"></div>
-        </div>
+<!-- =================== 4. BLOG MATRIX =================== -->
+<div class="page" id="page-blog-matrix">
+  <div class="page-header">
+    <h2>🧩 블로그 매트릭스</h2>
+    <p>블로그 레벨 × 키워드 × 경쟁 분석을 종합한 성장 매트릭스를 제공합니다.</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>블로그 URL</label>
+      <input type="url" class="form-control" id="bmatrix-url" placeholder="https://blog.naver.com/yourname" />
+    </div>
+    <div class="form-group">
+      <label>분석 키워드</label>
+      <input type="text" class="form-control" id="bmatrix-keyword" placeholder="예) 강남 맛집" />
+    </div>
+    <div class="form-group">
+      <label>플랫폼</label>
+      <div class="platform-group" id="bmatrix-platform">
+        <button class="platform-btn active" data-val="both" onclick="setPlatform('bmatrix',this)">둘 다</button>
+        <button class="platform-btn naver" data-val="naver" onclick="setPlatform('bmatrix',this)">네이버</button>
+        <button class="platform-btn tistory" data-val="tistory" onclick="setPlatform('bmatrix',this)">티스토리</button>
       </div>
     </div>
+    <button class="btn btn-primary" onclick="analyzeBlogMatrix()">🧩 매트릭스 분석</button>
+  </div>
+  <div class="loading" id="bmatrix-loading"><div class="spinner"></div><div class="loading-text">매트릭스를 구성 중입니다...</div></div>
+  <div class="result-area" id="bmatrix-result"></div>
+</div>
 
-    <!-- ④ 키워드 지수 조회 -->
-    <div id="page-keyword-index" class="page">
-      <div class="page-title">📊 키워드 지수 조회</div>
-      <div class="page-desc">특정 키워드의 검색량·경쟁도·노출 가능성을 분석합니다.</div>
-
-      <div class="card">
-        <label>조회할 키워드</label>
-        <input type="text" id="kidx-keyword" placeholder="예: 아파트 전세 계약, 금리 인상, 배당주" />
-        <div style="margin-top:14px;">
-          <label>플랫폼</label>
-          <div class="platform-group">
-            <button class="platform-btn active" data-group="kidx" data-val="둘 다">둘 다</button>
-            <button class="platform-btn" data-group="kidx" data-val="네이버 블로그">네이버</button>
-            <button class="platform-btn" data-group="kidx" data-val="티스토리">티스토리</button>
-          </div>
-        </div>
-        <button class="btn-run" onclick="runKeywordIndex()">🔬 지수 분석</button>
-      </div>
-
-      <div class="error-box" id="kidx-error"></div>
-      <div class="loading" id="kidx-loading"><div class="spinner"></div><p>분석 중...</p></div>
-
-      <div class="result-section" id="kidx-result">
-        <div class="card">
-          <div class="card-title">키워드 경쟁 분석</div>
-          <div id="kidx-analysis"></div>
-        </div>
-        <div class="card">
-          <div class="card-title">노출 전략</div>
-          <div id="kidx-strategy"></div>
-        </div>
+<!-- =================== 5. KEYWORD RECOMMEND =================== -->
+<div class="page" id="page-keyword-recommend">
+  <div class="page-header">
+    <h2>💡 키워드 추천</h2>
+    <p>주제에 맞는 최적의 키워드를 추천해 드립니다.</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>주제</label>
+      <input type="text" class="form-control" id="krecom-topic" placeholder="예) 다이어트, 여행, 재테크" />
+    </div>
+    <div class="form-group">
+      <label>플랫폼</label>
+      <div class="platform-group" id="krecom-platform">
+        <button class="platform-btn active" data-val="both" onclick="setPlatform('krecom',this)">둘 다</button>
+        <button class="platform-btn naver" data-val="naver" onclick="setPlatform('krecom',this)">네이버</button>
+        <button class="platform-btn tistory" data-val="tistory" onclick="setPlatform('krecom',this)">티스토리</button>
       </div>
     </div>
+    <button class="btn btn-primary" onclick="analyzeKwRecom()">💡 키워드 추천받기</button>
+  </div>
+  <div class="loading" id="krecom-loading"><div class="spinner"></div><div class="loading-text">최적의 키워드를 탐색 중...</div></div>
+  <div class="result-area" id="krecom-result"></div>
+</div>
 
-    <!-- ⑤ 황금 키워드 추출 -->
-    <div id="page-golden-keyword" class="page active">
-      <div class="page-title">🥇 황금 키워드 추출</div>
-      <div class="page-desc">검색량은 높고 경쟁은 낮은 황금 키워드를 찾아드립니다.</div>
-
-      <div class="card">
-        <label>블로그 주제 또는 분야</label>
-        <input type="text" id="gold-topic" placeholder="예: 재건축 투자, 금리 동향, ETF 투자" />
-        <div style="margin-top:14px;">
-          <label>플랫폼</label>
-          <div class="platform-group">
-            <button class="platform-btn active" data-group="gold" data-val="둘 다">둘 다</button>
-            <button class="platform-btn" data-group="gold" data-val="네이버 블로그">네이버</button>
-            <button class="platform-btn" data-group="gold" data-val="티스토리">티스토리</button>
-          </div>
-        </div>
-        <button class="btn-run" onclick="runGolden()">🥇 황금 키워드 찾기</button>
-      </div>
-
-      <div class="error-box" id="gold-error"></div>
-      <div class="loading" id="gold-loading"><div class="spinner"></div><p>황금 키워드 발굴 중...</p></div>
-
-      <div class="result-section" id="gold-result">
-        <div class="card">
-          <div class="card-title">🥇 황금 키워드 목록</div>
-          <div class="keyword-grid" id="gold-keywords"></div>
-        </div>
-        <div class="card">
-          <div class="card-title">활용 전략</div>
-          <ul class="tips-list" id="gold-tips"></ul>
-        </div>
+<!-- =================== 6. GOLDEN KEYWORD =================== -->
+<div class="page active" id="page-golden-keyword">
+  <div class="page-header">
+    <h2>🥇 황금 키워드 추출</h2>
+    <p>경쟁이 낮고 검색량이 높은 황금 키워드를 찾아드립니다.</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>주제</label>
+      <input type="text" class="form-control" id="golden-topic" placeholder="예) 맛집, 헬스, 부업" />
+    </div>
+    <div class="form-group">
+      <label>플랫폼</label>
+      <div class="platform-group" id="golden-platform">
+        <button class="platform-btn active" data-val="both" onclick="setPlatform('golden',this)">둘 다</button>
+        <button class="platform-btn naver" data-val="naver" onclick="setPlatform('golden',this)">네이버</button>
+        <button class="platform-btn tistory" data-val="tistory" onclick="setPlatform('golden',this)">티스토리</button>
       </div>
     </div>
+    <button class="btn btn-primary" onclick="analyzeGolden()">🥇 황금 키워드 찾기</button>
+  </div>
+  <div class="loading" id="golden-loading"><div class="spinner"></div><div class="loading-text">황금 키워드를 발굴 중입니다...</div></div>
+  <div class="result-area" id="golden-result"></div>
+</div>
 
-    <!-- ⑥ 키워드 추천 -->
-    <div id="page-keyword-recommend" class="page">
-      <div class="page-title">💡 키워드 추천</div>
-      <div class="page-desc">주제를 입력하면 네이버·티스토리 맞춤 키워드와 SEO 전략을 제공합니다.</div>
-
-      <div class="card">
-        <label>블로그 주제</label>
-        <input type="text" id="rec-topic" placeholder="예: 아파트 전세 계약 주의사항, 금리 인상 영향" />
-        <div style="margin-top:14px;">
-          <label>플랫폼</label>
-          <div class="platform-group">
-            <button class="platform-btn active" data-group="rec" data-val="둘 다">둘 다</button>
-            <button class="platform-btn" data-group="rec" data-val="네이버 블로그">네이버</button>
-            <button class="platform-btn" data-group="rec" data-val="티스토리">티스토리</button>
-          </div>
-        </div>
-        <button class="btn-run" onclick="runRecommend()">🚀 분석 시작</button>
-      </div>
-
-      <div class="error-box" id="rec-error"></div>
-      <div class="loading" id="rec-loading"><div class="spinner"></div><p>키워드 분석 중...</p></div>
-
-      <div class="result-section" id="rec-result">
-        <div class="card">
-          <div class="card-title">🏆 주요 키워드</div>
-          <div class="keyword-grid" id="rec-main-keywords"></div>
-        </div>
-        <div class="card">
-          <div class="card-title">🔗 세부(롱테일) 키워드</div>
-          <p style="font-size:0.8rem; color:#718096; margin-bottom:12px;">클릭하면 바로 재분석합니다</p>
-          <div class="tag-cloud" id="rec-longtail"></div>
-        </div>
-        <div class="card">
-          <div class="card-title">✍️ 추천 제목 3가지</div>
-          <ul class="title-list" id="rec-titles"></ul>
-        </div>
-        <div class="card">
-          <div class="card-title">📈 플랫폼별 노출 전략</div>
-          <div id="rec-strategy"></div>
-        </div>
-        <div class="card">
-          <div class="card-title">📝 글 구성 팁</div>
-          <ol class="structure-list" id="rec-structure"></ol>
-        </div>
+<!-- =================== 7. KEYWORD INDEX =================== -->
+<div class="page" id="page-keyword-index">
+  <div class="page-header">
+    <h2>📊 키워드 지수 조회</h2>
+    <p>특정 키워드의 검색량, 경쟁도, 트렌드를 분석합니다.</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>키워드</label>
+      <input type="text" class="form-control" id="kidx-keyword" placeholder="예) 강남 맛집" />
+    </div>
+    <div class="form-group">
+      <label>플랫폼</label>
+      <div class="platform-group" id="kidx-platform">
+        <button class="platform-btn active" data-val="both" onclick="setPlatform('kidx',this)">둘 다</button>
+        <button class="platform-btn naver" data-val="naver" onclick="setPlatform('kidx',this)">네이버</button>
+        <button class="platform-btn tistory" data-val="tistory" onclick="setPlatform('kidx',this)">티스토리</button>
       </div>
     </div>
+    <button class="btn btn-primary" onclick="analyzeKwIndex()">📊 키워드 지수 분석</button>
+  </div>
+  <div class="loading" id="kidx-loading"><div class="spinner"></div><div class="loading-text">키워드 지수를 조회 중...</div></div>
+  <div class="result-area" id="kidx-result"></div>
+</div>
 
-    <!-- ⑪ 유튜브 분석기 -->
-    <div id="page-youtube" class="page">
-      <div class="page-title">▶️ 유튜브 분석기</div>
-      <div class="page-desc">유튜브 채널·영상 키워드를 분석하고 제목·태그·썸네일·성장 전략을 제공합니다.</div>
-      <div class="card">
-        <label>분석할 주제 또는 유튜브 URL</label>
-        <input type="text" id="yt-keyword" placeholder="예: 부동산 투자, 금리 인상, https://youtube.com/watch?v=..." />
-        <label style="margin-top:14px;">채널 분야 (선택)</label>
-        <input type="text" id="yt-topic" placeholder="예: 부동산, 경제, 재테크, 일상 브이로그" />
-        <button class="btn-run" onclick="runYoutube()">▶️ 유튜브 분석</button>
-      </div>
-      <div class="error-box" id="youtube-error"></div>
-      <div class="loading" id="youtube-loading"><div class="spinner"></div><p>분석 중...</p></div>
-      <div class="result-section" id="youtube-result">
-        <div class="card">
-          <div class="card-title">📊 키워드 분석</div>
-          <div id="yt-keyword-analysis"></div>
-        </div>
-        <div class="card">
-          <div class="card-title">✍️ 추천 제목 (유튜브 최적화)</div>
-          <ul class="title-list" id="yt-titles"></ul>
-        </div>
-        <div class="card">
-          <div class="card-title"># 추천 태그</div>
-          <div class="tag-cloud" id="yt-tags"></div>
-        </div>
-        <div class="card">
-          <div class="card-title">🖼️ 썸네일 팁</div>
-          <ul class="tips-list" id="yt-thumbnail"></ul>
-        </div>
-        <div class="card">
-          <div class="card-title">📈 성장 전략</div>
-          <div class="strategy-summary" id="yt-summary"></div>
-          <ul class="tips-list" style="margin-top:12px;" id="yt-strategy"></ul>
-        </div>
+<!-- =================== 8. KM-SEARCH =================== -->
+<div class="page" id="page-km-search">
+  <div class="page-header">
+    <h2>🎯 키워드마스터</h2>
+    <p>키워드의 검색량과 경쟁도를 심층 분석합니다.</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>키워드</label>
+      <input type="text" class="form-control" id="kmsearch-keyword" placeholder="예) 홍대 카페 추천" />
+    </div>
+    <div class="form-group">
+      <label>플랫폼</label>
+      <div class="platform-group" id="kmsearch-platform">
+        <button class="platform-btn active" data-val="both" onclick="setPlatform('kmsearch',this)">둘 다</button>
+        <button class="platform-btn naver" data-val="naver" onclick="setPlatform('kmsearch',this)">네이버</button>
+        <button class="platform-btn tistory" data-val="tistory" onclick="setPlatform('kmsearch',this)">티스토리</button>
       </div>
     </div>
+    <button class="btn btn-primary" onclick="analyzeKmSearch()">🎯 키워드 분석</button>
+  </div>
+  <div class="loading" id="kmsearch-loading"><div class="spinner"></div><div class="loading-text">키워드를 심층 분석 중...</div></div>
+  <div class="result-area" id="kmsearch-result"></div>
+</div>
 
-    <!-- ⑫ 블로그 매트릭스 -->
-    <div id="page-blog-matrix" class="page">
-      <div class="page-title">🔲 블로그 매트릭스</div>
-      <div class="page-desc">지수·키워드·경쟁 분석까지 한 번에 해결하는 종합 분석 도구입니다.</div>
-      <div class="card">
-        <label>블로그 주소</label>
-        <input type="text" id="matrix-url" placeholder="예: blog.naver.com/myid  또는  myid.tistory.com" />
-        <label style="margin-top:14px;">주요 키워드</label>
-        <input type="text" id="matrix-keyword" placeholder="예: 아파트 전세, 금리 인상, ETF 투자" />
-        <div style="margin-top:14px;">
-          <label>플랫폼</label>
-          <div class="platform-group">
-            <button class="platform-btn active" data-group="matrix" data-val="둘 다">둘 다</button>
-            <button class="platform-btn" data-group="matrix" data-val="네이버 블로그">네이버</button>
-            <button class="platform-btn" data-group="matrix" data-val="티스토리">티스토리</button>
-          </div>
-        </div>
-        <button class="btn-run" onclick="runBlogMatrix()">🔲 통합 분석</button>
-      </div>
-      <div class="error-box" id="matrix-error"></div>
-      <div class="loading" id="matrix-loading"><div class="spinner"></div><p>매트릭스 분석 중...</p></div>
-      <div class="result-section" id="matrix-result">
-        <div class="matrix-grid">
-          <div class="matrix-card" id="matrix-level-card"></div>
-          <div class="matrix-card" id="matrix-keyword-card"></div>
-        </div>
-        <div class="card">
-          <div class="card-title">🥇 황금 키워드 TOP 3</div>
-          <div class="keyword-grid" id="matrix-golden"></div>
-        </div>
-        <div class="card">
-          <div class="card-title">⚔️ 경쟁 매트릭스</div>
-          <table class="competition-table">
-            <thead><tr><th>경쟁 유형</th><th>강점</th><th>약점</th></tr></thead>
-            <tbody id="matrix-competition"></tbody>
-          </table>
-        </div>
-        <div class="card">
-          <div class="card-title">📅 콘텐츠 계획</div>
-          <ul class="tips-list" id="matrix-content"></ul>
-        </div>
-        <div class="card">
-          <div class="card-title">⚡ 빠른 성과 전략</div>
-          <div class="strategy-summary" id="matrix-summary"></div>
-          <ul class="tips-list" style="margin-top:12px;" id="matrix-quickwins"></ul>
-        </div>
+<!-- =================== 9. INFINITE KEYWORD =================== -->
+<div class="page" id="page-infinite-keyword">
+  <div class="page-header">
+    <h2>♾️ 무한 키워드</h2>
+    <p>주제와 관련된 50개 키워드를 한번에 생성합니다.</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>주제</label>
+      <input type="text" class="form-control" id="infinite-topic" placeholder="예) 요가, 주식, 캠핑" />
+    </div>
+    <div class="form-group">
+      <label>플랫폼</label>
+      <div class="platform-group" id="infinite-platform">
+        <button class="platform-btn active" data-val="both" onclick="setPlatform('infinite',this)">둘 다</button>
+        <button class="platform-btn naver" data-val="naver" onclick="setPlatform('infinite',this)">네이버</button>
+        <button class="platform-btn tistory" data-val="tistory" onclick="setPlatform('infinite',this)">티스토리</button>
       </div>
     </div>
+    <button class="btn btn-primary" onclick="analyzeInfinite()">♾️ 무한 키워드 생성</button>
+  </div>
+  <div class="loading" id="infinite-loading"><div class="spinner"></div><div class="loading-text">키워드 50개를 생성 중...</div></div>
+  <div class="result-area" id="infinite-result"></div>
+</div>
 
-    <!-- ⑦ 키워드마스터 - 검색량 조회 -->
-    <div id="page-km-search" class="page">
-      <div class="page-title">🔍 검색량 조회</div>
-      <div class="page-desc">최근 30일 검색량을 빠르게 확인합니다. PC·모바일 검색량, 경쟁 포스트 수, 트렌드 점수를 제공합니다.</div>
-      <div class="card">
-        <label>조회할 키워드</label>
-        <input type="text" id="km-search-keyword" placeholder="예: 아파트 전세, 금리 인상, ETF" />
-        <button class="btn-run" onclick="runKmSearch()">🔍 검색량 조회</button>
-      </div>
-      <div class="error-box" id="km-search-error"></div>
-      <div class="loading" id="km-search-loading"><div class="spinner"></div><p>조회 중...</p></div>
-      <div class="result-section" id="km-search-result">
-        <div class="card">
-          <div class="card-title">📊 검색량 현황</div>
-          <div id="km-search-stats" class="stat-row"></div>
-          <div id="km-search-badge" class="badge-row" style="margin-bottom:12px;"></div>
-          <div id="km-search-naver-link"></div>
-        </div>
-        <div class="card">
-          <div class="card-title">🔗 연관 키워드</div>
-          <p style="font-size:0.8rem;color:#718096;margin-bottom:12px;">클릭하면 바로 재조회합니다</p>
-          <div class="tag-cloud" id="km-search-related"></div>
-        </div>
-        <div class="card">
-          <div class="card-title">💡 분석 및 전략</div>
-          <div class="strategy-summary" id="km-search-analysis"></div>
-          <ul class="tips-list" style="margin-top:12px;" id="km-search-tips"></ul>
-        </div>
-      </div>
+<!-- =================== 10. KEYWORD COMBINER =================== -->
+<div class="page" id="page-keyword-combiner">
+  <div class="page-header">
+    <h2>🏷️ 세부키워드 조합기</h2>
+    <p>키워드를 다양한 형식으로 조합하고 변환합니다.</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>키워드 목록 <span style="color:var(--text-light);font-weight:400">(줄바꿈으로 구분)</span></label>
+      <textarea class="form-control" id="combiner-keywords" placeholder="키워드1&#10;키워드2&#10;키워드3" rows="6"></textarea>
     </div>
+    <button class="btn btn-primary" onclick="analyzeCombiner()">🏷️ 키워드 조합하기</button>
+  </div>
+  <div class="loading" id="combiner-loading"><div class="spinner"></div><div class="loading-text">키워드를 조합 중...</div></div>
+  <div class="result-area" id="combiner-result"></div>
+</div>
 
-    <!-- ⑧ 키워드마스터 - 형태소 분석 -->
-    <div id="page-km-morpheme" class="page">
-      <div class="page-title">🔤 형태소 분석기</div>
-      <div class="page-desc">텍스트를 형태소로 분석하고 키워드 빈도수와 감정을 파악합니다. 블로그 글, 댓글, 상품 설명 등 어떤 텍스트도 가능합니다.</div>
-      <div class="card">
-        <label>분석할 텍스트</label>
-        <textarea id="km-morpheme-text" placeholder="분석할 텍스트를 입력하세요."></textarea>
-        <button class="btn-run" onclick="runKmMorpheme()">🔤 형태소 분석</button>
-      </div>
-      <div class="error-box" id="km-morpheme-error"></div>
-      <div class="loading" id="km-morpheme-loading"><div class="spinner"></div><p>분석 중...</p></div>
-      <div class="result-section" id="km-morpheme-result">
-        <div class="card">
-          <div class="card-title">😊 감정 분석</div>
-          <div id="km-morpheme-sentiment"></div>
-        </div>
-        <div class="card">
-          <div class="card-title">🏆 주요 키워드 (빈도 높은 순)</div>
-          <div class="tag-cloud" id="km-morpheme-keywords"></div>
-        </div>
-        <div class="card">
-          <div class="card-title">📊 형태소 분석 결과</div>
-          <table class="morpheme-table">
-            <thead><tr><th>단어</th><th>품사</th><th>빈도</th></tr></thead>
-            <tbody id="km-morpheme-table"></tbody>
-          </table>
-        </div>
-      </div>
+<!-- =================== 11. KM-REALTIME =================== -->
+<div class="page" id="page-km-realtime">
+  <div class="page-header">
+    <h2>📡 실시간 검색어</h2>
+    <p>분야별 실시간 인기 검색어를 확인합니다.</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>카테고리</label>
+      <select class="form-control" id="realtime-category">
+        <option value="전체">전체</option>
+        <option value="부동산">부동산</option>
+        <option value="금융경제">금융경제</option>
+        <option value="재테크투자">재테크투자</option>
+        <option value="뉴스이슈">뉴스이슈</option>
+      </select>
     </div>
+    <button class="btn btn-primary" onclick="analyzeRealtime()">📡 실시간 검색어 조회</button>
+  </div>
+  <div class="loading" id="realtime-loading"><div class="spinner"></div><div class="loading-text">실시간 검색어를 불러오는 중...</div></div>
+  <div class="result-area" id="realtime-result"></div>
+</div>
 
-    <!-- ⑨ 키워드마스터 - 셀러마스터 -->
-    <div id="page-km-seller" class="page">
-      <div class="page-title">🛒 셀러마스터</div>
-      <div class="page-desc">상품 키워드의 네이버 쇼핑 상품수와 경쟁도를 분석합니다. 온라인 셀러를 위한 시장 진입 전략을 제공합니다.</div>
-      <div class="card">
-        <label>상품 키워드</label>
-        <input type="text" id="km-seller-keyword" placeholder="예: 무선 이어폰, 공기청정기, 요가매트" />
-        <button class="btn-run" onclick="runKmSeller()">🛒 상품수 확인</button>
-      </div>
-      <div class="error-box" id="km-seller-error"></div>
-      <div class="loading" id="km-seller-loading"><div class="spinner"></div><p>조회 중...</p></div>
-      <div class="result-section" id="km-seller-result">
-        <div class="card">
-          <div class="card-title">📦 상품 현황</div>
-          <div id="km-seller-stats"></div>
-        </div>
-        <div class="card">
-          <div class="card-title">💡 셀러 전략</div>
-          <div class="strategy-summary" id="km-seller-analysis"></div>
-          <ul class="tips-list" style="margin-top:12px;" id="km-seller-tips"></ul>
-        </div>
-        <div class="card">
-          <div class="card-title">🔗 관련 상품 키워드</div>
-          <div class="tag-cloud" id="km-seller-related"></div>
-        </div>
-      </div>
+<!-- =================== 12. KM-MORPHEME =================== -->
+<div class="page" id="page-km-morpheme">
+  <div class="page-header">
+    <h2>🔬 형태소 분석기</h2>
+    <p>텍스트에서 핵심 키워드를 추출하고 감정을 분석합니다.</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>분석할 텍스트</label>
+      <textarea class="form-control" id="morpheme-text" placeholder="분석할 글이나 제목을 입력하세요..." rows="6"></textarea>
     </div>
+    <button class="btn btn-primary" onclick="analyzeMorpheme()">🔬 형태소 분석 시작</button>
+  </div>
+  <div class="loading" id="morpheme-loading"><div class="spinner"></div><div class="loading-text">형태소를 분석 중입니다...</div></div>
+  <div class="result-area" id="morpheme-result"></div>
+</div>
 
-    <!-- ⑩ 키워드마스터 - 실시간 검색어 -->
-    <div id="page-km-realtime" class="page">
-      <div class="page-title">📡 실시간 검색어</div>
-      <div class="page-desc">현재 이슈가 되는 키워드를 분야별로 확인합니다. (AI 트렌드 분석)</div>
-      <div class="card">
-        <label>분야 선택</label>
-        <div class="category-group">
-          <button class="category-btn active" data-cat="부동산">🏠 부동산</button>
-          <button class="category-btn" data-cat="금융/경제">💰 금융/경제</button>
-          <button class="category-btn" data-cat="재테크/투자">📈 재테크/투자</button>
-          <button class="category-btn" data-cat="뉴스/이슈">📰 뉴스/이슈</button>
-          <button class="category-btn" data-cat="전체">🌐 전체</button>
-        </div>
-        <button class="btn-run" onclick="runKmRealtime()">📡 검색어 불러오기</button>
-      </div>
-      <div class="error-box" id="km-realtime-error"></div>
-      <div class="loading" id="km-realtime-loading"><div class="spinner"></div><p>트렌드 분석 중...</p></div>
-      <div class="result-section" id="km-realtime-result">
-        <div class="card">
-          <div class="card-title">🔥 실시간 인기 검색어</div>
-          <div class="info-box" id="km-realtime-summary"></div>
-          <ul class="realtime-list" id="km-realtime-list"></ul>
-        </div>
-      </div>
+<!-- =================== 13. KM-SELLER =================== -->
+<div class="page" id="page-km-seller">
+  <div class="page-header">
+    <h2>🛒 셀러마스터</h2>
+    <p>상품 키워드의 경쟁도와 시장 현황을 분석합니다.</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>상품 키워드</label>
+      <input type="text" class="form-control" id="seller-keyword" placeholder="예) 에어팟 케이스" />
     </div>
+    <button class="btn btn-primary" onclick="analyzeSeller()">🛒 셀러 분석</button>
+  </div>
+  <div class="loading" id="seller-loading"><div class="spinner"></div><div class="loading-text">시장 현황을 분석 중...</div></div>
+  <div class="result-area" id="seller-result"></div>
+</div>
 
-  </main>
+<!-- =================== 14. YOUTUBE ANALYZE =================== -->
+<div class="page" id="page-youtube-analyze">
+  <div class="page-header">
+    <h2>📺 유튜브 분석기</h2>
+    <p>유튜브 채널 및 키워드 전략을 분석합니다.</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>채널명 / 영상 키워드</label>
+      <input type="text" class="form-control" id="yt-keyword" placeholder="예) 재테크 유튜버" />
+    </div>
+    <div class="form-group">
+      <label>주제</label>
+      <input type="text" class="form-control" id="yt-topic" placeholder="예) 주식, 부동산, 요리" />
+    </div>
+    <button class="btn btn-primary" onclick="analyzeYoutube()">📺 유튜브 분석</button>
+  </div>
+  <div class="loading" id="yt-loading"><div class="spinner"></div><div class="loading-text">유튜브 전략을 분석 중...</div></div>
+  <div class="result-area" id="yt-result"></div>
+</div>
+
+</main>
 </div>
 
 <script>
-  /* ── 플랫폼 버튼 ── */
-  const platformState = { kidx: '둘 다', gold: '둘 다', rec: '둘 다', matrix: '둘 다' };
+// ═══════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════
+const state = {
+  blogIndexData: null,
+  chatMessages: [],
+  blogContext: {}
+};
 
-  document.querySelectorAll('.platform-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const g = btn.dataset.group;
-      document.querySelectorAll(`.platform-btn[data-group="${g}"]`).forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      platformState[g] = btn.dataset.val;
-    });
-  });
-
-  /* ── 페이지 전환 ── */
-  function showPage(id) {
+// ═══════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════
+document.querySelectorAll('.sidebar-item').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
-    document.getElementById('page-' + id).classList.add('active');
-    document.querySelector(`[data-page="${id}"]`).classList.add('active');
-  }
-
-  /* ── Enter 키 ── */
-  document.querySelectorAll('input[type="text"]').forEach(el => {
-    el.addEventListener('keydown', e => { if (e.key === 'Enter') el.closest('.card').querySelector('.btn-run').click(); });
+    item.classList.add('active');
+    document.getElementById('page-' + item.dataset.page).classList.add('active');
   });
+});
 
-  /* ── API 호출 공통 ── */
-  async function callAPI(payload) {
-    const res = await fetch('/api/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    if (!res.ok) {
-      const e = await res.json();
-      throw new Error(e.error || '서버 오류');
+// Enter key for text inputs (not textarea)
+document.querySelectorAll('input.form-control').forEach(input => {
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const page = input.closest('.page');
+      const btn = page && page.querySelector('.btn-primary');
+      if (btn) btn.click();
     }
-    return res.json();
-  }
+  });
+});
 
-  function showLoading(id, show) {
-    document.getElementById(id + '-loading').style.display = show ? 'block' : 'none';
-  }
-  function showResult(id, show) {
-    document.getElementById(id + '-result').style.display = show ? 'block' : 'none';
-  }
-  function showError(id, msg) {
-    const el = document.getElementById(id + '-error');
-    el.textContent = msg ? '오류: ' + msg : '';
-    el.style.display = msg ? 'block' : 'none';
-  }
-  function disableBtn(card, dis) {
-    card.querySelector('.btn-run').disabled = dis;
-  }
+// ═══════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════
+function setPlatform(prefix, btn) {
+  btn.closest('.platform-group').querySelectorAll('.platform-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function getPlatform(prefix) {
+  const active = document.querySelector(`#${prefix}-platform .platform-btn.active`);
+  return active ? active.dataset.val : 'both';
+}
+function showLoading(id) {
+  document.getElementById(id + '-loading').classList.add('show');
+  document.getElementById(id + '-result').classList.remove('show');
+  document.getElementById(id + '-result').innerHTML = '';
+}
+function hideLoading(id) {
+  document.getElementById(id + '-loading').classList.remove('show');
+}
+function showResult(id, html) {
+  hideLoading(id);
+  const el = document.getElementById(id + '-result');
+  el.innerHTML = html;
+  el.classList.add('show', 'result-fade');
+}
+function showError(id, msg) {
+  hideLoading(id);
+  showResult(id, `<div class="error-box">${msg}</div>`);
+}
+async function callApi(body) {
+  const res = await fetch('/api/analyze', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error(`서버 오류: ${res.status}`);
+  return res.json();
+}
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.classList.add('copied');
+    const orig = btn.textContent;
+    btn.textContent = '✓ 복사됨';
+    setTimeout(() => { btn.classList.remove('copied'); btn.textContent = orig; }, 2000);
+  });
+}
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
-  /* ── ① 블로그 누락 검사 ── */
-  async function runMissing() {
-    const url  = document.getElementById('missing-url').value.trim();
-    const kw   = document.getElementById('missing-keyword').value.trim();
-    if (!url) { alert('블로그 주소를 입력해주세요.'); return; }
+// ═══════════════════════════════════════════
+//  LEVEL COLORS & VISUALIZATION
+// ═══════════════════════════════════════════
+const LEVEL_COLORS = ['#9e9e9e','#66bb6a','#43a047','#00897b','#1565c0','#1976d2','#5e35b1','#7b1fa2','#ad1457','#c62828','#b71c1c'];
+const LEVEL_NAMES = ['초보','입문','기초','성장','활성','안정','전문','고수','달인','마스터','레전드'];
 
-    const card = document.querySelector('#page-blog-missing .card');
-    disableBtn(card, true);
-    showLoading('missing', true);
-    showResult('missing', false);
-    showError('missing', '');
+function renderLevelViz(level, reason) {
+  const color = LEVEL_COLORS[level] || '#9e9e9e';
+  const name = LEVEL_NAMES[level] || '';
+  const dots = Array.from({length:11}, (_,i) => {
+    const c = LEVEL_COLORS[i];
+    const isCurrent = i === level;
+    return `<div class="level-dot${isCurrent?' current':''}" style="background:${c};opacity:${isCurrent?1:0.45}" title="Lv.${i} ${LEVEL_NAMES[i]}">Lv${i}</div>`;
+  }).join('');
+  return `
+    <div class="level-display">
+      <div class="level-badge-big" style="background:${color};color:#fff">${level}</div>
+      <div class="level-label">Level ${level} · ${name}</div>
+      ${reason ? `<div class="level-reason">${escHtml(reason)}</div>` : ''}
+      <div class="level-scale">${dots}</div>
+    </div>`;
+}
 
-    // 직접 확인 링크
-    const cleanUrl = url.replace(/^https?:\/\//, '');
-    const naverQuery = kw ? `site:${cleanUrl} ${kw}` : `site:${cleanUrl}`;
-    const googleQuery = kw ? `site:${cleanUrl} ${kw}` : `site:${cleanUrl}`;
-    document.getElementById('naver-check-link').href = `https://search.naver.com/search.naver?query=${encodeURIComponent(naverQuery)}`;
-    document.getElementById('google-check-link').href = `https://www.google.com/search?q=${encodeURIComponent(googleQuery)}`;
+function getBadgeClass(val) {
+  if (!val) return 'badge-mid';
+  const v = String(val);
+  if (v==='높음'||v==='high') return 'badge-high';
+  if (v==='낮음'||v==='low') return 'badge-low';
+  return 'badge-mid';
+}
+function renderBadge(label, val) {
+  return `<span class="badge ${getBadgeClass(val)}">${escHtml(label||val)}</span>`;
+}
 
-    try {
-      const data = await callAPI({ mode: 'blog-missing', blogUrl: url, keyword: kw });
-      renderMissing(data);
-      showResult('missing', true);
-    } catch(e) {
-      showError('missing', e.message);
-    } finally {
-      disableBtn(card, false);
-      showLoading('missing', false);
-    }
-  }
-
-  function renderMissing(data) {
-    const el = document.getElementById('missing-analysis');
-    el.innerHTML = `
-      <div class="info-box" style="margin-bottom:14px;">💡 위 버튼을 클릭해 실제 검색 결과를 직접 확인하세요. 결과가 없다면 색인이 누락된 것입니다.</div>
-      ${(data.causes || []).length ? `
-        <div style="font-weight:700; font-size:0.88rem; color:#1a365d; margin-bottom:10px;">주요 누락 원인</div>
-        <ul class="tips-list" style="margin-bottom:16px;">
-          ${(data.causes || []).map(c => `<li>${c}</li>`).join('')}
-        </ul>
-      ` : ''}
-      ${(data.solutions || []).length ? `
-        <div style="font-weight:700; font-size:0.88rem; color:#1a365d; margin-bottom:10px;">해결 방법</div>
-        <ul class="tips-list">
-          ${(data.solutions || []).map(s => `<li>${s}</li>`).join('')}
-        </ul>
-      ` : ''}
-    `;
-  }
-
-  /* ── ② ③ 블로그 지수 ── */
-  async function runBlogIndex(type) {
-    const isSimple = type === 'simple';
-    const prefix = isSimple ? 'simple' : 'blogindex';
-    const url   = document.getElementById(prefix + '-url').value.trim();
-    const topic = isSimple ? '' : document.getElementById('blogindex-topic').value.trim();
-    if (!url) { alert('블로그 주소를 입력해주세요.'); return; }
-
-    const card = document.querySelector(`#page-blog-index${isSimple ? '-simple' : ''} .card`);
-    disableBtn(card, true);
-    showLoading(prefix, true);
-    showResult(prefix, false);
-    showError(prefix, '');
-
-    try {
-      const data = await callAPI({ mode: isSimple ? 'blog-index-simple' : 'blog-index', blogUrl: url, topic });
-      isSimple ? renderSimpleIndex(data) : renderBlogIndex(data);
-      showResult(prefix, true);
-    } catch(e) {
-      showError(prefix, e.message);
-    } finally {
-      disableBtn(card, false);
-      showLoading(prefix, false);
-    }
-  }
-
-  // Level 0~10 색상
-  const LEVEL_COLORS = ['#9e9e9e','#66bb6a','#43a047','#00897b','#1565c0','#1976d2','#5e35b1','#7b1fa2','#ad1457','#c62828','#b71c1c'];
-
-  function levelScaleHTML(current) {
-    return Array.from({length: 11}, (_, i) => `
-      <span class="level-pip lv${i} ${i === current ? 'active' : ''}">Level ${i}</span>
-    `).join('');
-  }
-
-  function renderBlogIndex(data) {
-    const lv = data.estimatedLevel ?? 0;
-    const color = LEVEL_COLORS[lv] || '#9e9e9e';
-
-    const scores = document.getElementById('blogindex-scores');
-    scores.innerHTML = `
-      <div class="level-display">
-        <div class="level-current">
-          <div class="level-big-badge" style="background:${color}">Level ${lv}</div>
-          <div class="level-reason">${data.levelReason || ''}</div>
+// ═══════════════════════════════════════════
+//  1. BLOG MISSING
+// ═══════════════════════════════════════════
+async function analyzeMissing() {
+  const url = document.getElementById('missing-url').value.trim();
+  const keyword = document.getElementById('missing-keyword').value.trim();
+  if (!url) { alert('블로그 URL을 입력해주세요.'); return; }
+  showLoading('missing');
+  try {
+    const data = await callApi({mode:'blog-missing', blogUrl:url, keyword});
+    const causes = (data.causes||[]).map(c=>`<li>${escHtml(c)}</li>`).join('');
+    const solutions = (data.solutions||[]).map(s=>`<li>${escHtml(s)}</li>`).join('');
+    const encodedKw = encodeURIComponent(keyword || url);
+    showResult('missing', `
+      <div class="card result-fade">
+        <div class="card-title">🔗 직접 확인 링크</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+          <a class="link-btn link-naver" href="https://search.naver.com/search.naver?query=${encodedKw}" target="_blank">🟢 네이버에서 확인</a>
+          <a class="link-btn link-google" href="https://www.google.com/search?q=${encodedKw}" target="_blank">🔵 구글에서 확인</a>
         </div>
-        <div class="level-scale">${levelScaleHTML(lv)}</div>
       </div>
-      ${(data.scores || []).map(s => `
-        <div class="score-card">
-          <div class="score-label">${s.label}</div>
-          <div class="score-value">${s.value}</div>
-          <div class="score-sub">${s.sub || ''}</div>
-        </div>
-      `).join('')}
-    `;
+      ${causes ? `<div class="card result-fade">
+        <div class="card-title">❗ 누락 원인</div>
+        <ul class="tips-list">${causes}</ul>
+      </div>` : ''}
+      ${solutions ? `<div class="card result-fade">
+        <div class="card-title">💡 해결 방법</div>
+        <ul class="tips-list">${solutions}</ul>
+      </div>` : ''}
+    `);
+  } catch(e) { showError('missing', e.message); }
+}
 
-    const analysis = document.getElementById('blogindex-analysis');
-    analysis.innerHTML = `
-      <div class="strategy-summary" style="margin-top:16px;">${data.summary || ''}</div>
-      ${(data.nextLevelTips || []).length ? `
-        <div class="next-level-box">
-          <div class="next-level-title">🎯 Level ${lv + 1}로 올리려면</div>
-          <ul class="next-level-tips">
-            ${data.nextLevelTips.map(t => `<li>${t}</li>`).join('')}
-          </ul>
-        </div>
-      ` : ''}
-    `;
-    document.getElementById('blogindex-tips').innerHTML = (data.tips || []).map(t => `<li>${t}</li>`).join('');
+// ═══════════════════════════════════════════
+//  2. BLOG INDEX
+// ═══════════════════════════════════════════
+async function analyzeBlogIndex() {
+  const url = document.getElementById('bindex-url').value.trim();
+  const topic = document.getElementById('bindex-topic').value.trim();
+  if (!url) { alert('블로그 URL을 입력해주세요.'); return; }
+  showLoading('bindex');
+  document.getElementById('bindex-chat-wrap').style.display = 'none';
+  try {
+    const data = await callApi({mode:'blog-index', blogUrl:url, topic});
+    state.blogIndexData = data;
+    state.blogContext = {url, topic, level: data.estimatedLevel, summary: data.summary};
+    state.chatMessages = [];
 
-    // 대화형 코칭 초기화
-    const blogUrl = document.getElementById('blogindex-url').value.trim();
-    const topic   = document.getElementById('blogindex-topic').value.trim();
-    initChat('blogindex', {
-      blogUrl, topic,
-      estimatedLevel: data.estimatedLevel,
-      levelReason: data.levelReason,
-      summary: data.summary,
-      nextLevelTips: data.nextLevelTips || []
-    });
-  }
-
-  function renderSimpleIndex(data) {
-    const lv = data.estimatedLevel ?? 0;
-    const color = LEVEL_COLORS[lv] || '#9e9e9e';
-    const el = document.getElementById('simple-analysis');
-    el.innerHTML = `
-      <div class="level-display">
-        <div class="level-current">
-          <div class="level-big-badge" style="background:${color}">Level ${lv}</div>
-          <div class="level-reason">${data.levelReason || ''}</div>
-        </div>
-        <div class="level-scale">${levelScaleHTML(lv)}</div>
-      </div>
-      <div class="strategy-summary" style="margin-top:16px;">${data.summary || ''}</div>
-      ${(data.points || []).length ? `
-        <ul class="tips-list" style="margin-top:14px;">
-          ${data.points.map(p => `<li>${p}</li>`).join('')}
-        </ul>
-      ` : ''}
-    `;
-  }
-
-  /* ── ④ 키워드 지수 ── */
-  async function runKeywordIndex() {
-    const kw = document.getElementById('kidx-keyword').value.trim();
-    if (!kw) { alert('키워드를 입력해주세요.'); return; }
-
-    const card = document.querySelector('#page-keyword-index .card');
-    disableBtn(card, true);
-    showLoading('kidx', true);
-    showResult('kidx', false);
-    showError('kidx', '');
-
-    try {
-      const data = await callAPI({ mode: 'keyword-index', keyword: kw, platform: platformState.kidx });
-      renderKeywordIndex(data);
-      showResult('kidx', true);
-    } catch(e) {
-      showError('kidx', e.message);
-    } finally {
-      disableBtn(card, false);
-      showLoading('kidx', false);
-    }
-  }
-
-  function renderKeywordIndex(data) {
-    const raw = data.naverRawData || {};
-    const hasReal = raw.blogCount !== null && raw.blogCount !== undefined;
-
-    const analysis = document.getElementById('kidx-analysis');
-    analysis.innerHTML = `
-      ${data._hasNaver ? `<div class="data-source-badge">🟢 네이버 실데이터 반영</div>` : `<div class="data-source-badge" style="background:#fef3c7;color:#92400e;border-color:#f6e05e;">🤖 Claude AI 추정</div>`}
-      ${hasReal ? `
-        <div class="naver-data-box">
-          <div class="naver-stat">
-            <div class="naver-stat-label">경쟁 포스트 수</div>
-            <div class="naver-stat-value">${raw.blogCount.toLocaleString()}</div>
-            <div class="naver-stat-sub">네이버 블로그</div>
-          </div>
-          ${raw.monthlySearch ? `
-            <div class="naver-stat">
-              <div class="naver-stat-label">월간 검색량</div>
-              <div class="naver-stat-value">${raw.monthlySearch.toLocaleString()}</div>
-              <div class="naver-stat-sub">PC ${(raw.pc||0).toLocaleString()} + 모바일 ${(raw.mobile||0).toLocaleString()}</div>
-            </div>
-          ` : ''}
-          ${raw.trendAvg !== null && raw.trendAvg !== undefined ? `
-            <div class="naver-stat">
-              <div class="naver-stat-label">트렌드 점수</div>
-              <div class="naver-stat-value">${raw.trendAvg}</div>
-              <div class="naver-stat-sub">데이터랩 최근 3개월</div>
-            </div>
-          ` : ''}
-        </div>
-      ` : ''}
-      <div class="badge-row" style="margin-bottom:14px;">
-        <span class="badge ${volClass(data.searchVolume)}">검색량 ${data.searchVolume || '-'}</span>
-        <span class="badge ${compClass(data.competition)}">경쟁도 ${data.competition || '-'}</span>
-        <span class="badge badge-gold">노출 가능성 ${data.exposure || '-'}</span>
-      </div>
-      <div class="strategy-summary">${data.analysis || ''}</div>
-    `;
-
-    const strategy = document.getElementById('kidx-strategy');
-    let html = '';
-    if (data.naverTips) {
-      html += `<span class="platform-badge-inline naver-badge">네이버 블로그</span>
-      <ul class="tips-list" style="margin-bottom:16px;">${(data.naverTips||[]).map(t=>`<li>${t}</li>`).join('')}</ul>`;
-    }
-    if (data.naverTips && data.tistoryTips) html += '<div class="divider"></div>';
-    if (data.tistoryTips) {
-      html += `<span class="platform-badge-inline tistory-badge">티스토리</span>
-      <ul class="tips-list">${(data.tistoryTips||[]).map(t=>`<li>${t}</li>`).join('')}</ul>`;
-    }
-    strategy.innerHTML = html;
-  }
-
-  /* ── ⑤ 황금 키워드 ── */
-  async function runGolden() {
-    const topic = document.getElementById('gold-topic').value.trim();
-    if (!topic) { alert('주제를 입력해주세요.'); return; }
-
-    const card = document.querySelector('#page-golden-keyword .card');
-    disableBtn(card, true);
-    showLoading('gold', true);
-    showResult('gold', false);
-    showError('gold', '');
-
-    try {
-      const data = await callAPI({ mode: 'golden-keyword', topic, platform: platformState.gold });
-      renderGolden(data);
-      showResult('gold', true);
-    } catch(e) {
-      showError('gold', e.message);
-    } finally {
-      disableBtn(card, false);
-      showLoading('gold', false);
-    }
-  }
-
-  function renderGolden(data) {
-    const src = data._hasNaver
-      ? `<div class="data-source-badge">🟢 네이버 실데이터 반영</div>`
-      : `<div class="data-source-badge" style="background:#fef3c7;color:#92400e;border-color:#f6e05e;">🤖 Claude AI 추정</div>`;
-    document.getElementById('gold-keywords').innerHTML = src + (data.goldenKeywords || []).map(k => `
-      <div class="keyword-card">
-        <div class="keyword-name">🥇 ${k.keyword}</div>
-        <div class="badge-row">
-          <span class="badge ${volClass(k.searchVolume)}">검색량 ${k.searchVolume}</span>
-          <span class="badge ${compClass(k.competition)}">경쟁도 ${k.competition}</span>
-          <span class="badge badge-gold">황금도 ${k.goldenScore}</span>
-        </div>
-        <div class="keyword-tip">${k.reason}</div>
-      </div>
-    `).join('');
-    document.getElementById('gold-tips').innerHTML = (data.tips || []).map(t => `<li>${t}</li>`).join('');
-  }
-
-  /* ── ⑥ 키워드 추천 ── */
-  async function runRecommend() {
-    const topic = document.getElementById('rec-topic').value.trim();
-    if (!topic) { alert('주제를 입력해주세요.'); return; }
-
-    const card = document.querySelector('#page-keyword-recommend .card');
-    disableBtn(card, true);
-    showLoading('rec', true);
-    showResult('rec', false);
-    showError('rec', '');
-
-    try {
-      const data = await callAPI({ mode: 'keyword-recommend', topic, platform: platformState.rec });
-      renderRecommend(data);
-      showResult('rec', true);
-    } catch(e) {
-      showError('rec', e.message);
-    } finally {
-      disableBtn(card, false);
-      showLoading('rec', false);
-    }
-  }
-
-  function renderRecommend(data) {
-    document.getElementById('rec-main-keywords').innerHTML = (data.mainKeywords || []).map(k => `
-      <div class="keyword-card">
-        <div class="keyword-name">${k.keyword}</div>
-        <div class="badge-row">
-          <span class="badge ${volClass(k.searchVolume)}">검색량 ${k.searchVolume}</span>
-          <span class="badge ${compClass(k.competition)}">경쟁도 ${k.competition}</span>
-        </div>
-        <div class="keyword-tip">${k.tip}</div>
-      </div>
-    `).join('');
-
-    document.getElementById('rec-longtail').innerHTML = (data.longtailKeywords || []).map(kw => `
-      <span class="tag" onclick="setRecTopic('${kw.replace(/'/g,"\\'")}')">  ${kw}</span>
-    `).join('');
-
-    document.getElementById('rec-titles').innerHTML = (data.titleSuggestions || []).map(t => `
-      <li class="title-item">
-        <span class="title-text">${t}</span>
-        <button class="copy-btn" onclick="copyText('${t.replace(/'/g,"\\'")}', this)">복사</button>
-      </li>
-    `).join('');
-
-    let stratHtml = '';
-    if (data.naverStrategy) {
-      stratHtml += `<span class="platform-badge-inline naver-badge">네이버 블로그</span>
-        <div class="strategy-summary">${data.naverStrategy.summary}</div>
-        <ul class="tips-list" style="margin-bottom:4px;">${(data.naverStrategy.tips||[]).map(t=>`<li>${t}</li>`).join('')}</ul>`;
-    }
-    if (data.naverStrategy && data.tistoryStrategy) stratHtml += '<div class="divider"></div>';
-    if (data.tistoryStrategy) {
-      stratHtml += `<span class="platform-badge-inline tistory-badge">티스토리</span>
-        <div class="strategy-summary">${data.tistoryStrategy.summary}</div>
-        <ul class="tips-list">${(data.tistoryStrategy.tips||[]).map(t=>`<li>${t}</li>`).join('')}</ul>`;
-    }
-    document.getElementById('rec-strategy').innerHTML = stratHtml;
-
-    document.getElementById('rec-structure').innerHTML = (data.contentStructure || []).map((tip, i) => `
-      <li><span class="step-num">${i+1}</span>${tip}</li>
-    `).join('');
-  }
-
-  /* ── 대화형 코칭 ── */
-  const chatState = {
-    blogindex: { messages: [], context: null }
-  };
-
-  function initChat(prefix, context) {
-    chatState[prefix] = { messages: [], context };
-    const msgEl = document.getElementById(prefix + '-chat-messages');
-    msgEl.innerHTML = `
-      <div class="chat-bubble ai">
-        <div class="bubble-avatar ai">🤖</div>
-        <div class="bubble-text">블로그 분석이 완료됐습니다! <strong>현재 Level ${context.estimatedLevel}</strong>이에요.<br>레벨을 올리는 방법이나 궁금한 점을 편하게 물어보세요 😊</div>
-      </div>`;
-    document.getElementById(prefix + '-chat').style.display = 'block';
-  }
-
-  function sendQuick(prefix, text) {
-    document.getElementById(prefix + '-chat-input').value = text;
-    sendChat(prefix);
-  }
-
-  async function sendChat(prefix) {
-    const input = document.getElementById(prefix + '-chat-input');
-    const text = input.value.trim();
-    if (!text) return;
-    input.value = '';
-
-    const state = chatState[prefix];
-    state.messages.push({ role: 'user', content: text });
-
-    appendBubble(prefix, 'user', text);
-
-    const sendBtn = document.getElementById(prefix + '-chat-send');
-    sendBtn.disabled = true;
-    input.disabled = true;
-    document.getElementById(prefix + '-typing').style.display = 'flex';
-    scrollChat(prefix);
-
-    try {
-      const res = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mode: 'chat',
-          messages: state.messages,
-          blogContext: state.context
-        })
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-
-      state.messages.push({ role: 'assistant', content: data.reply });
-      appendBubble(prefix, 'ai', data.reply);
-    } catch(e) {
-      appendBubble(prefix, 'ai', '오류가 발생했습니다: ' + e.message);
-    } finally {
-      sendBtn.disabled = false;
-      input.disabled = false;
-      document.getElementById(prefix + '-typing').style.display = 'none';
-      input.focus();
-      scrollChat(prefix);
-    }
-  }
-
-  function appendBubble(prefix, role, text) {
-    const el = document.getElementById(prefix + '-chat-messages');
-    const div = document.createElement('div');
-    div.className = 'chat-bubble ' + role;
-    div.innerHTML = `
-      <div class="bubble-avatar ${role}">${role === 'ai' ? '🤖' : '👤'}</div>
-      <div class="bubble-text">${text.replace(/\n/g, '<br>')}</div>`;
-    el.appendChild(div);
-    scrollChat(prefix);
-  }
-
-  function scrollChat(prefix) {
-    const el = document.getElementById(prefix + '-chat-messages');
-    el.scrollTop = el.scrollHeight;
-  }
-
-  /* ── 유틸 ── */
-  function volClass(v)  { return v==='높음' ? 'badge-vol-high'  : v==='중간' ? 'badge-vol-mid'  : 'badge-vol-low';  }
-  function compClass(v) { return v==='높음' ? 'badge-comp-high' : v==='중간' ? 'badge-comp-mid' : 'badge-comp-low'; }
-
-  function setRecTopic(kw) {
-    document.getElementById('rec-topic').value = kw;
-    showPage('keyword-recommend');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  function copyText(text, btn) {
-    navigator.clipboard.writeText(text).then(() => {
-      btn.textContent = '✓ 복사됨';
-      setTimeout(() => btn.textContent = '복사', 1500);
-    });
-  }
-
-  /* ── ⑪ 유튜브 분석기 ── */
-  async function runYoutube() {
-    const kw    = document.getElementById('yt-keyword').value.trim();
-    const topic = document.getElementById('yt-topic').value.trim();
-    if (!kw) { alert('주제 또는 URL을 입력해주세요.'); return; }
-    const card = document.querySelector('#page-youtube .card');
-    disableBtn(card, true);
-    showLoading('youtube', true);
-    showResult('youtube', false);
-    showError('youtube', '');
-    try {
-      const data = await callAPI({ mode: 'youtube-analyze', keyword: kw, topic });
-      renderYoutube(data);
-      showResult('youtube', true);
-    } catch(e) { showError('youtube', e.message); }
-    finally { disableBtn(card, false); showLoading('youtube', false); }
-  }
-
-  function renderYoutube(data) {
-    const ka = data.keywordAnalysis || {};
-    document.getElementById('yt-keyword-analysis').innerHTML = `
-      <div class="badge-row" style="margin-bottom:12px;">
-        <span class="badge ${volClass(ka.searchVolume)}">검색량 ${ka.searchVolume||'-'}</span>
-        <span class="badge ${compClass(ka.competition)}">경쟁도 ${ka.competition||'-'}</span>
-        <span class="badge badge-gold">트렌드 ${ka.trending||'-'}</span>
-      </div>
-      <div class="strategy-summary">${data.channelAnalysis?.reason||''}</div>
-    `;
-    document.getElementById('yt-titles').innerHTML = (data.titleSuggestions||[]).map(t => `
-      <li class="title-item">
-        <span class="title-text">${t}</span>
-        <button class="copy-btn" onclick="copyText('${t.replace(/'/g,"\\'")}', this)">복사</button>
-      </li>`).join('');
-    document.getElementById('yt-tags').innerHTML = (data.recommendedTags||[]).map(tag =>
-      `<span class="tag">${tag}</span>`).join('');
-    document.getElementById('yt-thumbnail').innerHTML = (data.thumbnailTips||[]).map(t=>`<li>${t}</li>`).join('');
-    document.getElementById('yt-summary').textContent = data.summary || '';
-    document.getElementById('yt-strategy').innerHTML = (data.growthStrategy||[]).map(t=>`<li>${t}</li>`).join('');
-  }
-
-  /* ── ⑫ 블로그 매트릭스 ── */
-  async function runBlogMatrix() {
-    const url = document.getElementById('matrix-url').value.trim();
-    const kw  = document.getElementById('matrix-keyword').value.trim();
-    if (!url || !kw) { alert('블로그 주소와 키워드를 모두 입력해주세요.'); return; }
-    const card = document.querySelector('#page-blog-matrix .card');
-    disableBtn(card, true);
-    showLoading('matrix', true);
-    showResult('matrix', false);
-    showError('matrix', '');
-    try {
-      const data = await callAPI({ mode: 'blog-matrix', blogUrl: url, keyword: kw, platform: platformState.matrix });
-      renderBlogMatrix(data);
-      showResult('matrix', true);
-    } catch(e) { showError('matrix', e.message); }
-    finally { disableBtn(card, false); showLoading('matrix', false); }
-  }
-
-  function renderBlogMatrix(data) {
-    const lv = data.blogLevel || {};
-    const ks = data.keywordStatus || {};
-    const raw = data.rawData || {};
-    const color = LEVEL_COLORS[lv.level ?? 0] || '#9e9e9e';
-
-    document.getElementById('matrix-level-card').innerHTML = `
-      <div class="matrix-card-title">블로그 레벨</div>
-      <div class="matrix-big-value" style="color:${color};">Level ${lv.level ?? 0}</div>
-      <div class="matrix-sub" style="margin-bottom:10px;">${lv.reason||''}</div>
-      <div class="level-scale" style="margin-top:8px;">${levelScaleHTML(lv.level ?? 0)}</div>
-    `;
-    document.getElementById('matrix-keyword-card').innerHTML = `
-      <div class="matrix-card-title">키워드 현황</div>
-      ${raw.monthlySearch != null ? `<div class="matrix-big-value">${raw.monthlySearch.toLocaleString()}</div><div class="matrix-sub">월간 검색량</div>` : ''}
-      <div class="badge-row" style="margin-top:10px;">
-        <span class="badge ${volClass(ks.searchVolume)}">검색량 ${ks.searchVolume||'-'}</span>
-        <span class="badge ${compClass(ks.competition)}">경쟁도 ${ks.competition||'-'}</span>
-        <span class="badge badge-gold">기회 ${ks.opportunity||'-'}</span>
-      </div>
-      ${raw.blogCount != null ? `<div class="matrix-sub" style="margin-top:8px;">경쟁 포스트 ${raw.blogCount.toLocaleString()}개</div>` : ''}
-    `;
-    document.getElementById('matrix-golden').innerHTML = (data.goldenKeywords||[]).map(k => `
-      <div class="keyword-card">
-        <div class="keyword-name">🥇 ${k.keyword}</div>
-        <div class="badge-row"><span class="badge badge-gold">황금도 ${k.score}</span></div>
-        <div class="keyword-tip">${k.reason}</div>
+    const level = data.estimatedLevel || 0;
+    const scores = (data.scores||[]).map(s => `
+      <div class="score-card">
+        <div class="score-val">${escHtml(s.value)}</div>
+        <div class="score-label">${escHtml(s.label)}</div>
+        ${s.sub ? `<div class="score-sub">${escHtml(s.sub)}</div>` : ''}
       </div>`).join('');
-    document.getElementById('matrix-competition').innerHTML = (data.competitionMatrix||[]).map(c => `
-      <tr>
-        <td style="font-weight:600;">${c.competitor}</td>
-        <td style="color:#22543d;">${c.strength}</td>
-        <td style="color:#c53030;">${c.weakness}</td>
-      </tr>`).join('');
-    document.getElementById('matrix-content').innerHTML = (data.contentPlan||[]).map(t=>`<li>${t}</li>`).join('');
-    document.getElementById('matrix-summary').textContent = data.summary || '';
-    document.getElementById('matrix-quickwins').innerHTML = (data.quickWins||[]).map(t=>`<li>${t}</li>`).join('');
-  }
+    const tips = (data.tips||[]).map(t=>`<li>${escHtml(t)}</li>`).join('');
+    const nextTips = (data.nextLevelTips||[]).map(t=>`<li>${escHtml(t)}</li>`).join('');
 
-  /* ── 키워드마스터 카테고리 버튼 ── */
-  let kmRealtimeCat = '부동산';
-  document.querySelectorAll('.category-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      kmRealtimeCat = btn.dataset.cat;
+    showResult('bindex', `
+      <div class="card result-fade">
+        ${renderLevelViz(level, data.levelReason)}
+      </div>
+      ${scores ? `<div class="card result-fade">
+        <div class="card-title">📋 세부 점수</div>
+        <div class="scores-grid">${scores}</div>
+      </div>` : ''}
+      ${data.summary ? `<div class="summary-box result-fade">${escHtml(data.summary)}</div>` : ''}
+      ${tips ? `<div class="card result-fade">
+        <div class="card-title">💡 분석 팁</div>
+        <ul class="tips-list">${tips}</ul>
+      </div>` : ''}
+      ${nextTips ? `<div class="card result-fade">
+        <div class="card-title">🚀 다음 레벨 전략</div>
+        <ul class="tips-list">${nextTips}</ul>
+      </div>` : ''}
+    `);
+
+    // Show chat
+    const chatWrap = document.getElementById('bindex-chat-wrap');
+    chatWrap.style.display = 'block';
+    const msgs = document.getElementById('bindex-chat-messages');
+    msgs.innerHTML = '';
+    appendChatBubble('ai', `안녕하세요! 블로그 분석이 완료됐습니다. 현재 **Level ${level} (${LEVEL_NAMES[level]})** 수준이에요. 궁금한 점을 물어보세요! 😊`);
+    chatWrap.scrollIntoView({behavior:'smooth', block:'nearest'});
+  } catch(e) { showError('bindex', e.message); }
+}
+
+function appendChatBubble(role, text) {
+  const msgs = document.getElementById('bindex-chat-messages');
+  const div = document.createElement('div');
+  div.className = `chat-bubble ${role}`;
+  div.textContent = text.replace(/\*\*(.*?)\*\*/g, '$1');
+  div.innerHTML = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g,'<br>');
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+async function sendQuick(question) {
+  document.getElementById('bindex-chat-input').value = question;
+  await sendChat();
+}
+
+async function sendChat() {
+  const input = document.getElementById('bindex-chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  appendChatBubble('user', text);
+  state.chatMessages.push({role:'user', content:text});
+  const loadingDiv = document.createElement('div');
+  loadingDiv.className = 'chat-bubble ai';
+  loadingDiv.innerHTML = '<span style="opacity:.5">입력 중...</span>';
+  document.getElementById('bindex-chat-messages').appendChild(loadingDiv);
+  document.getElementById('bindex-chat-messages').scrollTop = 99999;
+  try {
+    const data = await callApi({
+      mode: 'chat',
+      messages: state.chatMessages,
+      blogContext: state.blogContext
     });
-  });
-
-  /* ── ⑦ 검색량 조회 ── */
-  async function runKmSearch() {
-    const kw = document.getElementById('km-search-keyword').value.trim();
-    if (!kw) { alert('키워드를 입력해주세요.'); return; }
-    const card = document.querySelector('#page-km-search .card');
-    disableBtn(card, true);
-    showLoading('km-search', true);
-    showResult('km-search', false);
-    showError('km-search', '');
-    try {
-      const data = await callAPI({ mode: 'km-search', keyword: kw });
-      renderKmSearch(data, kw);
-      showResult('km-search', true);
-    } catch(e) { showError('km-search', e.message); }
-    finally { disableBtn(card, false); showLoading('km-search', false); }
+    loadingDiv.remove();
+    const reply = data.reply || data.message || (typeof data === 'string' ? data : '응답을 받았습니다.');
+    appendChatBubble('ai', reply);
+    state.chatMessages.push({role:'assistant', content:reply});
+  } catch(e) {
+    loadingDiv.textContent = '오류: ' + e.message;
   }
+}
 
-  function renderKmSearch(data, kw) {
-    const raw = data.rawData || {};
-    const hasVol = raw.pc !== null && raw.pc !== undefined;
-    document.getElementById('km-search-stats').innerHTML = `
-      ${hasVol ? `
-        <div class="stat-box"><div class="stat-box-label">PC 검색량</div><div class="stat-box-value">${(raw.pc||0).toLocaleString()}</div><div class="stat-box-sub">최근 30일</div></div>
-        <div class="stat-box"><div class="stat-box-label">모바일 검색량</div><div class="stat-box-value">${(raw.mobile||0).toLocaleString()}</div><div class="stat-box-sub">최근 30일</div></div>
-        <div class="stat-box" style="border-color:#2b6cb0;"><div class="stat-box-label">총 검색량</div><div class="stat-box-value" style="color:#2b6cb0;">${(raw.monthlySearch||0).toLocaleString()}</div><div class="stat-box-sub">PC + 모바일</div></div>
-      ` : `<div class="info-box" style="grid-column:1/-1;">🤖 네이버 광고 API 미연결 — 검색량은 AI 추정값입니다.</div>`}
-      ${raw.blogCount != null ? `<div class="stat-box"><div class="stat-box-label">경쟁 포스트 수</div><div class="stat-box-value">${raw.blogCount.toLocaleString()}</div><div class="stat-box-sub">네이버 블로그</div></div>` : ''}
-      ${raw.trendAvg != null ? `<div class="stat-box"><div class="stat-box-label">트렌드 점수</div><div class="stat-box-value">${raw.trendAvg}</div><div class="stat-box-sub">최근 3개월 평균</div></div>` : ''}
-    `;
-    document.getElementById('km-search-badge').innerHTML = `
-      <span class="badge ${volClass(data.searchVolume)}">검색량 ${data.searchVolume||'-'}</span>
-      <span class="badge ${compClass(data.competition)}">경쟁도 ${data.competition||'-'}</span>
-    `;
-    document.getElementById('km-search-naver-link').innerHTML = `
-      <a href="https://search.naver.com/search.naver?query=${encodeURIComponent(kw)}" target="_blank" class="check-link check-link-naver" style="display:inline-flex;margin-top:10px;">🟢 네이버에서 실제 결과 보기</a>
-    `;
-    document.getElementById('km-search-related').innerHTML = (data.relatedKeywords||[]).map(k =>
-      `<span class="tag" onclick="setKmSearch('${k.replace(/'/g,"\\'")}')"> ${k}</span>`).join('');
-    document.getElementById('km-search-analysis').textContent = data.analysis || '';
-    document.getElementById('km-search-tips').innerHTML = (data.tips||[]).map(t=>`<li>${t}</li>`).join('');
-  }
-
-  function setKmSearch(kw) {
-    document.getElementById('km-search-keyword').value = kw;
-    showPage('km-search');
-    runKmSearch();
-  }
-
-  /* ── ⑧ 형태소 분석 ── */
-  async function runKmMorpheme() {
-    const text = document.getElementById('km-morpheme-text').value.trim();
-    if (!text) { alert('분석할 텍스트를 입력해주세요.'); return; }
-    const card = document.querySelector('#page-km-morpheme .card');
-    disableBtn(card, true);
-    showLoading('km-morpheme', true);
-    showResult('km-morpheme', false);
-    showError('km-morpheme', '');
-    try {
-      const data = await callAPI({ mode: 'km-morpheme', keyword: text });
-      renderKmMorpheme(data);
-      showResult('km-morpheme', true);
-    } catch(e) { showError('km-morpheme', e.message); }
-    finally { disableBtn(card, false); showLoading('km-morpheme', false); }
-  }
-
-  function renderKmMorpheme(data) {
-    const sentMap = {
-      '긍정': { cls:'pos', label:'긍정적 😊', color:'#48bb78' },
-      '부정': { cls:'neg', label:'부정적 😔', color:'#fc8181' },
-      '중립': { cls:'neu', label:'중립적 😐', color:'#a0aec0' }
-    };
-    const s = sentMap[data.sentiment] || sentMap['중립'];
-    const score = Math.round((data.sentimentScore||0.5)*100);
-    document.getElementById('km-morpheme-sentiment').innerHTML = `
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-        <span class="badge" style="background:${s.color}22;color:${s.color};border:1.5px solid ${s.color}44;font-size:0.9rem;padding:6px 14px;">${s.label}</span>
-        <span style="font-size:0.85rem;color:#718096;">${score}% 확신도</span>
+// ═══════════════════════════════════════════
+//  3. BLOG INDEX SIMPLE
+// ═══════════════════════════════════════════
+async function analyzeBlogSimple() {
+  const url = document.getElementById('bsimple-url').value.trim();
+  if (!url) { alert('블로그 URL을 입력해주세요.'); return; }
+  showLoading('bsimple');
+  try {
+    const data = await callApi({mode:'blog-index-simple', blogUrl:url});
+    const level = data.estimatedLevel || 0;
+    showResult('bsimple', `
+      <div class="card result-fade">
+        ${renderLevelViz(level, data.levelReason||data.summary)}
       </div>
-      <div class="sentiment-bar"><div class="sentiment-fill sentiment-${s.cls}" style="width:${score}%"></div></div>
-      <div style="font-size:0.85rem;color:#4a5568;margin-top:10px;line-height:1.6;">${data.sentimentDetail||''}</div>
-    `;
-    document.getElementById('km-morpheme-keywords').innerHTML = (data.topKeywords||[]).map((k,i)=>
-      `<span class="tag" style="font-size:${i<3?'0.95rem':'0.82rem'};font-weight:${i<3?'700':'500'};">${k}</span>`).join('');
-    document.getElementById('km-morpheme-table').innerHTML = (data.morphemes||[]).map(m=>`
-      <tr>
-        <td style="font-weight:600;">${m.word}</td>
-        <td><span class="badge" style="background:#ebf4ff;color:#2b6cb0;">${m.pos}</span></td>
-        <td style="font-weight:700;color:#1a365d;">${m.count}회</td>
-      </tr>`).join('');
-  }
+      ${data.summary ? `<div class="summary-box result-fade">${escHtml(data.summary)}</div>` : ''}
+      ${(data.tips||[]).length ? `<div class="card result-fade">
+        <div class="card-title">💡 빠른 팁</div>
+        <ul class="tips-list">${(data.tips||[]).map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul>
+      </div>` : ''}
+    `);
+  } catch(e) { showError('bsimple', e.message); }
+}
 
-  /* ── ⑨ 셀러마스터 ── */
-  async function runKmSeller() {
-    const kw = document.getElementById('km-seller-keyword').value.trim();
-    if (!kw) { alert('상품 키워드를 입력해주세요.'); return; }
-    const card = document.querySelector('#page-km-seller .card');
-    disableBtn(card, true);
-    showLoading('km-seller', true);
-    showResult('km-seller', false);
-    showError('km-seller', '');
-    try {
-      const data = await callAPI({ mode: 'km-seller', keyword: kw });
-      renderKmSeller(data);
-      showResult('km-seller', true);
-    } catch(e) { showError('km-seller', e.message); }
-    finally { disableBtn(card, false); showLoading('km-seller', false); }
-  }
+// ═══════════════════════════════════════════
+//  4. BLOG MATRIX
+// ═══════════════════════════════════════════
+async function analyzeBlogMatrix() {
+  const url = document.getElementById('bmatrix-url').value.trim();
+  const keyword = document.getElementById('bmatrix-keyword').value.trim();
+  const platform = getPlatform('bmatrix');
+  if (!url) { alert('블로그 URL을 입력해주세요.'); return; }
+  showLoading('bmatrix');
+  try {
+    const data = await callApi({mode:'blog-matrix', blogUrl:url, keyword, platform});
+    const bl = data.blogLevel||{};
+    const ks = data.keywordStatus||{};
+    const gk = data.goldenKeywords||[];
+    const cm = data.competitionMatrix||[];
+    const cp = data.contentPlan||[];
+    const qw = data.quickWins||[];
 
-  function renderKmSeller(data) {
-    const pr = data.priceRange || {};
-    document.getElementById('km-seller-stats').innerHTML = `
-      <div class="stat-row">
-        ${data.productCount != null ? `
-          <div class="stat-box" style="border-color:#2b6cb0;">
-            <div class="stat-box-label">네이버 쇼핑 상품수</div>
-            <div class="stat-box-value" style="color:#2b6cb0;">${data.productCount.toLocaleString()}</div>
-            <div class="stat-box-sub">실제 데이터</div>
-          </div>` : `<div class="info-box" style="grid-column:1/-1;">🤖 AI 추정값입니다.</div>`}
-        <div class="stat-box">
-          <div class="stat-box-label">경쟁도</div>
-          <div class="stat-box-value" style="font-size:1.1rem;">${data.competition||'-'}</div>
-          <div class="stat-box-sub">판매 경쟁 수준</div>
+    const gkCards = gk.map(g=>`
+      <div class="keyword-card">
+        <div class="kc-word">${escHtml(g.keyword)}</div>
+        <div class="kc-meta"><span class="kc-score">점수 ${escHtml(g.score)}</span></div>
+        ${g.reason?`<div class="kc-reason">${escHtml(g.reason)}</div>`:''}
+      </div>`).join('');
+
+    const compRows = cm.map(c=>`
+      <div class="competitor-row">
+        <div class="comp-name">${escHtml(c.competitor||c.keyword||'')}</div>
+        <div class="comp-meta">
+          <div><div class="comp-label">강점</div><div class="comp-strength">${escHtml(c.strength)}</div></div>
+          <div><div class="comp-label">약점</div><div class="comp-weakness">${escHtml(c.weakness)}</div></div>
         </div>
-        ${pr.avg ? `<div class="stat-box"><div class="stat-box-label">평균 예상가</div><div class="stat-box-value" style="font-size:1rem;">${pr.avg.toLocaleString()}원</div><div class="stat-box-sub">${(pr.min||0).toLocaleString()}~${(pr.max||0).toLocaleString()}원</div></div>` : ''}
-      </div>
-    `;
-    document.getElementById('km-seller-analysis').textContent = data.analysis || '';
-    document.getElementById('km-seller-tips').innerHTML = (data.sellerTips||[]).map(t=>`<li>${t}</li>`).join('');
-    document.getElementById('km-seller-related').innerHTML = (data.relatedProducts||[]).map(k=>
-      `<span class="tag" onclick="setKmSeller('${k.replace(/'/g,"\\'")}')"> ${k}</span>`).join('');
-  }
+      </div>`).join('');
 
-  function setKmSeller(kw) {
-    document.getElementById('km-seller-keyword').value = kw;
-    showPage('km-seller');
-    runKmSeller();
-  }
-
-  /* ── ⑩ 실시간 검색어 ── */
-  async function runKmRealtime() {
-    const card = document.querySelector('#page-km-realtime .card');
-    disableBtn(card, true);
-    showLoading('km-realtime', true);
-    showResult('km-realtime', false);
-    showError('km-realtime', '');
-    try {
-      const data = await callAPI({ mode: 'km-realtime', topic: kmRealtimeCat });
-      renderKmRealtime(data);
-      showResult('km-realtime', true);
-    } catch(e) { showError('km-realtime', e.message); }
-    finally { disableBtn(card, false); showLoading('km-realtime', false); }
-  }
-
-  function renderKmRealtime(data) {
-    const trendMap = {
-      '상승': { cls:'trend-up',   label:'▲ 상승' },
-      '신규': { cls:'trend-new',  label:'🆕 신규' },
-      '유지': { cls:'trend-keep', label:'→ 유지' }
-    };
-
-    const sourceBadge = data._hasRealNews
-      ? `<span style="display:inline-block;background:#c6f6d5;color:#22543d;border:1.5px solid #9ae6b4;border-radius:20px;padding:2px 10px;font-size:0.75rem;font-weight:700;">🟢 네이버 실뉴스 반영</span>`
-      : `<span style="display:inline-block;background:#fef3c7;color:#92400e;border:1.5px solid #f6e05e;border-radius:20px;padding:2px 10px;font-size:0.75rem;font-weight:700;">🤖 AI 추정</span>`;
-
-    document.getElementById('km-realtime-summary').innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px;">
-        ${sourceBadge}
-        ${data.updatedAt ? `<span style="font-size:0.75rem;color:#a0aec0;">마지막 업데이트: ${data.updatedAt}</span>` : ''}
-      </div>
-      <div style="font-size:0.85rem;color:#744210;">${data.summary || ''}</div>
-    `;
-
-    document.getElementById('km-realtime-list').innerHTML = (data.keywords||[]).map(k => {
-      const t = trendMap[k.trend] || trendMap['유지'];
-      return `
-        <li class="realtime-item" style="flex-direction:column;align-items:flex-start;gap:5px;">
-          <div style="display:flex;align-items:center;gap:10px;width:100%;">
-            <span class="realtime-rank">${k.rank}</span>
-            <span class="realtime-keyword" style="flex:1;">${k.keyword}</span>
-            <span class="realtime-trend ${t.cls}">${t.label}</span>
+    showResult('bmatrix', `
+      <div class="card result-fade">
+        <div class="card-title">🏠 블로그 레벨</div>
+        <div class="matrix-grid">
+          <div class="matrix-item">
+            <div class="matrix-item-title">블로그 레벨</div>
+            <div class="matrix-item-val" style="font-size:1.8rem;color:${LEVEL_COLORS[bl.level||0]}">${bl.level||0}</div>
+            <div class="matrix-item-sub">${escHtml(bl.reason||'')}</div>
           </div>
-          ${k.headline ? `<div style="font-size:0.8rem;color:#4a5568;padding-left:38px;line-height:1.5;">${k.headline}</div>` : ''}
-          ${k.desc ? `<div style="font-size:0.73rem;color:#a0aec0;padding-left:38px;">${k.category} · ${k.desc}</div>` : ''}
-        </li>`;
-    }).join('');
-  }
-</script>
+          <div class="matrix-item">
+            <div class="matrix-item-title">키워드 상태</div>
+            <div class="matrix-item-val">${renderBadge('검색량 '+escHtml(ks.searchVolume||''), ks.searchVolume)}</div>
+            <div class="matrix-item-sub">경쟁도 ${renderBadge(escHtml(ks.competition||''), ks.competition)} &nbsp; 기회 ${renderBadge(escHtml(ks.opportunity||''), ks.opportunity)}</div>
+          </div>
+        </div>
+      </div>
+      ${gkCards ? `<div class="card result-fade">
+        <div class="card-title">🥇 황금 키워드</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px">${gkCards}</div>
+      </div>` : ''}
+      ${compRows ? `<div class="card result-fade">
+        <div class="card-title">⚔️ 경쟁 매트릭스</div>
+        ${compRows}
+      </div>` : ''}
+      ${cp.length ? `<div class="card result-fade">
+        <div class="card-title">📝 콘텐츠 플랜</div>
+        <ul class="tips-list">${cp.map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul>
+      </div>` : ''}
+      ${qw.length ? `<div class="card result-fade">
+        <div class="card-title">⚡ 빠른 성과</div>
+        <ul class="tips-list">${qw.map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul>
+      </div>` : ''}
+      ${data.summary ? `<div class="summary-box result-fade">${escHtml(data.summary)}</div>` : ''}
+    `);
+  } catch(e) { showError('bmatrix', e.message); }
+}
 
+// ═══════════════════════════════════════════
+//  5. KEYWORD RECOMMEND
+// ═══════════════════════════════════════════
+async function analyzeKwRecom() {
+  const topic = document.getElementById('krecom-topic').value.trim();
+  const platform = getPlatform('krecom');
+  if (!topic) { alert('주제를 입력해주세요.'); return; }
+  showLoading('krecom');
+  try {
+    const data = await callApi({mode:'keyword-recommend', topic, platform});
+    showResult('krecom', renderKwRecomResult(data));
+  } catch(e) { showError('krecom', e.message); }
+}
+
+function renderKwRecomResult(data) {
+  const sections = [];
+  const addSection = (title, items, tag='tag') => {
+    if (!items||!items.length) return;
+    const chips = items.map(k => {
+      if (typeof k === 'object') {
+        return `<span class="tag">${escHtml(k.keyword||k.title||k)}</span>`;
+      }
+      return `<span class="tag">${escHtml(k)}</span>`;
+    }).join('');
+    sections.push(`<div class="card result-fade"><div class="card-title">${title}</div><div class="tag-cloud">${chips}</div></div>`);
+  };
+  addSection('🔑 주요 키워드', data.mainKeywords||data.keywords||[]);
+  addSection('📌 롱테일 키워드', data.longtailKeywords||data.longtail||[]);
+  addSection('📝 추천 제목', data.titles||data.titleSuggestions||[]);
+  if ((data.strategy||[]).length) {
+    sections.push(`<div class="card result-fade"><div class="card-title">🎯 콘텐츠 전략</div><ul class="tips-list">${(data.strategy||[]).map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul></div>`);
+  }
+  if ((data.structureTips||data.tips||[]).length) {
+    const tips = data.structureTips||data.tips||[];
+    sections.push(`<div class="card result-fade"><div class="card-title">💡 구성 팁</div><ul class="tips-list">${tips.map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul></div>`);
+  }
+  if (data.summary) sections.push(`<div class="summary-box result-fade">${escHtml(data.summary)}</div>`);
+  return sections.join('') || '<div class="error-box">결과 데이터가 없습니다.</div>';
+}
+
+// ═══════════════════════════════════════════
+//  6. GOLDEN KEYWORD
+// ═══════════════════════════════════════════
+async function analyzeGolden() {
+  const topic = document.getElementById('golden-topic').value.trim();
+  const platform = getPlatform('golden');
+  if (!topic) { alert('주제를 입력해주세요.'); return; }
+  showLoading('golden');
+  try {
+    const data = await callApi({mode:'golden-keyword', topic, platform});
+    const keywords = data.goldenKeywords || data.keywords || [];
+    const tips = data.tips || data.usageTips || [];
+    const cards = keywords.map(g => {
+      const kw = typeof g==='string' ? g : (g.keyword||g.title||'');
+      const score = g.score||'';
+      const reason = g.reason||g.desc||'';
+      return `
+        <div class="keyword-card">
+          <div class="kc-word">🥇 ${escHtml(kw)}</div>
+          <div class="kc-meta">
+            ${score?`<span class="kc-score">점수 ${escHtml(String(score))}</span>`:''}
+            ${renderBadge('황금', 'gold')}
+          </div>
+          ${reason?`<div class="kc-reason">${escHtml(reason)}</div>`:''}
+        </div>`;
+    }).join('');
+    showResult('golden', `
+      ${data.summary ? `<div class="summary-box result-fade">${escHtml(data.summary)}</div>` : ''}
+      ${cards ? `<div class="card result-fade">
+        <div class="card-title">🥇 황금 키워드</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">${cards}</div>
+      </div>` : ''}
+      ${tips.length ? `<div class="card result-fade">
+        <div class="card-title">💡 활용 팁</div>
+        <ul class="tips-list">${tips.map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul>
+      </div>` : ''}
+    `);
+  } catch(e) { showError('golden', e.message); }
+}
+
+// ═══════════════════════════════════════════
+//  7. KEYWORD INDEX
+// ═══════════════════════════════════════════
+async function analyzeKwIndex() {
+  const keyword = document.getElementById('kidx-keyword').value.trim();
+  const platform = getPlatform('kidx');
+  if (!keyword) { alert('키워드를 입력해주세요.'); return; }
+  showLoading('kidx');
+  try {
+    const data = await callApi({mode:'keyword-index', keyword, platform});
+    showResult('kidx', renderKwIndexResult(data, keyword));
+  } catch(e) { showError('kidx', e.message); }
+}
+
+function renderKwIndexResult(data, keyword) {
+  const raw = data.rawData||{};
+  const hasRaw = raw && (raw.monthlySearch||raw.pc||raw.mobile||raw.blogCount);
+  let html = '';
+  if (hasRaw) {
+    const rawCards = [
+      raw.monthlySearch!=null ? `<div class="raw-card"><div class="raw-val">${Number(raw.monthlySearch).toLocaleString()}</div><div class="raw-label">월 검색량</div></div>` : '',
+      raw.pc!=null ? `<div class="raw-card"><div class="raw-val">${Number(raw.pc).toLocaleString()}</div><div class="raw-label">PC 검색</div></div>` : '',
+      raw.mobile!=null ? `<div class="raw-card"><div class="raw-val">${Number(raw.mobile).toLocaleString()}</div><div class="raw-label">모바일 검색</div></div>` : '',
+      raw.blogCount!=null ? `<div class="raw-card"><div class="raw-val">${Number(raw.blogCount).toLocaleString()}</div><div class="raw-label">블로그 수</div></div>` : '',
+      raw.trendAvg!=null ? `<div class="raw-card"><div class="raw-val">${raw.trendAvg}</div><div class="raw-label">트렌드</div></div>` : '',
+    ].filter(Boolean).join('');
+    html += `<div class="card result-fade"><div class="card-title">📊 네이버 실데이터</div><div class="raw-data-grid">${rawCards}</div></div>`;
+  }
+  html += `<div class="card result-fade"><div class="card-title">📈 키워드 현황</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+      ${renderBadge('검색량 '+(data.searchVolume||''), data.searchVolume)}
+      ${renderBadge('경쟁도 '+(data.competition||''), data.competition)}
+    </div>
+    ${data.analysis ? `<div class="text-mid" style="font-size:.83rem;line-height:1.6">${escHtml(data.analysis)}</div>` : ''}
+  </div>`;
+  if ((data.relatedKeywords||[]).length) {
+    const tags = (data.relatedKeywords||[]).map(k=>`<span class="tag" onclick="reanalyzeKwidx('${escHtml(k)}')">${escHtml(k)}</span>`).join('');
+    html += `<div class="card result-fade"><div class="card-title">🔗 연관 키워드</div><div class="tag-cloud">${tags}</div></div>`;
+  }
+  if ((data.tips||[]).length) {
+    html += `<div class="card result-fade"><div class="card-title">💡 전략 팁</div><ul class="tips-list">${(data.tips||[]).map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul></div>`;
+  }
+  return html;
+}
+function reanalyzeKwidx(kw) {
+  document.getElementById('kidx-keyword').value = kw;
+  analyzeKwIndex();
+}
+
+// ═══════════════════════════════════════════
+//  8. KM-SEARCH
+// ═══════════════════════════════════════════
+async function analyzeKmSearch() {
+  const keyword = document.getElementById('kmsearch-keyword').value.trim();
+  const platform = getPlatform('kmsearch');
+  if (!keyword) { alert('키워드를 입력해주세요.'); return; }
+  showLoading('kmsearch');
+  try {
+    const data = await callApi({mode:'km-search', keyword, platform});
+    const raw = data.rawData||{};
+    const hasRaw = raw && (raw.monthlySearch!=null||raw.pc!=null||raw.mobile!=null||raw.blogCount!=null);
+    let html = '';
+    if (hasRaw) {
+      const rawCards = [
+        raw.monthlySearch!=null?`<div class="raw-card"><div class="raw-val">${Number(raw.monthlySearch).toLocaleString()}</div><div class="raw-label">월 검색량</div></div>`:'',
+        raw.pc!=null?`<div class="raw-card"><div class="raw-val">${Number(raw.pc).toLocaleString()}</div><div class="raw-label">PC 검색</div></div>`:'',
+        raw.mobile!=null?`<div class="raw-card"><div class="raw-val">${Number(raw.mobile).toLocaleString()}</div><div class="raw-label">모바일</div></div>`:'',
+        raw.blogCount!=null?`<div class="raw-card"><div class="raw-val">${Number(raw.blogCount).toLocaleString()}</div><div class="raw-label">블로그 수</div></div>`:'',
+      ].filter(Boolean).join('');
+      html += `<div class="card result-fade"><div class="card-title">📡 네이버 실데이터</div><div class="raw-data-grid">${rawCards}</div></div>`;
+    }
+    html += `<div class="card result-fade"><div class="card-title">📊 키워드 분석</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+        ${renderBadge('검색량 '+(data.searchVolume||''), data.searchVolume)}
+        ${renderBadge('경쟁도 '+(data.competition||''), data.competition)}
+      </div>
+      ${data.analysis?`<div class="text-mid" style="font-size:.83rem;line-height:1.6">${escHtml(data.analysis)}</div>`:''}
+    </div>`;
+    if ((data.relatedKeywords||[]).length) {
+      const tags = (data.relatedKeywords||[]).map(k=>`<span class="tag longtail" onclick="reanalyzeKmSearch('${escHtml(k)}')">${escHtml(k)}</span>`).join('');
+      html += `<div class="card result-fade"><div class="card-title">🔗 연관 키워드 <span class="text-xs text-light" style="font-weight:400">(클릭하면 재분석)</span></div><div class="tag-cloud">${tags}</div></div>`;
+    }
+    if ((data.tips||[]).length) {
+      html += `<div class="card result-fade"><div class="card-title">💡 SEO 팁</div><ul class="tips-list">${(data.tips||[]).map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul></div>`;
+    }
+    showResult('kmsearch', html);
+  } catch(e) { showError('kmsearch', e.message); }
+}
+function reanalyzeKmSearch(kw) {
+  document.getElementById('kmsearch-keyword').value = kw;
+  analyzeKmSearch();
+}
+
+// ═══════════════════════════════════════════
+//  9. INFINITE KEYWORD
+// ═══════════════════════════════════════════
+async function analyzeInfinite() {
+  const topic = document.getElementById('infinite-topic').value.trim();
+  const platform = getPlatform('infinite');
+  if (!topic) { alert('주제를 입력해주세요.'); return; }
+  showLoading('infinite');
+  try {
+    const data = await callApi({mode:'infinite-keyword', topic, platform});
+    const kws = data.keywords||[];
+    const main = kws.filter(k=>k.type==='메인'||k.type==='main');
+    const sub  = kws.filter(k=>k.type==='세부'||k.type==='sub');
+    const long = kws.filter(k=>k.type==='롱테일'||k.type==='longtail'||(!k.type&&true));
+
+    const renderKwList = (list) => list.map(k=>`
+      <div class="kw-row">
+        <span class="kw-name">${escHtml(k.keyword)}</span>
+        <div class="kw-meta">
+          ${k.searchVolume?renderBadge(k.searchVolume, k.searchVolume):''}
+          ${k.competition?`<span class="badge ${getBadgeClass(k.competition)}" style="font-size:.65rem">${escHtml(k.competition)}</span>`:''}
+        </div>
+      </div>`).join('');
+
+    const allList = kws.length ? kws : [];
+    showResult('infinite', `
+      ${data.summary?`<div class="summary-box result-fade">${escHtml(data.summary)}</div>`:''}
+      <div class="card result-fade">
+        <div class="card-title">♾️ 키워드 목록 <span class="badge badge-blue" style="margin-left:6px">${data.totalCount||kws.length}개</span></div>
+        <div class="tabs">
+          <button class="tab-btn active" onclick="switchTab(this,'inf-all')">전체 (${allList.length})</button>
+          <button class="tab-btn" onclick="switchTab(this,'inf-main')">메인 (${main.length})</button>
+          <button class="tab-btn" onclick="switchTab(this,'inf-sub')">세부 (${sub.length})</button>
+          <button class="tab-btn" onclick="switchTab(this,'inf-long')">롱테일 (${long.length})</button>
+        </div>
+        <div class="tab-panel active" id="inf-all"><div class="kw-table">${renderKwList(allList)||'<div class="text-mid text-sm">결과가 없습니다.</div>'}</div></div>
+        <div class="tab-panel" id="inf-main"><div class="kw-table">${renderKwList(main)||'<div class="text-mid text-sm">결과가 없습니다.</div>'}</div></div>
+        <div class="tab-panel" id="inf-sub"><div class="kw-table">${renderKwList(sub)||'<div class="text-mid text-sm">결과가 없습니다.</div>'}</div></div>
+        <div class="tab-panel" id="inf-long"><div class="kw-table">${renderKwList(long)||'<div class="text-mid text-sm">결과가 없습니다.</div>'}</div></div>
+      </div>
+    `);
+  } catch(e) { showError('infinite', e.message); }
+}
+function switchTab(btn, panelId) {
+  const card = btn.closest('.card');
+  card.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  card.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(panelId).classList.add('active');
+}
+
+// ═══════════════════════════════════════════
+//  10. KEYWORD COMBINER
+// ═══════════════════════════════════════════
+async function analyzeCombiner() {
+  const raw = document.getElementById('combiner-keywords').value.trim();
+  if (!raw) { alert('키워드를 입력해주세요.'); return; }
+  const keywords = raw.split('\n').map(k=>k.trim()).filter(Boolean);
+  if (!keywords.length) { alert('유효한 키워드가 없습니다.'); return; }
+
+  // Local transformation (instant)
+  const comma = keywords.join(', ');
+  const space = keywords.join(' ');
+  const hashtag = keywords.map(k=>'#'+k).join(' ');
+  const naver = keywords.join(',');
+
+  const makeBlock = (label, text, id) => `
+    <div class="combiner-label">
+      <span>${label}</span>
+      <button class="btn-copy" onclick="copyText(document.getElementById('${id}').textContent, this)">📋 복사</button>
+    </div>
+    <div class="combiner-block" id="${id}">${escHtml(text)}</div>`;
+
+  showResult('combiner', `
+    <div class="card result-fade">
+      <div class="card-title">🏷️ 변환 결과 <span class="badge badge-blue" style="margin-left:6px">${keywords.length}개 키워드</span></div>
+      ${makeBlock('콤마 구분', comma, 'cb-comma')}
+      <div style="height:12px"></div>
+      ${makeBlock('공백 구분', space, 'cb-space')}
+      <div style="height:12px"></div>
+      ${makeBlock('해시태그', hashtag, 'cb-hashtag')}
+      <div style="height:12px"></div>
+      ${makeBlock('네이버 태그', naver, 'cb-naver')}
+    </div>
+    <div id="combiner-api-result"></div>
+  `);
+
+  // Also call API for recommended combos
+  showLoading('combiner');
+  try {
+    const data = await callApi({mode:'keyword-combiner', keyword: raw});
+    hideLoading('combiner');
+    const rec = data.recommended||[];
+    if (rec.length) {
+      document.getElementById('combiner-api-result').innerHTML = `
+        <div class="card result-fade">
+          <div class="card-title">✨ AI 추천 조합 (${rec.length}개)</div>
+          ${rec.map((r,i)=>`
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:${i%2===0?'#f7fbff':'#fff'};border-radius:8px;margin-bottom:6px;border:1px solid #e2ecf9">
+              <span style="font-size:.83rem;font-weight:600;color:var(--navy)">${escHtml(r)}</span>
+              <button class="btn-copy" onclick="copyText('${escHtml(r).replace(/'/g,"\\'")}', this)">📋 복사</button>
+            </div>`).join('')}
+        </div>`;
+    }
+    if (data.totalCount) {
+      // Update count badge
+    }
+  } catch(e) {
+    hideLoading('combiner');
+    // Non-critical — local result already shown
+  }
+}
+
+// ═══════════════════════════════════════════
+//  11. KM-REALTIME
+// ═══════════════════════════════════════════
+async function analyzeRealtime() {
+  const topic = document.getElementById('realtime-category').value;
+  showLoading('realtime');
+  try {
+    const data = await callApi({mode:'km-realtime', topic});
+    const kws = data.keywords||[];
+    const rows = kws.map(k => {
+      const rankEl = k.rank<=3 ? `<span class="rank-num top3">${k.rank}</span>` : `<span class="rank-num">${k.rank}</span>`;
+      let trendEl = '';
+      if (k.trend==='상승') trendEl = `<span class="trend-badge trend-up">↑ 상승</span>`;
+      else if (k.trend==='신규') trendEl = `<span class="trend-badge trend-new">★ 신규</span>`;
+      else trendEl = `<span class="trend-badge trend-keep">- 유지</span>`;
+      return `<tr>
+        <td style="text-align:center">${rankEl}</td>
+        <td><strong style="color:var(--navy)">${escHtml(k.keyword)}</strong>${k.headline?`<div style="font-size:.71rem;color:var(--text-light);margin-top:2px">${escHtml(k.headline)}</div>`:''}</td>
+        <td><span class="badge badge-blue">${escHtml(k.category||'')}</span></td>
+        <td>${trendEl}</td>
+        <td style="font-size:.75rem;color:var(--text-mid)">${escHtml(k.desc||'')}</td>
+      </tr>`;
+    }).join('');
+
+    showResult('realtime', `
+      ${data.summary?`<div class="summary-box result-fade">${escHtml(data.summary)}</div>`:''}
+      <div class="card result-fade">
+        <div class="card-title" style="display:flex;justify-content:space-between">
+          📡 실시간 검색어
+          ${data.updatedAt?`<span class="text-xs text-light">업데이트: ${escHtml(data.updatedAt)}</span>`:''}
+          ${data._hasRealNews?`<span class="badge badge-naver">실데이터</span>`:''}
+        </div>
+        <div class="scroll-x">
+          <table class="data-table">
+            <thead><tr><th style="width:50px">순위</th><th>키워드</th><th>분야</th><th>트렌드</th><th>설명</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>
+    `);
+  } catch(e) { showError('realtime', e.message); }
+}
+
+// ═══════════════════════════════════════════
+//  12. KM-MORPHEME
+// ═══════════════════════════════════════════
+async function analyzeMorpheme() {
+  const keyword = document.getElementById('morpheme-text').value.trim();
+  if (!keyword) { alert('텍스트를 입력해주세요.'); return; }
+  showLoading('morpheme');
+  try {
+    const data = await callApi({mode:'km-morpheme', keyword});
+    const morphemes = data.morphemes||[];
+    const topKws = data.topKeywords||[];
+    const maxCount = morphemes.length ? Math.max(...morphemes.map(m=>m.count||1)) : 1;
+
+    const bars = morphemes.slice(0,20).map(m => {
+      const pct = Math.round((m.count/maxCount)*100);
+      const posClass = m.pos==='동사'?'pos-verb':m.pos==='형용사'?'pos-adj':'pos-noun';
+      return `<div class="morpheme-row">
+        <div class="morpheme-word">${escHtml(m.word)}</div>
+        <div class="morpheme-bar-wrap">
+          <div class="morpheme-bar-fill" style="width:${pct}%"><span class="morpheme-bar-val">${m.count}</span></div>
+        </div>
+        <span class="morpheme-pos ${posClass}">${escHtml(m.pos||'명사')}</span>
+      </div>`;
+    }).join('');
+
+    const sentEmoji = data.sentiment==='긍정'?'😊':data.sentiment==='부정'?'😟':'😐';
+    const sentColor = data.sentiment==='긍정'?'var(--green-text)':data.sentiment==='부정'?'var(--red-text)':'var(--text-mid)';
+
+    showResult('morpheme', `
+      <div class="card result-fade">
+        <div class="card-title">🔬 형태소 빈도</div>
+        <div class="morpheme-bars">${bars||'<div class="text-mid text-sm">형태소를 추출하지 못했습니다.</div>'}</div>
+      </div>
+      <div class="card result-fade">
+        <div class="card-title">💭 감정 분석</div>
+        <div class="sentiment-card">
+          <div class="sentiment-emoji">${sentEmoji}</div>
+          <div class="sentiment-info">
+            <div class="s-label">감정</div>
+            <div class="s-val" style="color:${sentColor}">${escHtml(data.sentiment||'')} ${data.sentimentScore!=null?`(${data.sentimentScore > 0 ? '+':''}${data.sentimentScore})`:''}
+            </div>
+            ${data.sentimentDetail?`<div class="s-detail">${escHtml(data.sentimentDetail)}</div>`:''}
+          </div>
+        </div>
+      </div>
+      ${topKws.length?`<div class="card result-fade">
+        <div class="card-title">🏆 상위 키워드</div>
+        <div class="tag-cloud">${topKws.map(k=>`<span class="tag">${escHtml(k)}</span>`).join('')}</div>
+      </div>`:''}
+      ${data.summary?`<div class="summary-box result-fade">${escHtml(data.summary)}</div>`:''}
+    `);
+  } catch(e) { showError('morpheme', e.message); }
+}
+
+// ═══════════════════════════════════════════
+//  13. KM-SELLER
+// ═══════════════════════════════════════════
+async function analyzeSeller() {
+  const keyword = document.getElementById('seller-keyword').value.trim();
+  if (!keyword) { alert('키워드를 입력해주세요.'); return; }
+  showLoading('seller');
+  try {
+    const data = await callApi({mode:'km-seller', keyword});
+    const pr = data.priceRange||{};
+    const hasPr = pr.min!=null||pr.max!=null||pr.avg!=null;
+    let priceHtml = '';
+    if (hasPr) {
+      const min = pr.min||0, max = pr.max||0, avg = pr.avg||0;
+      const range = max-min||1;
+      const avgPct = max ? Math.round(((avg-min)/range)*80+10) : 50;
+      priceHtml = `<div class="card result-fade">
+        <div class="card-title">💰 가격대 분석</div>
+        <div class="price-bar-wrap">
+          <div class="price-avg-marker" style="left:${avgPct}%" data-label="평균 ${avg.toLocaleString()}원"></div>
+        </div>
+        <div class="price-labels">
+          <span>최저 ${min.toLocaleString()}원</span>
+          <span>최고 ${max.toLocaleString()}원</span>
+        </div>
+        ${data.productCount?`<div class="mt-2 text-sm text-mid">검색된 상품: <strong>${Number(data.productCount).toLocaleString()}개</strong></div>`:''}
+      </div>`;
+    }
+    const tips = (data.sellerTips||[]).map(t=>`<li>${escHtml(t)}</li>`).join('');
+    const prods = (data.relatedProducts||[]).map(p=>`<span class="product-tag">${escHtml(p)}</span>`).join('');
+
+    showResult('seller', `
+      <div class="card result-fade">
+        <div class="card-title">📦 경쟁도</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+          ${renderBadge('경쟁도 '+(data.competition||''), data.competition)}
+        </div>
+        ${data.analysis?`<div class="text-mid" style="font-size:.83rem;line-height:1.6">${escHtml(data.analysis)}</div>`:''}
+      </div>
+      ${priceHtml}
+      ${tips?`<div class="card result-fade"><div class="card-title">💡 셀러 팁</div><ul class="tips-list">${tips}</ul></div>`:''}
+      ${prods?`<div class="card result-fade"><div class="card-title">🛍️ 연관 상품</div><div style="display:flex;flex-wrap:wrap">${prods}</div></div>`:''}
+    `);
+  } catch(e) { showError('seller', e.message); }
+}
+
+// ═══════════════════════════════════════════
+//  14. YOUTUBE ANALYZE
+// ═══════════════════════════════════════════
+async function analyzeYoutube() {
+  const keyword = document.getElementById('yt-keyword').value.trim();
+  const topic = document.getElementById('yt-topic').value.trim();
+  if (!keyword) { alert('채널명 또는 키워드를 입력해주세요.'); return; }
+  showLoading('yt');
+  try {
+    const data = await callApi({mode:'youtube-analyze', keyword, topic});
+    const ca = data.channelAnalysis||{};
+    const ka = data.keywordAnalysis||{};
+    const titles = data.titleSuggestions||[];
+    const tags = data.recommendedTags||[];
+    const thumbTips = data.thumbnailTips||[];
+    const growth = data.growthStrategy||[];
+
+    const titleCards = titles.map((t,i)=>`
+      <div class="title-chip">
+        <span style="font-weight:600;flex:1">${escHtml(t)}</span>
+        <button class="btn-copy" onclick="copyText('${escHtml(t).replace(/'/g,"\\'")}', this)">📋 복사</button>
+      </div>`).join('');
+    const tagChips = tags.map(t=>`<span class="tag-chip">#${escHtml(t)}</span>`).join(' ');
+
+    showResult('yt', `
+      <div class="card result-fade">
+        <div class="yt-section-title">📺 채널 분석</div>
+        <div class="matrix-grid">
+          <div class="matrix-item">
+            <div class="matrix-item-title">채널 레벨</div>
+            <div class="matrix-item-val">${escHtml(ca.level||'')}</div>
+            <div class="matrix-item-sub">${escHtml(ca.reason||'')}</div>
+          </div>
+          <div class="matrix-item">
+            <div class="matrix-item-title">키워드 분석</div>
+            <div class="matrix-item-val" style="font-size:.82rem">${renderBadge('검색량 '+(ka.searchVolume||''), ka.searchVolume)} ${renderBadge('경쟁도 '+(ka.competition||''), ka.competition)}</div>
+            <div class="matrix-item-sub">트렌드: ${escHtml(ka.trending||'')}</div>
+          </div>
+        </div>
+      </div>
+      ${titleCards?`<div class="card result-fade"><div class="card-title">📝 추천 제목</div>${titleCards}</div>`:''}
+      ${tagChips?`<div class="card result-fade"><div class="card-title">🏷️ 추천 태그</div><div style="display:flex;flex-wrap:wrap;gap:6px">${tagChips}</div></div>`:''}
+      ${thumbTips.length?`<div class="card result-fade"><div class="card-title">🖼️ 썸네일 팁</div><ul class="tips-list">${thumbTips.map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul></div>`:''}
+      ${growth.length?`<div class="card result-fade"><div class="card-title">🚀 성장 전략</div><ul class="tips-list">${growth.map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul></div>`:''}
+      ${data.summary?`<div class="summary-box result-fade">${escHtml(data.summary)}</div>`:''}
+    `);
+  } catch(e) { showError('yt', e.message); }
+}
+</script>
 </body>
 </html>

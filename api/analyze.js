@@ -474,7 +474,35 @@ goldenKeywords 3개, competitionMatrix 3개, contentPlan 4개, quickWins 4개.`,
       };
     }
 
-    // ⑬ 대화형 블로그 코칭 챗
+    // ⑬ 무한 키워드
+    else if (mode === 'infinite-keyword') {
+      result = await claude(CLAUDE_KEY,
+        `한국 블로그 SEO 전문가. 부동산·금융·경제 특화. 순수 JSON만 반환.
+{"keywords":[{"keyword":"","type":"메인|세부|롱테일","searchVolume":"높음|중간|낮음","competition":"높음|중간|낮음"}],"totalCount":0,"summary":""}
+주어진 주제에서 메인 키워드 10개 + 세부 키워드 20개 + 롱테일 키워드 20개 = 총 50개 추출.
+keywords 배열에 50개 모두 포함. totalCount는 50.`,
+        `주제: ${topic}\n플랫폼: ${platform || '둘 다'}`
+      );
+    }
+
+    // ⑭ 세부키워드 조합기 (Claude로 최적화 태그 생성)
+    else if (mode === 'keyword-combiner') {
+      result = await claude(CLAUDE_KEY,
+        `한국 블로그 SEO 전문가. 순수 JSON만 반환.
+{
+  "comma": "키워드1, 키워드2, 키워드3 ...",
+  "space": "키워드1 키워드2 키워드3 ...",
+  "hashtag": "#키워드1 #키워드2 #키워드3 ...",
+  "naverTag": "키워드1,키워드2,키워드3",
+  "recommended": ["추천조합1(3단어)","추천조합2","추천조합3","추천조합4","추천조합5"],
+  "totalCount": 0
+}
+입력된 키워드들을 4가지 형식으로 변환하고, 검색 노출에 유리한 조합 5개 추천.`,
+        `키워드 목록:\n${keyword}`
+      );
+    }
+
+    // ⑮ 대화형 블로그 코칭 챗
     else if (mode === 'chat') {
       const { messages, blogContext } = req.body;
       if (!messages?.length) return res.status(400).json({ error: '메시지가 없습니다.' });
