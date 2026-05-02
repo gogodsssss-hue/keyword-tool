@@ -406,39 +406,6 @@ textarea.form-control{resize:vertical;min-height:100px}
       <label>블로그 주제</label>
       <input type="text" class="form-control" id="bindex-topic" placeholder="예) 부동산, 금융, 재테크" />
     </div>
-    <div class="stat-input-section">
-      <div class="stat-input-header">블로그 현황 입력 <span style="font-weight:400;color:var(--text-light)">(선택 · 입력할수록 정확해져요)</span></div>
-      <div class="stat-input-grid">
-        <div class="stat-input-item">
-          <label>이웃수</label>
-          <input type="number" id="bindex-neighbors" placeholder="예) 307" min="0" />
-        </div>
-        <div class="stat-input-item">
-          <label>오늘 방문자</label>
-          <input type="number" id="bindex-today-visitors" placeholder="예) 32" min="0" />
-        </div>
-        <div class="stat-input-item">
-          <label>전체 방문자</label>
-          <input type="number" id="bindex-total-visitors" placeholder="예) 35918" min="0" />
-        </div>
-        <div class="stat-input-item">
-          <label>평균 방문자</label>
-          <input type="number" id="bindex-avg-visitors" placeholder="예) 25" min="0" />
-        </div>
-        <div class="stat-input-item">
-          <label>총 포스팅 수</label>
-          <input type="number" id="bindex-post-count" placeholder="예) 48" min="0" />
-        </div>
-        <div class="stat-input-item">
-          <label>인플루언서</label>
-          <select id="bindex-influencer" style="width:100%;padding:8px 10px;border:1.5px solid #cde;border-radius:8px;font-size:.83rem;font-family:inherit;color:var(--text);background:#fff;outline:none;font-weight:600">
-            <option value="없음">없음</option>
-            <option value="있음">있음</option>
-          </select>
-        </div>
-      </div>
-      <div class="stat-hint">💡 네이버 블로그 관리 페이지에서 확인 가능한 수치를 입력하세요</div>
-    </div>
     <button class="btn btn-primary" style="margin-top:14px;width:100%" onclick="analyzeBlogIndex()">📈 블로그 지수 분석</button>
   </div>
   <div class="loading" id="bindex-loading"><div class="spinner"></div><div class="loading-text">블로그 지수를 측정 중입니다...</div></div>
@@ -946,30 +913,16 @@ async function analyzeBlogIndex() {
   const topic = document.getElementById('bindex-topic').value.trim();
   if (!url) { alert('블로그 URL을 입력해주세요.'); return; }
 
-  // 현황 수치 수집
-  const neighbors      = parseInt(document.getElementById('bindex-neighbors').value) || 0;
-  const todayVisitors  = parseInt(document.getElementById('bindex-today-visitors').value) || 0;
-  const totalVisitors  = parseInt(document.getElementById('bindex-total-visitors').value) || 0;
-  const avgVisitors    = parseInt(document.getElementById('bindex-avg-visitors').value) || 0;
-  const postCount      = parseInt(document.getElementById('bindex-post-count').value) || 0;
-  const isInfluencer   = document.getElementById('bindex-influencer').value;
-
   showLoading('bindex');
   try {
-    const data = await callApi({
-      mode:'blog-index', blogUrl:url, topic,
-      neighbors, todayVisitors, totalVisitors, avgVisitors, postCount, isInfluencer
-    });
+    const data = await callApi({ mode:'blog-index', blogUrl:url, topic });
     state.blogIndexData = data;
-    // 채팅에 전달할 컨텍스트 — 필드명 API와 일치시킴
     state.blogContext = {
-      blogUrl: url,
-      topic,
+      blogUrl: url, topic,
       estimatedLevel: data.estimatedLevel,
-      levelReason:    data.levelReason || '',
-      nextLevelTips:  data.nextLevelTips || [],
-      summary:        data.summary || '',
-      neighbors, todayVisitors, totalVisitors, avgVisitors, postCount, isInfluencer
+      levelReason: data.levelReason || '',
+      nextLevelTips: data.nextLevelTips || [],
+      summary: data.summary || ''
     };
     state.chatMessages = [];
 
@@ -983,26 +936,10 @@ async function analyzeBlogIndex() {
     const tips = (data.tips||[]).map(t=>`<li>${escHtml(t)}</li>`).join('');
     const nextTips = (data.nextLevelTips||[]).map(t=>`<li>${escHtml(t)}</li>`).join('');
 
-    // 입력된 현황 카드 렌더링
-    const hasStats = neighbors || todayVisitors || totalVisitors || postCount;
-    const statsCard = hasStats ? `
-      <div class="card result-fade">
-        <div class="card-title">📊 블로그 현황</div>
-        ${isInfluencer==='있음' ? `<div style="margin-bottom:10px"><span class="influencer-badge">⭐ 인플루언서</span></div>` : ''}
-        <div class="blog-stat-bar">
-          ${neighbors ? `<div class="bstat-item"><div class="bstat-val">${neighbors.toLocaleString()}</div><div class="bstat-label">이웃수</div></div>` : ''}
-          ${todayVisitors ? `<div class="bstat-item"><div class="bstat-val">${todayVisitors.toLocaleString()}</div><div class="bstat-label">오늘 방문자</div></div>` : ''}
-          ${totalVisitors ? `<div class="bstat-item"><div class="bstat-val">${totalVisitors.toLocaleString()}</div><div class="bstat-label">전체 방문자</div></div>` : ''}
-          ${avgVisitors ? `<div class="bstat-item"><div class="bstat-val">${avgVisitors.toLocaleString()}</div><div class="bstat-label">평균 방문자</div></div>` : ''}
-          ${postCount ? `<div class="bstat-item"><div class="bstat-val">${postCount.toLocaleString()}</div><div class="bstat-label">총 포스팅</div></div>` : ''}
-        </div>
-      </div>` : '';
-
     showResult('bindex', `
       <div class="card result-fade">
         ${renderLevelViz(level, data.levelReason)}
       </div>
-      ${statsCard}
       ${scores ? `<div class="card result-fade">
         <div class="card-title">📋 세부 점수</div>
         <div class="scores-grid">${scores}</div>
