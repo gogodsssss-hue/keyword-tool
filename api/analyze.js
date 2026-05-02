@@ -775,6 +775,33 @@ JSON 없이 자연스러운 한국어 대화체로 답하세요.`;
       result = { posts: enrichedPosts, bestKeywords, blogId, totalPosts: posts.length };
     }
 
+    // 키워드 실데이터 조회 (AI 없음 — 네이버 API 직접)
+    else if (mode === 'kw-checker') {
+      const keywords = (req.body.keywords || []).slice(0, 10);
+      if (!keywords.length) return res.status(400).json({ error: '키워드를 입력해주세요.' });
+
+      const rows = await Promise.all(keywords.map(async kw => {
+        const [vol, bc] = await Promise.all([
+          hasAds   ? naverSearchVolume(kw, AD_KEY, AD_SECRET, AD_CUSTOMER) : Promise.resolve(null),
+          hasNaver ? naverBlogSearch(kw, NAVER_CID, NAVER_CSEC)            : Promise.resolve(null)
+        ]);
+        const total = vol?.total ?? null;
+        const comp  = bc ?? null;
+        const score = (() => {
+          const v = total || 0, c = comp || 999999, r = v / (c + 1);
+          if (r >= 1   && v >= 5000) return 'A+';
+          if (r >= 0.5 && v >= 2000) return 'A';
+          if (r >= 0.2 && v >= 1000) return 'B+';
+          if (r >= 0.1)              return 'B';
+          if (v >= 5000)             return 'B';
+          return 'C';
+        })();
+        return { keyword: kw, pc: vol?.pc ?? null, mobile: vol?.mobile ?? null, total, blogCount: comp, score };
+      }));
+
+      result = { rows };
+    }
+
     else {
       return res.status(400).json({ error: '지원하지 않는 모드입니다.' });
     }

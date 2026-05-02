@@ -347,6 +347,7 @@ textarea.form-control{resize:vertical;min-height:100px}
 <!-- ── SIDEBAR ── -->
 <nav class="sidebar" id="sidebar">
   <div class="sidebar-section">분석</div>
+  <div class="sidebar-item" data-page="kw-checker"><span class="si-icon">🔬</span>키워드 실데이터 조회</div>
   <div class="sidebar-item" data-page="blog-missing"><span class="si-icon">🔎</span>블로그 누락 검사</div>
   <div class="sidebar-item active" data-page="blog-index"><span class="si-icon">🩺</span>블로그 진단</div>
 
@@ -365,6 +366,23 @@ textarea.form-control{resize:vertical;min-height:100px}
 <main id="main-content">
 
 <!-- =================== 1. BLOG MISSING =================== -->
+<!-- =================== 키워드 실데이터 조회 =================== -->
+<div class="page" id="page-kw-checker">
+  <div class="page-header">
+    <h2>🔬 키워드 실데이터 조회</h2>
+    <p>AI 추측 없음. 네이버 API가 직접 답합니다 — 월간 검색량, 경쟁 포스트 수.</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>키워드 입력 <span style="font-weight:400;color:var(--text-light)">(여러 개는 줄바꿈으로 구분, 최대 10개)</span></label>
+      <textarea class="form-control" id="kwc-input" rows="4" placeholder="아파트 리모델링&#10;전세 사기&#10;금리 인상 영향&#10;부동산 투자" style="resize:vertical"></textarea>
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="runKwChecker()">🔬 실데이터 조회</button>
+  </div>
+  <div class="loading" id="kwc-loading"><div class="spinner"></div><div class="loading-text">네이버 API 조회 중...</div></div>
+  <div class="result-area" id="kwc-result"></div>
+</div>
+
 <div class="page" id="page-blog-missing">
   <div class="page-header">
     <h2>🔎 블로그 누락 검사</h2>
@@ -1369,6 +1387,66 @@ function copyDraft() {
 }
 
 function hideResult(id) { const el = document.getElementById(id+'-result'); if(el) el.innerHTML=''; }
+
+// ═══════════════════════════════════════════
+//  키워드 실데이터 조회 (AI 없음)
+// ═══════════════════════════════════════════
+async function runKwChecker() {
+  const raw = document.getElementById('kwc-input').value;
+  const keywords = raw.split('\n').map(k => k.trim()).filter(k => k.length > 0).slice(0, 10);
+  if (!keywords.length) { alert('키워드를 입력해주세요.'); return; }
+  showLoading('kwc');
+  try {
+    const data = await callApi({ mode: 'kw-checker', keywords });
+    const rows = data.rows || [];
+
+    const scoreColor = { 'A+':'#22543d','A':'#276749','B+':'#2b6cb0','B':'#4a5568','C':'#9b2c2c' };
+    const scoreBg    = { 'A+':'#c6f6d5','A':'#c6f6d5','B+':'#bee3f8','B':'#e2e8f0','C':'#fed7d7' };
+
+    const tableRows = rows.map(r => {
+      const sc = r.score || 'C';
+      const volColor  = (r.total||0) >= 10000 ? '#22543d' : (r.total||0) >= 2000 ? '#744210' : '#4a5568';
+      const compColor = (r.blogCount||999999) <= 5000 ? '#22543d' : (r.blogCount||999999) <= 30000 ? '#744210' : '#9b2c2c';
+      return `
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:12px 8px;font-weight:600">${escHtml(r.keyword)}</td>
+          <td style="padding:12px 8px;text-align:right;color:${volColor};font-weight:700">${r.total !== null ? r.total.toLocaleString() : '-'}</td>
+          <td style="padding:12px 8px;text-align:right;font-size:.78rem;color:var(--text-mid)">${r.pc !== null ? r.pc.toLocaleString() : '-'}</td>
+          <td style="padding:12px 8px;text-align:right;font-size:.78rem;color:var(--text-mid)">${r.mobile !== null ? r.mobile.toLocaleString() : '-'}</td>
+          <td style="padding:12px 8px;text-align:right;color:${compColor};font-weight:700">${r.blogCount !== null ? r.blogCount.toLocaleString() : '-'}</td>
+          <td style="padding:12px 8px;text-align:center">
+            <span style="background:${scoreBg[sc]||'#e2e8f0'};color:${scoreColor[sc]||'#4a5568'};font-weight:700;font-size:.85rem;padding:3px 12px;border-radius:20px">${sc}</span>
+          </td>
+        </tr>`;
+    }).join('');
+
+    showResult('kwc', `
+      <div class="card result-fade" style="margin-top:0;padding:0;overflow:hidden">
+        <div style="padding:14px 18px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div class="card-title" style="margin:0">🔬 실데이터 조회 결과</div>
+          <span style="font-size:.72rem;color:var(--naver);font-weight:600">🟢 네이버 API · AI 추측 없음</span>
+        </div>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:.85rem">
+            <thead>
+              <tr style="background:var(--bg);border-bottom:2px solid var(--border)">
+                <th style="padding:10px 8px;text-align:left;font-weight:600;color:var(--text-mid)">키워드</th>
+                <th style="padding:10px 8px;text-align:right;font-weight:600;color:var(--text-mid)">월검색(합)</th>
+                <th style="padding:10px 8px;text-align:right;font-weight:600;color:var(--text-mid)">PC</th>
+                <th style="padding:10px 8px;text-align:right;font-weight:600;color:var(--text-mid)">모바일</th>
+                <th style="padding:10px 8px;text-align:right;font-weight:600;color:var(--text-mid)">블로그 경쟁</th>
+                <th style="padding:10px 8px;text-align:center;font-weight:600;color:var(--text-mid)">황금도</th>
+              </tr>
+            </thead>
+            <tbody>${tableRows}</tbody>
+          </table>
+        </div>
+        <div style="padding:10px 18px;font-size:.75rem;color:var(--text-light)">
+          황금도 = 월검색량 ÷ 블로그 경쟁수 비율 · A+가 가장 좋음
+        </div>
+      </div>`);
+  } catch(e) { showError('kwc', e.message); }
+}
 
 // pg-golden 플랫폼 버튼
 document.querySelectorAll('#pg-golden .platform-btn').forEach(btn => {
