@@ -264,6 +264,23 @@ textarea.form-control{resize:vertical;min-height:100px}
 .seller-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-mid);margin-bottom:8px}
 .product-tag{display:inline-flex;align-items:center;padding:5px 12px;background:linear-gradient(135deg,#fff8e1,#fff);border:1px solid #fcd34d;border-radius:14px;font-size:.77rem;font-weight:600;color:#7d4608;margin:3px}
 
+/* ── STAT INPUT GRID ── */
+.stat-input-section{background:linear-gradient(135deg,#f0f7ff,#f7fbff);border:1.5px solid #bee3f8;border-radius:11px;padding:15px 16px;margin-top:12px}
+.stat-input-header{font-size:.75rem;font-weight:700;color:var(--navy-mid);margin-bottom:12px;display:flex;align-items:center;gap:6px;letter-spacing:.4px}
+.stat-input-header::before{content:'📊';font-size:13px}
+.stat-input-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat-input-item label{display:block;font-size:.7rem;font-weight:700;color:var(--text-mid);margin-bottom:5px}
+.stat-input-item input{width:100%;padding:8px 10px;border:1.5px solid #cde;border-radius:8px;font-size:.85rem;font-family:inherit;color:var(--text);background:#fff;outline:none;text-align:center;font-weight:600;transition:border .2s}
+.stat-input-item input:focus{border-color:var(--navy-light);box-shadow:0 0 0 2px rgba(49,130,206,.1)}
+.stat-hint{font-size:.68rem;color:var(--text-light);margin-top:8px;text-align:center}
+
+/* ── BLOG STAT SUMMARY CARD ── */
+.blog-stat-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:4px}
+.bstat-item{background:linear-gradient(135deg,#ebf8ff,#fff);border:1px solid #bee3f8;border-radius:10px;padding:12px 10px;text-align:center}
+.bstat-val{font-size:1.25rem;font-weight:900;color:var(--navy);line-height:1}
+.bstat-label{font-size:.65rem;color:var(--text-light);margin-top:4px;font-weight:600}
+.influencer-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;background:linear-gradient(135deg,#fef3c7,#fff8e1);border:1px solid #fcd34d;border-radius:12px;font-size:.73rem;font-weight:700;color:#92400e}
+
 /* ── DIVIDER ── */
 .divider{height:1px;background:var(--border);margin:20px 0;border:none}
 
@@ -359,9 +376,42 @@ textarea.form-control{resize:vertical;min-height:100px}
     </div>
     <div class="form-group">
       <label>블로그 주제</label>
-      <input type="text" class="form-control" id="bindex-topic" placeholder="예) 맛집, 육아, 재테크" />
+      <input type="text" class="form-control" id="bindex-topic" placeholder="예) 부동산, 금융, 재테크" />
     </div>
-    <button class="btn btn-primary" onclick="analyzeBlogIndex()">📈 블로그 지수 분석</button>
+    <div class="stat-input-section">
+      <div class="stat-input-header">블로그 현황 입력 <span style="font-weight:400;color:var(--text-light)">(선택 · 입력할수록 정확해져요)</span></div>
+      <div class="stat-input-grid">
+        <div class="stat-input-item">
+          <label>이웃수</label>
+          <input type="number" id="bindex-neighbors" placeholder="예) 307" min="0" />
+        </div>
+        <div class="stat-input-item">
+          <label>오늘 방문자</label>
+          <input type="number" id="bindex-today-visitors" placeholder="예) 32" min="0" />
+        </div>
+        <div class="stat-input-item">
+          <label>전체 방문자</label>
+          <input type="number" id="bindex-total-visitors" placeholder="예) 35918" min="0" />
+        </div>
+        <div class="stat-input-item">
+          <label>평균 방문자</label>
+          <input type="number" id="bindex-avg-visitors" placeholder="예) 25" min="0" />
+        </div>
+        <div class="stat-input-item">
+          <label>총 포스팅 수</label>
+          <input type="number" id="bindex-post-count" placeholder="예) 48" min="0" />
+        </div>
+        <div class="stat-input-item">
+          <label>인플루언서</label>
+          <select id="bindex-influencer" style="width:100%;padding:8px 10px;border:1.5px solid #cde;border-radius:8px;font-size:.83rem;font-family:inherit;color:var(--text);background:#fff;outline:none;font-weight:600">
+            <option value="없음">없음</option>
+            <option value="있음">있음</option>
+          </select>
+        </div>
+      </div>
+      <div class="stat-hint">💡 네이버 블로그 관리 페이지에서 확인 가능한 수치를 입력하세요</div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:14px;width:100%" onclick="analyzeBlogIndex()">📈 블로그 지수 분석</button>
   </div>
   <div class="loading" id="bindex-loading"><div class="spinner"></div><div class="loading-text">블로그 지수를 측정 중입니다...</div></div>
   <div class="result-area" id="bindex-result"></div>
@@ -795,12 +845,25 @@ async function analyzeBlogIndex() {
   const url = document.getElementById('bindex-url').value.trim();
   const topic = document.getElementById('bindex-topic').value.trim();
   if (!url) { alert('블로그 URL을 입력해주세요.'); return; }
+
+  // 현황 수치 수집
+  const neighbors      = parseInt(document.getElementById('bindex-neighbors').value) || 0;
+  const todayVisitors  = parseInt(document.getElementById('bindex-today-visitors').value) || 0;
+  const totalVisitors  = parseInt(document.getElementById('bindex-total-visitors').value) || 0;
+  const avgVisitors    = parseInt(document.getElementById('bindex-avg-visitors').value) || 0;
+  const postCount      = parseInt(document.getElementById('bindex-post-count').value) || 0;
+  const isInfluencer   = document.getElementById('bindex-influencer').value;
+
   showLoading('bindex');
   document.getElementById('bindex-chat-wrap').style.display = 'none';
   try {
-    const data = await callApi({mode:'blog-index', blogUrl:url, topic});
+    const data = await callApi({
+      mode:'blog-index', blogUrl:url, topic,
+      neighbors, todayVisitors, totalVisitors, avgVisitors, postCount, isInfluencer
+    });
     state.blogIndexData = data;
-    state.blogContext = {url, topic, level: data.estimatedLevel, summary: data.summary};
+    state.blogContext = {url, topic, level: data.estimatedLevel, summary: data.summary,
+      neighbors, todayVisitors, totalVisitors, postCount};
     state.chatMessages = [];
 
     const level = data.estimatedLevel || 0;
@@ -813,10 +876,26 @@ async function analyzeBlogIndex() {
     const tips = (data.tips||[]).map(t=>`<li>${escHtml(t)}</li>`).join('');
     const nextTips = (data.nextLevelTips||[]).map(t=>`<li>${escHtml(t)}</li>`).join('');
 
+    // 입력된 현황 카드 렌더링
+    const hasStats = neighbors || todayVisitors || totalVisitors || postCount;
+    const statsCard = hasStats ? `
+      <div class="card result-fade">
+        <div class="card-title">📊 블로그 현황</div>
+        ${isInfluencer==='있음' ? `<div style="margin-bottom:10px"><span class="influencer-badge">⭐ 인플루언서</span></div>` : ''}
+        <div class="blog-stat-bar">
+          ${neighbors ? `<div class="bstat-item"><div class="bstat-val">${neighbors.toLocaleString()}</div><div class="bstat-label">이웃수</div></div>` : ''}
+          ${todayVisitors ? `<div class="bstat-item"><div class="bstat-val">${todayVisitors.toLocaleString()}</div><div class="bstat-label">오늘 방문자</div></div>` : ''}
+          ${totalVisitors ? `<div class="bstat-item"><div class="bstat-val">${totalVisitors.toLocaleString()}</div><div class="bstat-label">전체 방문자</div></div>` : ''}
+          ${avgVisitors ? `<div class="bstat-item"><div class="bstat-val">${avgVisitors.toLocaleString()}</div><div class="bstat-label">평균 방문자</div></div>` : ''}
+          ${postCount ? `<div class="bstat-item"><div class="bstat-val">${postCount.toLocaleString()}</div><div class="bstat-label">총 포스팅</div></div>` : ''}
+        </div>
+      </div>` : '';
+
     showResult('bindex', `
       <div class="card result-fade">
         ${renderLevelViz(level, data.levelReason)}
       </div>
+      ${statsCard}
       ${scores ? `<div class="card result-fade">
         <div class="card-title">📋 세부 점수</div>
         <div class="scores-grid">${scores}</div>
