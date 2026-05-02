@@ -474,6 +474,54 @@ goldenKeywords 3개, competitionMatrix 3개, contentPlan 4개, quickWins 4개.`,
       };
     }
 
+    // ⑬ 대화형 블로그 코칭 챗
+    else if (mode === 'chat') {
+      const { messages, blogContext } = req.body;
+      if (!messages?.length) return res.status(400).json({ error: '메시지가 없습니다.' });
+
+      const ctx = blogContext || {};
+      const systemPrompt = `당신은 한국 블로그 SEO 전문 코치입니다. 부동산·금융·경제 분야 블로그 특화.
+
+분석된 블로그:
+- 주소: ${ctx.blogUrl || '미입력'}
+- 분야: ${ctx.topic || '부동산/금융/경제'}
+- 현재 레벨: Level ${ctx.estimatedLevel ?? '?'} / 10
+- 레벨 근거: ${ctx.levelReason || ''}
+- 분석 요약: ${ctx.summary || ''}
+- 다음 레벨 조건: ${(ctx.nextLevelTips || []).join(' / ')}
+
+대화 원칙:
+1. 짧고 명확하게. 3~5문장 이내.
+2. 구체적 숫자·행동 지침 제시.
+3. 부동산·금융·경제 블로그 특성 반영.
+4. 네이버·티스토리 차이 구분 설명.
+5. 정직한 선배처럼 솔직하게.
+6. 마지막에 다음 질문 유도 한마디.
+
+JSON 없이 자연스러운 한국어 대화체로 답하세요.`;
+
+      const chatRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': CLAUDE_KEY,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 600,
+          system: systemPrompt,
+          messages: messages.map(m => ({ role: m.role, content: m.content }))
+        })
+      });
+      if (!chatRes.ok) {
+        const e = await chatRes.json();
+        return res.status(chatRes.status).json({ error: e.error?.message || 'Claude API 오류' });
+      }
+      const chatData = await chatRes.json();
+      return res.status(200).json({ reply: chatData.content?.[0]?.text || '' });
+    }
+
     else {
       return res.status(400).json({ error: '지원하지 않는 모드입니다.' });
     }
