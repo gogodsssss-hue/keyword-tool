@@ -509,6 +509,7 @@ textarea.form-control{resize:vertical;min-height:100px}
   <div class="draft-tabs">
     <button class="draft-tab active" onclick="switchDraftTab('to-keyword')">📄 대본 → 키워드 추출</button>
     <button class="draft-tab" onclick="switchDraftTab('to-draft')">🥇 키워드 → 대본 생성</button>
+    <button class="draft-tab" onclick="switchDraftTab('golden')">💡 키워드 추천</button>
   </div>
 
   <!-- 탭 1: 대본 → 키워드 -->
@@ -531,6 +532,27 @@ textarea.form-control{resize:vertical;min-height:100px}
     </div>
     <div class="loading" id="draft-kw-loading"><div class="spinner"></div><div class="loading-text">대본을 분석해 키워드를 추출 중...</div></div>
     <div class="result-area" id="draft-kw-result"></div>
+  </div>
+
+  <!-- 탭 3: 황금 키워드 추천 -->
+  <div class="draft-panel" id="draft-panel-golden">
+    <div class="card">
+      <div class="form-group">
+        <label>블로그 주제</label>
+        <input type="text" class="form-control" id="golden-topic-input" placeholder="예) 부동산, 금리, 재테크, 아파트 투자" />
+      </div>
+      <div class="form-group">
+        <label>플랫폼</label>
+        <div class="platform-group" id="pg-golden">
+          <button class="platform-btn active" data-val="둘 다">둘 다</button>
+          <button class="platform-btn" data-val="네이버 블로그">네이버</button>
+          <button class="platform-btn" data-val="티스토리">티스토리</button>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="runGoldenKeyword()">💡 황금 키워드 추천받기</button>
+    </div>
+    <div class="loading" id="golden-kw-loading"><div class="spinner"></div><div class="loading-text">황금 키워드를 분석 중...</div></div>
+    <div class="result-area" id="golden-kw-result"></div>
   </div>
 
   <!-- 탭 2: 키워드 → 대본 -->
@@ -1211,9 +1233,11 @@ async function analyzeYoutube() {
 // ═══════════════════════════════════════════
 
 function switchDraftTab(tab) {
-  document.querySelectorAll('.draft-tab').forEach((t,i) => t.classList.toggle('active', i === (tab==='to-keyword'?0:1)));
+  const tabs = ['to-keyword','to-draft','golden'];
+  document.querySelectorAll('.draft-tab').forEach((t,i) => t.classList.toggle('active', tabs[i] === tab));
   document.getElementById('draft-panel-to-keyword').classList.toggle('active', tab==='to-keyword');
   document.getElementById('draft-panel-to-draft').classList.toggle('active', tab==='to-draft');
+  document.getElementById('draft-panel-golden').classList.toggle('active', tab==='golden');
 }
 
 function updateCharCount() {
@@ -1323,6 +1347,44 @@ function copyDraft() {
 }
 
 function hideResult(id) { const el = document.getElementById(id+'-result'); if(el) el.innerHTML=''; }
+
+// pg-golden 플랫폼 버튼
+document.querySelectorAll('#pg-golden .platform-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.platform-group').querySelectorAll('.platform-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+async function runGoldenKeyword() {
+  const topic = document.getElementById('golden-topic-input').value.trim();
+  if (!topic) { alert('블로그 주제를 입력해주세요.'); return; }
+  const platform = document.querySelector('#pg-golden .platform-btn.active')?.dataset.val || '둘 다';
+  showLoading('golden-kw');
+  hideResult('golden-kw');
+  try {
+    const data = await callApi({ mode: 'golden-keyword', topic, platform });
+    const kwCards = (data.goldenKeywords||[]).map(k => `
+      <div class="keyword-card">
+        <div class="kc-word">🥇 ${escHtml(k.keyword)}</div>
+        <div class="kc-meta">
+          ${renderBadge('검색량 '+escHtml(k.searchVolume||''), k.searchVolume)}
+          ${renderBadge('경쟁도 '+escHtml(k.competition||''), k.competition)}
+          <span class="badge" style="background:var(--gold-bg);color:var(--gold-text)">황금도 ${escHtml(k.goldenScore||'')}</span>
+        </div>
+        <div class="kc-reason">${escHtml(k.reason||'')}</div>
+        <button class="btn" style="margin-top:10px;padding:6px 14px;font-size:.78rem;background:var(--navy-mid);color:#fff;border:none;border-radius:8px;cursor:pointer;width:100%"
+          onclick="switchDraftTab('to-draft');document.getElementById('kw-to-draft-input').value='${escHtml(k.keyword).replace(/'/g,"\\'")}';document.getElementById('kw-to-draft-topic').value='${escHtml(topic).replace(/'/g,"\\'")}'"
+        >✍️ 이 키워드로 대본 생성</button>
+      </div>`).join('');
+    showResult('golden-kw', kwCards ? `
+      <div class="card result-fade" style="margin-top:0">
+        <div class="card-title">💡 황금 키워드 추천</div>
+        ${data._hasNaver ? '<span style="font-size:.72rem;color:var(--naver);font-weight:600">🟢 네이버 실데이터 반영</span>' : ''}
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:10px">${kwCards}</div>
+      </div>` : '<div class="card">결과가 없습니다.</div>');
+  } catch(e) { showError('golden-kw', e.message); }
+}
 </script>
 </body>
 </html>
