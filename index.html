@@ -439,8 +439,7 @@ textarea.form-control{resize:vertical;min-height:100px}
   </div>
 </div>
 
-<!-- =================== 3. BLOG INDEX SIMPLE =================== -->
-<!-- =================== 4. BLOG MATRIX =================== -->
+<!-- =================== 3. BLOG MATRIX =================== -->
 <div class="page" id="page-blog-matrix">
   <div class="page-header">
     <h2>🧩 블로그 매트릭스</h2>
@@ -974,30 +973,7 @@ async function sendChat() {
 }
 
 // ═══════════════════════════════════════════
-//  3. BLOG INDEX SIMPLE
-// ═══════════════════════════════════════════
-async function analyzeBlogSimple() {
-  const url = document.getElementById('bsimple-url').value.trim();
-  if (!url) { alert('블로그 URL을 입력해주세요.'); return; }
-  showLoading('bsimple');
-  try {
-    const data = await callApi({mode:'blog-index-simple', blogUrl:url});
-    const level = data.estimatedLevel || 0;
-    showResult('bsimple', `
-      <div class="card result-fade">
-        ${renderLevelViz(level, data.levelReason||data.summary)}
-      </div>
-      ${data.summary ? `<div class="summary-box result-fade">${escHtml(data.summary)}</div>` : ''}
-      ${(data.tips||[]).length ? `<div class="card result-fade">
-        <div class="card-title">💡 빠른 팁</div>
-        <ul class="tips-list">${(data.tips||[]).map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul>
-      </div>` : ''}
-    `);
-  } catch(e) { showError('bsimple', e.message); }
-}
-
-// ═══════════════════════════════════════════
-//  4. BLOG MATRIX
+//  3. BLOG MATRIX
 // ═══════════════════════════════════════════
 async function analyzeBlogMatrix() {
   const url = document.getElementById('bmatrix-url').value.trim();
