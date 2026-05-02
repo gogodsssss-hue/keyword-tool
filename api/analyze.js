@@ -65,10 +65,14 @@ async function naverSearchVolume(keyword, apiKey, secretKey, customerId) {
     );
     if (!res.ok) return null;
     const d = await res.json();
-    const kw = d.keywordList?.find(k => k.relKeyword === keyword) || d.keywordList?.[0];
+    // 공백 제거 후 비교 (네이버가 다른 형태로 반환하는 경우 대비)
+    const norm = s => (s || '').replace(/\s+/g, '').toLowerCase();
+    const kw = d.keywordList?.find(k => norm(k.relKeyword) === norm(keyword)) || d.keywordList?.[0];
     if (!kw) return null;
-    const pc  = Number(kw.monthlyPcQcCnt)     || 0;
-    const mob = Number(kw.monthlyMobileQcCnt) || 0;
+    // "<10" 같은 문자열 처리: 낮은 검색량은 5로 근사
+    const parseVol = v => { if (typeof v === 'number') return v; if (String(v).startsWith('<')) return 5; return Number(v) || 0; };
+    const pc  = parseVol(kw.monthlyPcQcCnt);
+    const mob = parseVol(kw.monthlyMobileQcCnt);
     return { pc, mobile: mob, total: pc + mob, compIdx: kw.compIdx };
   } catch { return null; }
 }
@@ -87,13 +91,12 @@ async function naverRelatedKeywords(hint, apiKey, secretKey, customerId) {
     );
     if (!res.ok) return [];
     const d = await res.json();
-    return (d.keywordList || []).map(kw => ({
-      keyword: kw.relKeyword,
-      pc:      Number(kw.monthlyPcQcCnt)     || 0,
-      mobile:  Number(kw.monthlyMobileQcCnt) || 0,
-      total:   (Number(kw.monthlyPcQcCnt) || 0) + (Number(kw.monthlyMobileQcCnt) || 0),
-      compIdx: kw.compIdx
-    }));
+    const parseVol = v => { if (typeof v === 'number') return v; if (String(v).startsWith('<')) return 5; return Number(v) || 0; };
+    return (d.keywordList || []).map(kw => {
+      const pc  = parseVol(kw.monthlyPcQcCnt);
+      const mob = parseVol(kw.monthlyMobileQcCnt);
+      return { keyword: kw.relKeyword, pc, mobile: mob, total: pc + mob, compIdx: kw.compIdx };
+    });
   } catch { return []; }
 }
 
