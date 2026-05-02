@@ -589,6 +589,24 @@ textarea.form-control{resize:vertical;min-height:100px}
     <div class="loading" id="rank-vol-loading" style="padding:24px"><div class="spinner"></div><div class="loading-text">네이버 검색량 조회 중...</div></div>
     <div id="rank-vol-result" style="margin-top:12px"></div>
   </div>
+
+  <!-- 마법의 키워드 -->
+  <div class="card" style="margin-top:8px;border:2px solid #d4af37">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+      <span style="font-size:1.5rem">✨</span>
+      <div>
+        <div style="font-weight:800;font-size:1rem;color:#92400e">마법의 키워드</div>
+        <div style="font-size:.78rem;color:var(--text-light)">주제 하나만 입력하면 — 경쟁 낮고 순위 잡기 쉬운 키워드 조합을 네이버 실데이터로 자동 추출</div>
+      </div>
+    </div>
+    <div class="form-group" style="margin-top:12px">
+      <label>글 쓸 주제</label>
+      <input type="text" class="form-control" id="magic-topic" placeholder="예) 미국 기준금리, 전세자금대출, 아파트 청약" />
+    </div>
+    <button class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,#b7791f,#d4af37);box-shadow:0 3px 12px rgba(180,120,20,.3)" onclick="runMagicKeyword()">✨ 마법의 키워드 추출</button>
+    <div class="loading" id="magic-loading" style="padding:24px"><div class="spinner"></div><div class="loading-text">네이버에서 황금 조합 찾는 중...</div></div>
+    <div id="magic-result" style="margin-top:14px"></div>
+  </div>
 </div>
 
 <!-- =================== 포스트 추적기 =================== -->
@@ -1381,6 +1399,74 @@ async function checkMyRank() {
       </div>` : ''}
     `);
   } catch(e) { showError('rank', e.message); }
+}
+
+async function runMagicKeyword() {
+  const topic = document.getElementById('magic-topic').value.trim();
+  if (!topic) { alert('주제를 입력해주세요.'); return; }
+
+  const loading = document.getElementById('magic-loading');
+  const resultEl = document.getElementById('magic-result');
+  loading.classList.add('show');
+  resultEl.innerHTML = '';
+
+  try {
+    const data = await callApi({ mode: 'golden-keyword', topic });
+    loading.classList.remove('show');
+
+    const keywords = data.goldenKeywords || [];
+    if (!keywords.length) {
+      resultEl.innerHTML = '<div style="color:var(--text-light);font-size:.85rem;padding:12px 0">데이터를 가져오지 못했습니다. 다른 주제로 시도해보세요.</div>';
+      return;
+    }
+
+    const gradeStyle = g => ({
+      'A+': 'background:linear-gradient(135deg,#d4af37,#f0c040);color:#5a3e0a;font-size:1rem',
+      'A':  'background:#c6f6d5;color:#22543d;font-size:.9rem',
+      'B+': 'background:#bee3f8;color:#2c5282;font-size:.85rem',
+      'B':  'background:#e2e8f0;color:#4a5568;font-size:.82rem',
+      'C':  'background:#fed7d7;color:#742a2a;font-size:.78rem'
+    })[g] || 'background:#e2e8f0;color:#4a5568';
+
+    const gradeDesc = g => ({
+      'A+': '🔥 지금 바로 써라',
+      'A':  '✅ 상위 노출 가능',
+      'B+': '👍 도전할 만함',
+      'B':  '📝 써볼 수 있음',
+      'C':  '⚠️ 경쟁 많음'
+    })[g] || '';
+
+    const cards = keywords.map((k, i) => `
+      <div style="border:1.5px solid ${k.goldenScore==='A+'?'#d4af37':k.goldenScore==='A'?'#38a169':'var(--border)'};border-radius:12px;padding:14px 16px;margin-bottom:10px;${k.goldenScore==='A+'?'background:#fffbeb':k.goldenScore==='A'?'background:#f0fff4':''}">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-weight:800;font-size:.95rem">${escHtml(k.keyword)}</span>
+          </div>
+          <span style="padding:4px 12px;border-radius:20px;font-weight:800;${gradeStyle(k.goldenScore)}">${k.goldenScore}</span>
+        </div>
+        <div style="font-size:.78rem;color:var(--text-mid);margin-bottom:6px">${gradeDesc(k.goldenScore)}</div>
+        <div style="display:flex;gap:12px;font-size:.78rem">
+          <span style="color:var(--text-light)">월검색 <b style="color:var(--navy)">${k.monthlyTotal?.toLocaleString() ?? '-'}회</b></span>
+          <span style="color:var(--text-light)">블로그경쟁 <b style="color:${(k.blogCount||0)<10000?'#22543d':'#c53030'}">${k.blogCount?.toLocaleString() ?? '-'}개</b></span>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+          <button onclick="document.getElementById('magic-topic').value='';document.getElementById('rank-keyword').value=${JSON.stringify(k.keyword)};document.getElementById('rank-keyword').scrollIntoView({behavior:'smooth'})"
+            style="font-size:.72rem;padding:4px 10px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:#fff;font-family:inherit">🏆 순위 확인</button>
+          <button onclick="switchPage('draft-helper');setTimeout(()=>{document.getElementById('kw-to-draft-input').value=${JSON.stringify(k.keyword)};switchDraftTab('to-draft')},300)"
+            style="font-size:.72rem;padding:4px 10px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:#fff;font-family:inherit">✍️ 대본 생성</button>
+        </div>
+      </div>`).join('');
+
+    const topGrade = keywords[0]?.goldenScore;
+    resultEl.innerHTML = `
+      <div style="background:#fffbeb;border:1px solid #d4af37;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:.82rem;color:#92400e">
+        ✨ <b>${escHtml(topic)}</b> 주제로 ${keywords.length}개 키워드 분석 완료 — 최고 등급: <b>${topGrade}</b> · 네이버 광고 API 실데이터
+      </div>
+      ${cards}`;
+  } catch(e) {
+    loading.classList.remove('show');
+    resultEl.innerHTML = `<div style="color:var(--red-text)">오류: ${escHtml(e.message)}</div>`;
+  }
 }
 
 async function checkRankVolume() {
