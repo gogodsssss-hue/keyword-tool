@@ -577,6 +577,18 @@ textarea.form-control{resize:vertical;min-height:100px}
   </div>
   <div class="loading" id="rank-loading"><div class="spinner"></div><div class="loading-text">네이버에서 순위 확인 중...</div></div>
   <div class="result-area" id="rank-result"></div>
+
+  <!-- 검색량 비교 -->
+  <div class="card" style="margin-top:8px">
+    <div class="card-title">📊 키워드 검색량 비교</div>
+    <div style="font-size:.8rem;color:var(--text-light);margin-bottom:12px">어떤 키워드가 더 많이 검색되는지 한번에 비교합니다. 한 줄에 하나씩 입력.</div>
+    <div class="form-group">
+      <textarea class="form-control" id="rank-vol-input" rows="5" placeholder="2026년 4월30일 미국 기준금리&#10;2026년 4월 미국 기준금리&#10;미국 기준금리 동결&#10;미국 기준금리"></textarea>
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="checkRankVolume()">📊 검색량 확인</button>
+    <div class="loading" id="rank-vol-loading" style="padding:24px"><div class="spinner"></div><div class="loading-text">네이버 검색량 조회 중...</div></div>
+    <div id="rank-vol-result" style="margin-top:12px"></div>
+  </div>
 </div>
 
 <!-- =================== 포스트 추적기 =================== -->
@@ -1369,6 +1381,48 @@ async function checkMyRank() {
       </div>` : ''}
     `);
   } catch(e) { showError('rank', e.message); }
+}
+
+async function checkRankVolume() {
+  const raw = document.getElementById('rank-vol-input').value.trim();
+  if (!raw) { alert('키워드를 입력해주세요.'); return; }
+  const keywords = raw.split('\n').map(k => k.trim()).filter(Boolean).slice(0, 10);
+
+  const loading = document.getElementById('rank-vol-loading');
+  const resultEl = document.getElementById('rank-vol-result');
+  loading.classList.add('show');
+  resultEl.innerHTML = '';
+
+  try {
+    const data = await callApi({ mode: 'kw-checker', keywords });
+    loading.classList.remove('show');
+
+    const maxVol = Math.max(...(data.rows || []).map(r => r.total || 0), 1);
+    const scoreColor = s => ({ 'A+':'#d4af37','A':'#38a169','B+':'#3182ce','B':'#718096','C':'#a0aec0' })[s] || '#a0aec0';
+
+    const rows = (data.rows || []).map(r => {
+      const pct = Math.round(((r.total || 0) / maxVol) * 100);
+      return `
+        <div style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <span style="font-weight:600;font-size:.9rem">${escHtml(r.keyword)}</span>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:.8rem;color:var(--text-mid)">${r.total !== null ? r.total.toLocaleString() + '회/월' : '조회불가'}</span>
+              ${r.score ? `<span style="font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:10px;background:${scoreColor(r.score)}20;color:${scoreColor(r.score)}">황금도 ${r.score}</span>` : ''}
+            </div>
+          </div>
+          <div style="height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--navy-mid),var(--sky));border-radius:4px;transition:width .4s"></div>
+          </div>
+          <div style="font-size:.75rem;color:var(--text-light);margin-top:3px">PC ${(r.pc||0).toLocaleString()} + 모바일 ${(r.mobile||0).toLocaleString()} · 블로그 경쟁 ${r.blogCount !== null ? r.blogCount.toLocaleString() + '개' : '-'}</div>
+        </div>`;
+    }).join('');
+
+    resultEl.innerHTML = rows || '<div style="color:var(--text-light);font-size:.85rem">결과 없음</div>';
+  } catch(e) {
+    loading.classList.remove('show');
+    resultEl.innerHTML = `<div style="color:var(--red-text)">오류: ${escHtml(e.message)}</div>`;
+  }
 }
 
 // ═══════════════════════════════════════════
