@@ -577,11 +577,13 @@ textarea.form-control{resize:vertical;min-height:100px}
   <div class="card">
     <div class="form-group">
       <label>확인할 키워드</label>
-      <input type="text" class="form-control" id="rank-keyword" placeholder="예) 전세자금대출 조건, 아파트 매매 절차" />
+      <input type="text" class="form-control" id="rank-keyword" placeholder="예) 전세자금대출 조건, 아파트 매매 절차"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopImmediatePropagation();checkMyRank()}" />
     </div>
     <div class="form-group">
       <label>내 블로그 URL 또는 ID</label>
-      <input type="text" class="form-control" id="rank-blogurl" placeholder="예) https://blog.naver.com/myid 또는 myid" />
+      <input type="text" class="form-control" id="rank-blogurl" placeholder="예) https://blog.naver.com/myid 또는 myid"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopImmediatePropagation();checkMyRank()}" />
     </div>
     <div style="background:#f0f7ff;border:1px solid #bee3f8;border-radius:8px;padding:10px 14px;font-size:.8rem;color:#2c5282;margin-bottom:14px">
       💡 상위 30개 결과 내 순위를 확인합니다. 30위 밖이면 "미노출"로 표시됩니다.
@@ -615,7 +617,7 @@ textarea.form-control{resize:vertical;min-height:100px}
     <div class="form-group" style="margin-top:12px">
       <label>글 쓸 주제</label>
       <input type="text" class="form-control" id="magic-topic" placeholder="예) 미국 기준금리, 전세자금대출, 아파트 청약"
-        onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopPropagation();runMagicKeyword()}" />
+        onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopImmediatePropagation();runMagicKeyword()}" />
     </div>
     <button class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,#b7791f,#d4af37);box-shadow:0 3px 12px rgba(180,120,20,.3)" onclick="runMagicKeyword()">✨ 마법의 키워드 추출</button>
     <div class="loading" id="magic-loading" style="padding:24px"><div class="spinner"></div><div class="loading-text">네이버에서 황금 조합 찾는 중...</div></div>
