@@ -2,6 +2,37 @@ import crypto from 'crypto';
 
 // ── 네이버 API 헬퍼 ──────────────────────────────────────────
 
+// 네이버 DataLab - 상대 검색 인기도 (0~100)
+async function naverDataLabTrend(keywords, cid, csec) {
+  if (!cid || !csec || !keywords.length) return {};
+  try {
+    const today = new Date();
+    const endDate = today.toISOString().slice(0, 10);
+    const startDate = new Date(today.setFullYear(today.getFullYear() - 1)).toISOString().slice(0, 10);
+    // DataLab은 최대 5개씩
+    const batches = [];
+    for (let i = 0; i < keywords.length; i += 5) batches.push(keywords.slice(i, i + 5));
+    const result = {};
+    for (const batch of batches) {
+      const res = await fetch('https://openapi.naver.com/v1/datalab/search', {
+        method: 'POST',
+        headers: { 'X-Naver-Client-Id': cid, 'X-Naver-Client-Secret': csec, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          startDate, endDate, timeUnit: 'month',
+          keywordGroups: batch.map(k => ({ groupName: k, keywords: [k] }))
+        })
+      });
+      if (!res.ok) continue;
+      const d = await res.json();
+      for (const r of (d.results || [])) {
+        const avg = r.data.reduce((s, x) => s + x.ratio, 0) / (r.data.length || 1);
+        result[r.title] = Math.round(avg);
+      }
+    }
+    return result;
+  } catch { return {}; }
+}
+
 // 네이버 블로그 검색 (경쟁도 측정)
 async function naverBlogSearch(query, cid, csec) {
   if (!cid || !csec) return null;
@@ -318,33 +349,52 @@ mainKeywords 5개, longtailKeywords 10개. 플랫폼이 "네이버 블로그만"
         await sleep(150);
       }
 
-      // 3단계: 황금도 계산 (검색량 / 경쟁 포스트 수 비율)
-      const goldenScore = (vol, comp) => {
-        const v = vol  || 0;
-        const c = comp || 999999;
-        const ratio = v / (c + 1);
-        if (ratio >= 1   && v >= 5000)  return 'A+';
-        if (ratio >= 0.5 && v >= 2000)  return 'A';
-        if (ratio >= 0.2 && v >= 1000)  return 'B+';
-        if (ratio >= 0.1)               return 'B';
-        if (v >= 5000)                  return 'B';
+      // DataLab 상대 인기도 (검색량 API 0일 때 대체 지표)
+      const kwNames = withBlogCount.map(k => k.keyword);
+      const trendMap = hasNaver ? await naverDataLabTrend(kwNames, NAVER_CID, NAVER_CSEC) : {};
+
+      // 3단계: 황금도 계산
+      // 검색량 있으면 (검색량/경쟁) 비율, 없으면 DataLab + 블로그경쟁으로만 판단
+      const goldenScore = (vol, comp, trend) => {
+        const v = vol   || 0;
+        const c = comp  || 999999;
+        const t = trend || 0;
+        if (v > 0) {
+          const ratio = v / (c + 1);
+          if (ratio >= 1   && v >= 5000)  return 'A+';
+          if (ratio >= 0.5 && v >= 2000)  return 'A';
+          if (ratio >= 0.2 && v >= 1000)  return 'B+';
+          if (ratio >= 0.1)               return 'B';
+          if (v >= 5000)                  return 'B';
+          return 'C';
+        }
+        // 검색량 없을 때: DataLab 인기도 + 블로그경쟁으로 판단
+        if (t >= 30 && c <= 30000)   return 'A';
+        if (t >= 20 && c <= 100000)  return 'B+';
+        if (t >= 10 && c <= 300000)  return 'B';
+        if (t >= 5  || c <= 200000)  return 'C+';
         return 'C';
       };
-      const volLabel  = v => v >= 10000 ? '높음' : v >= 2000 ? '중간' : '낮음';
-      const compLabel = c => c <= 5000  ? '낮음' : c <= 30000 ? '중간' : '높음';
+      const compLabel = c => c <= 10000 ? '낮음' : c <= 100000 ? '중간' : '높음';
 
       const scored = withBlogCount
-        .map(k => ({
-          keyword:       k.keyword,
-          searchVolume:  volLabel(k.total),
-          competition:   k.blogCount !== null ? compLabel(k.blogCount) : '조회불가',
-          goldenScore:   goldenScore(k.total, k.blogCount),
-          monthlyPc:     k.pc,
-          monthlyMobile: k.mobile,
-          monthlyTotal:  k.total,
-          blogCount:     k.blogCount,
-          reason: `월검색 ${k.total.toLocaleString()}회 · 블로그 ${(k.blogCount ?? 0).toLocaleString()}개`
-        }))
+        .map(k => {
+          const trend = trendMap[k.keyword] || 0;
+          const score = goldenScore(k.total, k.blogCount, trend);
+          const volStr = k.total > 0 ? `월 ${k.total.toLocaleString()}회` : (trend > 0 ? `인기도 ${trend}/100` : '검색량 확인불가');
+          return {
+            keyword:       k.keyword,
+            searchVolume:  k.total > 0 ? (k.total >= 10000 ? '높음' : k.total >= 2000 ? '중간' : '낮음') : (trend >= 20 ? '중간(추정)' : '낮음(추정)'),
+            competition:   k.blogCount !== null ? compLabel(k.blogCount) : '조회불가',
+            goldenScore:   score,
+            monthlyPc:     k.pc,
+            monthlyMobile: k.mobile,
+            monthlyTotal:  k.total,
+            trendScore:    trend,
+            blogCount:     k.blogCount,
+            reason: `${volStr} · 블로그 ${(k.blogCount ?? 0).toLocaleString()}개`
+          };
+        })
         .sort((a, b) => {
           const order = { 'A+':0, 'A':1, 'B+':2, 'B':3, 'C':4 };
           return (order[a.goldenScore] ?? 5) - (order[b.goldenScore] ?? 5);

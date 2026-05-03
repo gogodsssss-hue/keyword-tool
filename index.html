@@ -1857,37 +1857,44 @@ async function runMagicKeyword() {
     })[g] || 'background:#e2e8f0;color:#4a5568';
 
     const gradeDesc = g => ({
-      'A+': '🔥 지금 바로 써라',
-      'A':  '✅ 상위 노출 가능',
-      'B+': '👍 도전할 만함',
-      'B':  '📝 써볼 수 있음',
-      'C':  '⚠️ 경쟁 많음'
+      'A+': '🔥 지금 바로 써라 — 검색 많고 경쟁 적음',
+      'A':  '✅ 상위 노출 가능 — 도전 가치 있음',
+      'B+': '👍 도전할 만함 — 꾸준히 써야 함',
+      'B':  '📝 경쟁 있지만 써볼 수 있음',
+      'C+': '🟡 경쟁 있음 — 롱테일로 변형 추천',
+      'C':  '⚠️ 경쟁 많음 — 상위 노출 어려움'
     })[g] || '';
 
-    const cards = keywords.map((k, i) => `
-      <div style="border:1.5px solid ${k.goldenScore==='A+'?'#d4af37':k.goldenScore==='A'?'#38a169':'var(--border)'};border-radius:12px;padding:14px 16px;margin-bottom:10px;${k.goldenScore==='A+'?'background:#fffbeb':k.goldenScore==='A'?'background:#f0fff4':''}">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-weight:800;font-size:.95rem">${escHtml(k.keyword)}</span>
-          </div>
+    const cards = keywords.map((k, i) => {
+      const hasRealVol = k.monthlyTotal > 0;
+      const hasTrend   = (k.trendScore || 0) > 0;
+      const volDisplay = hasRealVol
+        ? `월 <b style="color:var(--navy)">${k.monthlyTotal.toLocaleString()}회</b>`
+        : hasTrend
+          ? `인기도 <b style="color:#2b6cb0">${k.trendScore}/100</b> <span style="color:#a0aec0;font-size:.7rem">(상대값)</span>`
+          : `<b style="color:#a0aec0">데이터 없음</b>`;
+      const compColor = (k.blogCount||0) < 30000 ? '#22543d' : (k.blogCount||0) < 200000 ? '#975a16' : '#c53030';
+      const isBest = i === 0;
+      return `
+      <div style="border:1.5px solid ${k.goldenScore==='A+'?'#d4af37':k.goldenScore==='A'?'#38a169':k.goldenScore==='B+'?'#3182ce':'var(--border)'};border-radius:12px;padding:14px 16px;margin-bottom:10px;${k.goldenScore==='A+'?'background:#fffbeb':k.goldenScore==='A'?'background:#f0fff4':k.goldenScore==='B+'?'background:#ebf8ff':''}">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span style="font-weight:800;font-size:.95rem">${isBest?'👑 ':''} ${escHtml(k.keyword)}</span>
           <span style="padding:4px 12px;border-radius:20px;font-weight:800;${gradeStyle(k.goldenScore)}">${k.goldenScore}</span>
         </div>
-        <div style="font-size:.78rem;color:var(--text-mid);margin-bottom:6px">${gradeDesc(k.goldenScore)}</div>
-        <div style="display:flex;gap:12px;font-size:.78rem">
-          <span style="color:var(--text-light)">월검색 <b style="color:var(--navy)">${k.monthlyTotal > 0 ? k.monthlyTotal.toLocaleString()+'회' : '조회불가'}</b></span>
-          <span style="color:var(--text-light)">블로그경쟁 <b style="color:${(k.blogCount||0)<10000?'#22543d':'#c53030'}">${k.blogCount?.toLocaleString() ?? '-'}개</b></span>
+        <div style="font-size:.78rem;color:var(--text-mid);margin-bottom:8px">${gradeDesc(k.goldenScore)}</div>
+        <div style="display:flex;gap:14px;font-size:.78rem;margin-bottom:8px">
+          <span style="color:var(--text-light)">검색량 ${volDisplay}</span>
+          <span style="color:var(--text-light)">블로그경쟁 <b style="color:${compColor}">${k.blogCount?.toLocaleString() ?? '-'}개</b></span>
         </div>
-        ${k.goldenScore === 'C' && k.monthlyTotal === 0 ? `
-        <div style="margin-top:8px;background:#fff8e1;border-radius:8px;padding:8px 10px;font-size:.76rem;color:#7d5a00;line-height:1.6">
-          💡 <b>이 키워드로 할 수 있는 것:</b><br>
-          1. 키워드를 줄여보세요 → <b>"전세대출"</b>, <b>"전세금리"</b><br>
-          2. 수식어 추가 → <b>"${escHtml(k.keyword)} 조건"</b>, <b>"${escHtml(k.keyword)} 2026"</b><br>
-          3. 아래 <b>대본 생성</b>으로 글을 써서 노출 테스트해보세요
+        ${!hasRealVol ? `
+        <div style="margin-top:6px;background:#f7f8fa;border-radius:8px;padding:8px 10px;font-size:.75rem;color:#4a5568;line-height:1.7;border:1px solid #e2e8f0">
+          ℹ️ 검색량은 서버 위치 제한으로 직접 확인 어렵습니다.<br>
+          👉 <a href="https://searchad.naver.com/keywordstool" target="_blank" style="color:#2b6cb0;font-weight:600">searchad.naver.com/keywordstool</a> 에서 직접 확인 가능<br>
+          📊 블로그경쟁 수가 <b style="color:#22543d">적을수록</b> 상위 노출 가능성 ↑ — 이 목록에서 경쟁 적은 것부터 써보세요
         </div>` : ''}
-        ${k.goldenScore === 'C' && k.monthlyTotal > 0 ? `
-        <div style="margin-top:8px;background:#fff5f5;border-radius:8px;padding:8px 10px;font-size:.76rem;color:#742a2a;line-height:1.6">
-          ⚠️ <b>경쟁이 많은 키워드입니다.</b><br>
-          → 롱테일로 바꾸세요: <b>"${escHtml(k.keyword)} 조건"</b>, <b>"${escHtml(k.keyword)} 방법"</b>, <b>"${escHtml(k.keyword)} 2026"</b>
+        ${(k.goldenScore === 'C' || k.goldenScore === 'C+') ? `
+        <div style="margin-top:6px;background:#fff5f5;border-radius:8px;padding:8px 10px;font-size:.75rem;color:#742a2a;line-height:1.7">
+          💡 더 좁혀서 써보세요: <b>"${escHtml(k.keyword)} 2026"</b>, <b>"${escHtml(k.keyword)} 후기"</b>, <b>"${escHtml(k.keyword)} 실제"</b>
         </div>` : ''}
         <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
           <button onclick="document.getElementById('magic-topic').value='';document.getElementById('rank-keyword').value=${JSON.stringify(k.keyword)};document.getElementById('rank-keyword').scrollIntoView({behavior:'smooth'})"
@@ -1895,7 +1902,8 @@ async function runMagicKeyword() {
           <button onclick="switchPage('draft-helper');setTimeout(()=>{document.getElementById('kw-to-draft-input').value=${JSON.stringify(k.keyword)};switchDraftTab('to-draft')},300)"
             style="font-size:.72rem;padding:4px 10px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:#fff;font-family:inherit">✍️ 대본 생성</button>
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
 
     const topGrade = keywords[0]?.goldenScore;
     resultEl.innerHTML = `
