@@ -1097,7 +1097,6 @@ ${postTitles}` }]
       const sleep = ms => new Promise(r => setTimeout(r, ms));
       const rows = [];
       for (const kw of keywords) {
-        // 블로그 경쟁 수는 병렬, Ad API는 순차 (Rate Limit 방지)
         const [vol, bc] = await Promise.all([
           hasAds   ? naverSearchVolume(kw, AD_KEY, AD_SECRET, AD_CUSTOMER) : Promise.resolve(null),
           hasNaver ? naverBlogSearch(kw, NAVER_CID, NAVER_CSEC)            : Promise.resolve(null)
@@ -1114,7 +1113,16 @@ ${postTitles}` }]
           return 'C';
         })();
         rows.push({ keyword: kw, pc: vol?.pc ?? null, mobile: vol?.mobile ?? null, total, blogCount: comp, score });
-        await sleep(300); // 네이버 API Rate Limit 방지
+        await sleep(300);
+      }
+
+      // Ad API가 모두 null이면 DataLab으로 상대 트렌드 보완
+      const allNull = rows.every(r => r.total === null);
+      if (allNull && hasNaver) {
+        const trends = await naverDataLabTrend(keywords, NAVER_CID, NAVER_CSEC);
+        for (const r of rows) {
+          if (trends[r.keyword] != null) r.trendScore = trends[r.keyword]; // 0~100
+        }
       }
 
       result = { rows };

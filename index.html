@@ -2225,13 +2225,27 @@ async function checkRankVolume() {
     const maxVol = Math.max(...rows.map(r => r.total || 0), 1);
     const scoreColor = s => ({ 'A+':'#d4af37','A':'#38a169','B+':'#3182ce','B':'#718096','C':'#a0aec0' })[s] || '#a0aec0';
 
+    const hasTrend = rows.some(r => r.trendScore != null);
+    const maxTrend = hasTrend ? Math.max(...rows.map(r => r.trendScore || 0), 1) : 1;
+
     const rowsHtml = rows.map(r => {
-      const pct = Math.round(((r.total || 0) / maxVol) * 100);
+      // 바 너비 계산: DB/API 검색량 우선, 없으면 트렌드 점수
+      const pct = r._fromDb || (r.total != null && r.total > 0)
+        ? Math.round(((r.total || 0) / maxVol) * 100)
+        : hasTrend ? Math.round(((r.trendScore || 0) / maxTrend) * 100) : 0;
+
+      const barColor = r._fromDb ? '#38a169,#68d391'
+        : hasTrend && r.trendScore != null ? '#805ad5,#b794f4'
+        : 'var(--navy-mid),var(--sky)';
+
       const volText = r._fromDb
         ? `<span style="font-size:.8rem;color:#276749;font-weight:700">📂 ${(r.total||0).toLocaleString()}회/월</span>`
-        : r.total !== null && r.total > 0
+        : r.total != null && r.total > 0
           ? `<span style="font-size:.8rem;color:var(--text-mid)">${r.total.toLocaleString()}회/월</span>`
-          : `<span style="font-size:.8rem;color:#a0aec0">조회불가</span>`;
+          : r.trendScore != null
+            ? `<span style="font-size:.8rem;color:#805ad5;font-weight:700">📈 트렌드 ${r.trendScore}/100</span>`
+            : `<span style="font-size:.8rem;color:#a0aec0">조회불가</span>`;
+
       return `
         <div style="margin-bottom:14px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
@@ -2242,11 +2256,12 @@ async function checkRankVolume() {
             </div>
           </div>
           <div style="height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
-            <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,${r._fromDb?'#38a169,#68d391':'var(--navy-mid),var(--sky)'});border-radius:4px;transition:width .4s"></div>
+            <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,${barColor});border-radius:4px;transition:width .4s"></div>
           </div>
           <div style="font-size:.75rem;color:var(--text-light);margin-top:3px">
             PC ${(r.pc||0).toLocaleString()} + 모바일 ${(r.mobile||0).toLocaleString()} · 블로그 경쟁 ${r.blogCount !== null ? r.blogCount.toLocaleString() + '개' : '-'}
             ${r._fromDb ? '<span style="margin-left:6px;background:#c6f6d5;color:#22543d;font-size:.7rem;padding:1px 6px;border-radius:8px;font-weight:600">📂 DB</span>' : ''}
+            ${r.trendScore != null && !r._fromDb ? '<span style="margin-left:6px;background:#e9d8fd;color:#553c9a;font-size:.7rem;padding:1px 6px;border-radius:8px;font-weight:600">📈 DataLab</span>' : ''}
           </div>
         </div>`;
     }).join('');
@@ -2754,7 +2769,11 @@ async function runKwChecker() {
       const compColor = (r.blogCount||999999) <= 5000 ? '#22543d' : (r.blogCount||999999) <= 30000 ? '#744210' : '#9b2c2c';
       const volCell = r._fromDb
         ? `<td style="padding:12px 8px;text-align:right;color:#22543d;font-weight:700">${(r.total||0).toLocaleString()} <span style="font-size:.65rem;background:#c6f6d5;color:#22543d;padding:1px 5px;border-radius:6px">DB</span></td>`
-        : `<td style="padding:12px 8px;text-align:right;color:${volColor};font-weight:700">${r.total !== null && r.total > 0 ? r.total.toLocaleString() : '-'}</td>`;
+        : r.total !== null && r.total > 0
+          ? `<td style="padding:12px 8px;text-align:right;color:${volColor};font-weight:700">${r.total.toLocaleString()}</td>`
+          : r.trendScore != null
+            ? `<td style="padding:12px 8px;text-align:right;color:#805ad5;font-weight:700">📈${r.trendScore}<span style="font-size:.65rem;background:#e9d8fd;color:#553c9a;padding:1px 5px;border-radius:6px;margin-left:3px">트렌드</span></td>`
+            : `<td style="padding:12px 8px;text-align:right;color:#a0aec0">-</td>`;
       return `
         <tr style="border-bottom:1px solid var(--border)${r._fromDb ? ';background:#f0fff4' : ''}">
           <td style="padding:12px 8px;font-weight:600">${escHtml(r.keyword)}</td>
