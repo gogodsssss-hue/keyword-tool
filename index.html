@@ -1841,7 +1841,10 @@ async function runMagicKeyword() {
 
     const keywords = data.goldenKeywords || [];
     if (!keywords.length) {
-      resultEl.innerHTML = '<div style="color:var(--text-light);font-size:.85rem;padding:12px 0">데이터를 가져오지 못했습니다. 다른 주제로 시도해보세요.</div>';
+      resultEl.innerHTML = `<div style="background:#fff8e1;border:1px solid #f6c90e;border-radius:10px;padding:14px 16px;font-size:.84rem;color:#7d5a00">
+        ⚠️ <b>"${escHtml(document.getElementById('magic-topic').value.trim())}"</b> 관련 키워드 데이터가 부족합니다.<br>
+        <span style="font-size:.78rem;color:#a07000;margin-top:4px;display:block">💡 좀 더 짧게 입력해보세요. 예) "미국금리", "기준금리", "금리동결"</span>
+      </div>`;
       return;
     }
 

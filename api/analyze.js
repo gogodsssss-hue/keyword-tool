@@ -269,11 +269,17 @@ mainKeywords 5개, longtailKeywords 10개. 플랫폼이 "네이버 블로그만"
         ? await naverRelatedKeywords(topic, AD_KEY, AD_SECRET, AD_CUSTOMER)
         : [];
 
-      // 2단계: 검색량 100 이상만 필터링 후 경쟁도(블로그 수) 순차 조회
-      const candidates = relKws
-        .filter(k => k.total >= 100)
+      // 2단계: 검색량 10 이상만 필터링 후 경쟁도(블로그 수) 순차 조회
+      // 관련 키워드가 없으면 topic 자체를 후보로 사용
+      let candidates = relKws
+        .filter(k => k.total >= 10)
         .sort((a, b) => b.total - a.total)
         .slice(0, 15);
+
+      if (!candidates.length && topic) {
+        // Ad API 결과 없으면 topic 그대로 후보로 추가
+        candidates = [{ keyword: topic, pc: 0, mobile: 0, total: 0 }];
+      }
 
       const sleep = ms => new Promise(r => setTimeout(r, ms));
       const withBlogCount = [];
