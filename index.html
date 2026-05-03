@@ -2184,31 +2184,77 @@ async function checkRankVolume() {
   resultEl.innerHTML = '';
 
   try {
+    // ① 키워드 DB에서 먼저 조회 (정확 일치 → 포함 일치)
+    const db = loadKwDb();
+    const dbMap = {};
+    keywords.forEach(kw => {
+      const kwLow = kw.toLowerCase().replace(/\s/g,'');
+      // 정확 일치 우선
+      let hit = db.find(d => d.keyword.toLowerCase().replace(/\s/g,'') === kwLow);
+      // 없으면 포함 일치
+      if (!hit) hit = db.find(d => d.keyword.toLowerCase().replace(/\s/g,'').includes(kwLow) || kwLow.includes(d.keyword.toLowerCase().replace(/\s/g,'')));
+      if (hit) dbMap[kw] = hit;
+    });
+
+    const dbHitCount = Object.keys(dbMap).length;
+
+    // ② API로 블로그 경쟁 수 조회 (검색량 0이라도 blogCount는 옴)
     const data = await callApi({ mode: 'kw-checker', keywords });
     loading.classList.remove('show');
 
-    const maxVol = Math.max(...(data.rows || []).map(r => r.total || 0), 1);
+    // ③ API 결과에 DB 검색량 덮어쓰기
+    const rows = (data.rows || []).map(r => {
+      const dbHit = dbMap[r.keyword];
+      if (dbHit) {
+        r.pc     = dbHit.pc;
+        r.mobile = dbHit.mobile;
+        r.total  = dbHit.total;
+        // 황금도 재계산
+        const ratio = r.blogCount > 0 ? r.total / r.blogCount : 0;
+        r.score = ratio >= 3 ? 'A+' : ratio >= 1 ? 'A' : ratio >= 0.3 ? 'B+' : ratio >= 0.1 ? 'B' : 'C';
+        r._fromDb = true;
+      }
+      return r;
+    });
+
+    const maxVol = Math.max(...rows.map(r => r.total || 0), 1);
     const scoreColor = s => ({ 'A+':'#d4af37','A':'#38a169','B+':'#3182ce','B':'#718096','C':'#a0aec0' })[s] || '#a0aec0';
 
-    const rows = (data.rows || []).map(r => {
+    const rowsHtml = rows.map(r => {
       const pct = Math.round(((r.total || 0) / maxVol) * 100);
+      const volText = r._fromDb
+        ? `<span style="font-size:.8rem;color:#276749;font-weight:700">📂 ${(r.total||0).toLocaleString()}회/월</span>`
+        : r.total !== null && r.total > 0
+          ? `<span style="font-size:.8rem;color:var(--text-mid)">${r.total.toLocaleString()}회/월</span>`
+          : `<span style="font-size:.8rem;color:#a0aec0">조회불가</span>`;
       return `
         <div style="margin-bottom:14px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
             <span style="font-weight:600;font-size:.9rem">${escHtml(r.keyword)}</span>
             <div style="display:flex;align-items:center;gap:8px">
-              <span style="font-size:.8rem;color:var(--text-mid)">${r.total !== null ? r.total.toLocaleString() + '회/월' : '조회불가'}</span>
+              ${volText}
               ${r.score ? `<span style="font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:10px;background:${scoreColor(r.score)}20;color:${scoreColor(r.score)}">황금도 ${r.score}</span>` : ''}
             </div>
           </div>
           <div style="height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
-            <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--navy-mid),var(--sky));border-radius:4px;transition:width .4s"></div>
+            <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,${r._fromDb?'#38a169,#68d391':'var(--navy-mid),var(--sky)'});border-radius:4px;transition:width .4s"></div>
           </div>
-          <div style="font-size:.75rem;color:var(--text-light);margin-top:3px">PC ${(r.pc||0).toLocaleString()} + 모바일 ${(r.mobile||0).toLocaleString()} · 블로그 경쟁 ${r.blogCount !== null ? r.blogCount.toLocaleString() + '개' : '-'}</div>
+          <div style="font-size:.75rem;color:var(--text-light);margin-top:3px">
+            PC ${(r.pc||0).toLocaleString()} + 모바일 ${(r.mobile||0).toLocaleString()} · 블로그 경쟁 ${r.blogCount !== null ? r.blogCount.toLocaleString() + '개' : '-'}
+            ${r._fromDb ? '<span style="margin-left:6px;background:#c6f6d5;color:#22543d;font-size:.7rem;padding:1px 6px;border-radius:8px;font-weight:600">📂 DB</span>' : ''}
+          </div>
         </div>`;
     }).join('');
 
-    resultEl.innerHTML = rows || '<div style="color:var(--text-light);font-size:.85rem">결과 없음</div>';
+    const dbBanner = dbHitCount > 0
+      ? `<div style="margin-bottom:12px;padding:8px 12px;background:#f0fff4;border:1px solid #9ae6b4;border-radius:8px;font-size:.78rem;color:#276749">
+           📂 <b>${dbHitCount}개</b> 키워드는 내 키워드 DB에서 실제 검색량을 가져왔습니다. (초록 바 = DB 데이터)
+         </div>`
+      : `<div style="margin-bottom:12px;padding:8px 12px;background:#fffbeb;border:1px solid #f6e05e;border-radius:8px;font-size:.78rem;color:#744210">
+           💡 키워드 DB에 일치하는 키워드가 없습니다. <b>키워드 DB</b>에 네이버 엑셀을 업로드하면 정확한 검색량을 볼 수 있어요.
+         </div>`;
+
+    resultEl.innerHTML = dbBanner + (rowsHtml || '<div style="color:var(--text-light);font-size:.85rem">결과 없음</div>');
   } catch(e) {
     loading.classList.remove('show');
     resultEl.innerHTML = `<div style="color:var(--red-text)">오류: ${escHtml(e.message)}</div>`;
