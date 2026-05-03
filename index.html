@@ -1965,9 +1965,9 @@ async function analyzePostTracker() {
     const best = data.bestKeywords || [];
 
     const volBadge = v => {
-      if (!v || v.total === null) return `<span style="font-size:.68rem;color:#a0aec0;font-style:italic">뉴스성 키워드</span>`;
+      if (!v || v.total === null) return `<span style="font-size:.68rem;color:#cbd5e0">-</span>`;
       const t = v.total || 0;
-      if (t === 0) return `<span style="font-size:.68rem;color:#a0aec0">검색량 낮음</span>`;
+      if (t === 0) return `<span style="font-size:.68rem;color:#a0aec0">0회</span>`;
       const color = t >= 10000 ? '#22543d' : t >= 3000 ? '#744210' : '#4a5568';
       const bg    = t >= 10000 ? '#c6f6d5'  : t >= 3000 ? '#fefcbf'  : 'var(--bg)';
       return `<span style="font-size:.72rem;background:${bg};color:${color};padding:2px 7px;border-radius:10px;font-weight:600">${t >= 10000 ? '🔥' : t >= 3000 ? '⭐' : ''}${t.toLocaleString()}회</span>`;

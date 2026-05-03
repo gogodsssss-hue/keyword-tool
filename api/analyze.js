@@ -1013,7 +1013,20 @@ ${postTitles}` }]
             const jsonMatch = raw.match(/\[[\s\S]*\]/);
             if (jsonMatch) aiSuggestions = JSON.parse(jsonMatch[0]);
           }
-        } catch {}
+        } catch (e) {
+          // AI 코치 실패 시 기본 제안 생성
+          aiSuggestions = posts.slice(0, 10).map((p, i) => {
+            const hasDate = /\d{4}년|\d{1,2}월|\d{1,2}일|오늘|어제|최신|최근/.test(p.title);
+            const type = hasDate ? '뉴스성' : '혼합';
+            return {
+              idx: i,
+              type,
+              issue: hasDate ? '날짜·시사성 표현이 포함되어 시간이 지나면 검색이 안됩니다' : '검색에 오래 노출되려면 제목을 다듬을 여지가 있습니다',
+              betterTitle: p.title.replace(/\d{4}년\s*\d{1,2}월\d{1,2}일\s*/g, '').replace(/최신\s*/g, '').trim(),
+              keyword: p.keywords?.[0]?.keyword || ''
+            };
+          });
+        }
       }
 
       result = { posts: enrichedPosts, bestKeywords, blogId, totalPosts: posts.length, aiSuggestions };
