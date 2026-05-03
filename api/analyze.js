@@ -264,6 +264,7 @@ mainKeywords 5개, longtailKeywords 10개. 플랫폼이 "네이버 블로그만"
 
     // ② 황금 키워드 추출
     else if (mode === 'golden-keyword') {
+      const sleep = ms => new Promise(r => setTimeout(r, ms));
       // 1단계: 네이버 Ad API에서 실제 연관 키워드 가져오기 (AI 생성 아님)
       const relKws = hasAds
         ? await naverRelatedKeywords(topic, AD_KEY, AD_SECRET, AD_CUSTOMER)
