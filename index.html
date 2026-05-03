@@ -1396,11 +1396,11 @@ async function loadTopBloggers() {
             ${b.titles.length ? `<div style="font-size:.74rem;color:var(--text-light)">${b.titles.map(t => `"${escHtml(t)}"`).join(' · ')}</div>` : ''}
           </div>
           <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
-            <button onclick="window.open(${JSON.stringify(b.link)},'_blank')"
+            <button onclick="window.open('${b.link.replace(/'/g,&quot;%27&quot;)}','_blank')"
               style="font-size:.72rem;padding:4px 10px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:#fff;font-family:inherit;color:var(--text-mid);text-align:center">
               방문 →
             </button>
-            <button onclick="document.getElementById('rank-blogurl').value=${JSON.stringify(b.link)};switchPage('rank-checker')"
+            <button onclick="document.getElementById('rank-blogurl').value='${b.link.replace(/'/g,&quot;%27&quot;)}';switchPage('rank-checker')"
               style="font-size:.68rem;padding:3px 8px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:#fff;font-family:inherit;color:var(--text-mid)">
               순위비교
             </button>
