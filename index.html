@@ -2248,6 +2248,20 @@ async function analyzePostTracker() {
       return { bg:'#fff5f5', color:'#c53030', label:'📰 뉴스성' };
     };
 
+    // 포스트 컨텍스트 전역 저장 (채팅용)
+    window._postContexts = posts.map((p, idx) => {
+      const sug = getSug(idx);
+      return {
+        title: p.title,
+        pubDate: p.pubDate,
+        keywords: p.keywords.map(k => k.keyword).join(', '),
+        type: sug?.type || '',
+        issue: sug?.issue || '',
+        betterTitle: sug?.betterTitle || '',
+        targetKeyword: sug?.keyword || ''
+      };
+    });
+
     const postCards = posts.map((p, idx) => {
       const sug = getSug(idx);
       const ts = sug ? typeStyle(sug.type) : null;
@@ -2272,8 +2286,40 @@ async function analyzePostTracker() {
           <div style="font-size:.7rem;font-weight:700;color:#2b6cb0;margin-bottom:5px;letter-spacing:.3px">💡 AI 코치 제안</div>
           <div style="font-size:.78rem;color:#744210;margin-bottom:6px">⚠️ ${escHtml(sug.issue)}</div>
           <div style="font-size:.8rem;color:#1a365d;font-weight:600;margin-bottom:4px">✏️ 더 나은 제목: "${escHtml(sug.betterTitle)}"</div>
-          <div style="font-size:.73rem;color:#4a5568">🎯 타깃 키워드: <b style="color:#2b6cb0">${escHtml(sug.keyword)}</b></div>
+          <div style="font-size:.73rem;color:#4a5568;margin-bottom:10px">🎯 타깃 키워드: <b style="color:#2b6cb0">${escHtml(sug.keyword)}</b></div>
+          <button onclick="togglePostChat(${idx})"
+            style="font-size:.75rem;padding:5px 14px;border:1px solid #4299e1;border-radius:8px;background:#fff;color:#2b6cb0;cursor:pointer;font-weight:600;font-family:inherit">
+            💬 이 글 AI랑 상담하기
+          </button>
         </div>` : ''}
+
+        <!-- 미니 채팅창 -->
+        <div id="post-chat-${idx}" style="display:none;margin-top:10px;border:1.5px solid #bee3f8;border-radius:12px;overflow:hidden">
+          <div style="background:#ebf8ff;padding:8px 14px;font-size:.75rem;color:#2b6cb0;font-weight:600;border-bottom:1px solid #bee3f8">
+            💬 "${escHtml(p.title.slice(0,30))}..." 에 대해 물어보세요
+          </div>
+          <!-- 빠른 질문 버튼 -->
+          <div style="padding:10px 14px;display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid #bee3f8;background:#f7fbff">
+            <button onclick="sendPostChatQuick(${idx},'이 글 주제로 검색에 오래 살아남는 제목 3가지 만들어줘')"
+              style="font-size:.72rem;padding:4px 10px;border:1px solid #90cdf4;border-radius:16px;background:#fff;color:#2b6cb0;cursor:pointer;font-family:inherit">제목 3개 추천</button>
+            <button onclick="sendPostChatQuick(${idx},'경쟁이 적고 검색되는 롱테일 키워드 5개 추천해줘')"
+              style="font-size:.72rem;padding:4px 10px;border:1px solid #90cdf4;border-radius:16px;background:#fff;color:#2b6cb0;cursor:pointer;font-family:inherit">롱테일 키워드 5개</button>
+            <button onclick="sendPostChatQuick(${idx},'이 글을 블로그에 올릴 때 해시태그 추천해줘')"
+              style="font-size:.72rem;padding:4px 10px;border:1px solid #90cdf4;border-radius:16px;background:#fff;color:#2b6cb0;cursor:pointer;font-family:inherit">해시태그 추천</button>
+            <button onclick="sendPostChatQuick(${idx},'비슷한 주제로 새로 쓸 수 있는 글 아이디어 3가지')"
+              style="font-size:.72rem;padding:4px 10px;border:1px solid #90cdf4;border-radius:16px;background:#fff;color:#2b6cb0;cursor:pointer;font-family:inherit">새 글 아이디어</button>
+          </div>
+          <!-- 대화 내역 -->
+          <div id="post-chat-history-${idx}" style="max-height:280px;overflow-y:auto;padding:10px 14px;background:#fff;display:flex;flex-direction:column;gap:8px"></div>
+          <!-- 입력창 -->
+          <div style="display:flex;gap:8px;padding:10px 14px;border-top:1px solid #bee3f8;background:#f7fbff">
+            <input id="post-chat-input-${idx}" type="text" placeholder="직접 물어보세요..."
+              style="flex:1;padding:8px 12px;border:1px solid #bee3f8;border-radius:8px;font-size:.82rem;font-family:inherit;outline:none"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopImmediatePropagation();sendPostChat(${idx})}">
+            <button onclick="sendPostChat(${idx})"
+              style="padding:8px 16px;background:#2b6cb0;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:.82rem;font-weight:600;font-family:inherit">전송</button>
+          </div>
+        </div>
       </div>`;
     }).join('');
 
@@ -2300,6 +2346,72 @@ async function analyzePostTracker() {
         ${postCards}
       </div>`);
   } catch(e) { showError('tracker', e.message); }
+}
+
+// 포스트별 미니 채팅
+function togglePostChat(idx) {
+  const el = document.getElementById(`post-chat-${idx}`);
+  if (!el) return;
+  const isOpen = el.style.display !== 'none';
+  el.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) {
+    // 처음 열 때 인사 메시지
+    const hist = document.getElementById(`post-chat-history-${idx}`);
+    if (hist && !hist.hasChildNodes()) {
+      const ctx = (window._postContexts || [])[idx];
+      addPostChatMsg(idx, 'ai', `안녕하세요! 👋<br><b>"${escHtml((ctx?.title||'').slice(0,35))}..."</b> 글에 대해 무엇이든 물어보세요.<br><br>💡 위 버튼을 누르거나 직접 질문하셔도 됩니다.`);
+    }
+    document.getElementById(`post-chat-input-${idx}`)?.focus();
+  }
+}
+
+function addPostChatMsg(idx, role, html) {
+  const hist = document.getElementById(`post-chat-history-${idx}`);
+  if (!hist) return;
+  const isAi = role === 'ai';
+  const div = document.createElement('div');
+  div.style.cssText = `display:flex;gap:8px;align-items:flex-start;${isAi ? '' : 'flex-direction:row-reverse'}`;
+  div.innerHTML = `
+    <div style="width:26px;height:26px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.8rem;${isAi ? 'background:#2b6cb0;color:#fff' : 'background:#e2e8f0;color:#4a5568'}">${isAi ? '🤖' : '나'}</div>
+    <div style="max-width:85%;padding:8px 12px;border-radius:12px;font-size:.8rem;line-height:1.6;${isAi ? 'background:#ebf8ff;color:#1a365d' : 'background:#f0fff4;color:#1a202c;text-align:right'}">${html}</div>`;
+  hist.appendChild(div);
+  hist.scrollTop = hist.scrollHeight;
+}
+
+async function sendPostChatQuick(idx, question) {
+  document.getElementById(`post-chat-input-${idx}`).value = question;
+  await sendPostChat(idx);
+}
+
+async function sendPostChat(idx) {
+  const input = document.getElementById(`post-chat-input-${idx}`);
+  const q = input?.value?.trim();
+  if (!q) return;
+  input.value = '';
+
+  addPostChatMsg(idx, 'user', escHtml(q));
+
+  // 로딩 표시
+  const loadId = `pc-load-${idx}-${Date.now()}`;
+  const hist = document.getElementById(`post-chat-history-${idx}`);
+  const loadDiv = document.createElement('div');
+  loadDiv.id = loadId;
+  loadDiv.style.cssText = 'display:flex;gap:8px;align-items:center;padding:4px 0';
+  loadDiv.innerHTML = `<div style="width:26px;height:26px;border-radius:50%;background:#2b6cb0;color:#fff;display:flex;align-items:center;justify-content:center;font-size:.8rem">🤖</div><div style="font-size:.78rem;color:#a0aec0">답변 작성 중...</div>`;
+  hist?.appendChild(loadDiv);
+  hist.scrollTop = hist.scrollHeight;
+
+  try {
+    const ctx = (window._postContexts || [])[idx];
+    const context = ctx ? `[분석 중인 포스트]\n제목: ${ctx.title}\n날짜: ${ctx.pubDate}\n키워드: ${ctx.keywords}\n유형: ${ctx.type}\n문제: ${ctx.issue}\nAI 추천 제목: ${ctx.betterTitle}\n타깃 키워드: ${ctx.targetKeyword}` : '';
+
+    const data = await callApi({ mode: 'cmp-chat', message: q, context, model: 'haiku' });
+    loadDiv.remove();
+    addPostChatMsg(idx, 'ai', escHtml(data.reply || '답변을 받지 못했습니다.').replace(/\n/g, '<br>'));
+  } catch(e) {
+    loadDiv.remove();
+    addPostChatMsg(idx, 'ai', '⚠️ 오류가 발생했습니다. 다시 시도해주세요.');
+  }
 }
 
 // ═══════════════════════════════════════════
