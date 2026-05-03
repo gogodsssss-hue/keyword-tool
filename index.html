@@ -664,6 +664,19 @@ textarea.form-control{resize:vertical;min-height:100px}
   </div>
   <div class="loading" id="cmp-loading"><div class="spinner"></div><div class="loading-text">두 블로그 포스트 수집 및 분석 중...</div></div>
   <div class="result-area" id="cmp-result"></div>
+
+  <!-- 결과 보고 질문하는 창 -->
+  <div id="cmp-qa-box" style="display:none;margin-top:16px">
+    <div class="card">
+      <div class="card-title">💬 분석 결과에 대해 질문하세요</div>
+      <div id="cmp-qa-history" style="max-height:280px;overflow-y:auto;margin-bottom:10px;display:flex;flex-direction:column;gap:8px"></div>
+      <div style="display:flex;gap:8px">
+        <input class="form-input" id="cmp-qa-input" placeholder="예: 경쟁 블로그 어떤 키워드 먼저 따라해야 해? / 내 블로그 부족한 점은?" style="flex:1"
+          onkeydown="if(event.key==='Enter')askCmpQuestion()">
+        <button class="btn btn-primary" onclick="askCmpQuestion()" style="white-space:nowrap">질문 →</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- =================== 상위 블로거 목록 =================== -->
@@ -1397,6 +1410,8 @@ async function loadGoldenKeywords(topic) {
 //  블로그 비교 분석
 // ═══════════════════════════════════════════
 
+let _cmpData = null; // 마지막 비교 결과 저장
+
 async function runBlogCompare() {
   const myUrl   = document.getElementById('cmp-my-url').value.trim();
   const compUrl = document.getElementById('cmp-comp-url').value.trim();
@@ -1445,6 +1460,10 @@ async function runBlogCompare() {
         <div style="font-size:.68rem;font-weight:700">${d.cnt}</div>
       </div>`
     ).join('');
+
+    _cmpData = data;
+    document.getElementById('cmp-qa-box').style.display = '';
+    document.getElementById('cmp-qa-history').innerHTML = '';
 
     showResult('cmp', `
       <div class="result-fade" style="display:flex;flex-direction:column;gap:14px">
@@ -1529,6 +1548,52 @@ async function runBlogCompare() {
       </div>
     `);
   } catch(e) { showError('cmp', e.message); }
+}
+
+async function askCmpQuestion() {
+  const input = document.getElementById('cmp-qa-input');
+  const q = input.value.trim();
+  if (!q) return;
+  if (!_cmpData) { alert('먼저 비교 분석을 실행해주세요.'); return; }
+
+  const history = document.getElementById('cmp-qa-history');
+
+  // 질문 말풍선
+  history.insertAdjacentHTML('beforeend', `
+    <div style="align-self:flex-end;background:var(--navy-mid);color:#fff;padding:8px 14px;border-radius:14px 14px 4px 14px;font-size:.84rem;max-width:80%">${escHtml(q)}</div>
+  `);
+  input.value = '';
+
+  // 로딩 말풍선
+  const loadId = 'cmp-qa-load-' + Date.now();
+  history.insertAdjacentHTML('beforeend', `
+    <div id="${loadId}" style="align-self:flex-start;background:#f0f4f8;padding:8px 14px;border-radius:14px 14px 14px 4px;font-size:.84rem;color:var(--text-light)">분석 중...</div>
+  `);
+  history.scrollTop = history.scrollHeight;
+
+  try {
+    const context = `
+내 블로그(${_cmpData.myId}): ${_cmpData.myCount}개 포스트
+경쟁 블로그(${_cmpData.compId}): ${_cmpData.compCount}개 포스트
+내 블로그 주요 키워드: ${(_cmpData.myKws||[]).slice(0,10).map(k=>k.kw).join(', ')}
+경쟁 블로그 주요 키워드: ${(_cmpData.compKws||[]).slice(0,10).map(k=>k.kw).join(', ')}
+갭 키워드(상대방만 씀): ${(_cmpData.gapKws||[]).slice(0,8).map(k=>k.kw).join(', ')}
+AI 분석 요약: ${_cmpData.aiAnalysis || '없음'}
+    `.trim();
+
+    const data = await callApi({
+      mode: 'chat',
+      message: q,
+      blogContext: { customContext: context }
+    });
+
+    const answer = data.reply || data.message || '답변을 받지 못했습니다.';
+    document.getElementById(loadId).innerHTML = answer.replace(/\n/g,'<br>');
+    document.getElementById(loadId).style.color = 'var(--text)';
+  } catch(e) {
+    document.getElementById(loadId).textContent = '오류: ' + e.message;
+  }
+  history.scrollTop = history.scrollHeight;
 }
 
 // ═══════════════════════════════════════════
