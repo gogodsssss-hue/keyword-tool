@@ -1209,13 +1209,15 @@ JSON 없이 자연스러운 한국어 대화체로 답하세요.`;
     else if (mode === 'cmp-chat') {
       const userMsg  = req.body.message || '';
       const context  = req.body.context || '';
+      const modelReq = req.body.model || 'haiku';
+      const modelId  = modelReq === 'sonnet' ? 'claude-sonnet-4-5' : 'claude-haiku-4-5';
       if (!userMsg) return res.status(400).json({ error: '메시지가 없습니다.' });
 
       const chatRes = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type':'application/json', 'x-api-key': CLAUDE_KEY, 'anthropic-version':'2023-06-01' },
         body: JSON.stringify({
-          model: 'claude-haiku-4-5',
+          model: modelId,
           max_tokens: 600,
           system: `당신은 한국 블로그 SEO 전문 코치입니다. 짧고 솔직하게 3~5문장으로 답하세요. 한국어로.${context ? '\n\n[블로그 비교 데이터]\n' + context : ''}`,
           messages: [{ role: 'user', content: userMsg }]

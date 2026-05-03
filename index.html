@@ -671,11 +671,22 @@ textarea.form-control{resize:vertical;min-height:100px}
     <!-- 헤더 -->
     <div style="background:linear-gradient(135deg,#0d1f3c,#2b6cb0);padding:14px 18px;display:flex;align-items:center;gap:10px">
       <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0">🤖</div>
-      <div>
+      <div style="flex:1">
         <div style="font-weight:700;color:#fff;font-size:.92rem;letter-spacing:-.2px">블로그 전략 AI</div>
         <div style="font-size:.7rem;color:rgba(255,255,255,.55);display:flex;align-items:center;gap:4px">
           <span style="width:6px;height:6px;border-radius:50%;background:#68d391;display:inline-block"></span> 온라인
         </div>
+      </div>
+      <!-- 모델 선택 -->
+      <div style="display:flex;gap:5px" id="cmp-model-btns">
+        <button onclick="setCmpModel('haiku', this)" data-model="haiku"
+          style="font-size:.68rem;padding:4px 9px;border-radius:20px;border:1.5px solid rgba(255,255,255,.5);background:rgba(255,255,255,.2);color:#fff;cursor:pointer;font-family:inherit;font-weight:600;transition:all .2s">
+          ⚡ 빠름
+        </button>
+        <button onclick="setCmpModel('sonnet', this)" data-model="sonnet"
+          style="font-size:.68rem;padding:4px 9px;border-radius:20px;border:1.5px solid transparent;background:transparent;color:rgba(255,255,255,.5);cursor:pointer;font-family:inherit;font-weight:600;transition:all .2s">
+          🧠 깊이
+        </button>
       </div>
     </div>
 
@@ -1459,6 +1470,19 @@ async function loadGoldenKeywords(topic) {
 // ═══════════════════════════════════════════
 
 let _cmpData = null; // 마지막 비교 결과 저장
+let _cmpModel = 'haiku'; // 선택된 AI 모델
+
+function setCmpModel(model, btn) {
+  _cmpModel = model;
+  document.querySelectorAll('#cmp-model-btns button').forEach(b => {
+    b.style.background = 'transparent';
+    b.style.borderColor = 'transparent';
+    b.style.color = 'rgba(255,255,255,.5)';
+  });
+  btn.style.background = 'rgba(255,255,255,.2)';
+  btn.style.borderColor = 'rgba(255,255,255,.5)';
+  btn.style.color = '#fff';
+}
 
 async function runBlogCompare() {
   const myUrl   = document.getElementById('cmp-my-url').value.trim();
@@ -1636,7 +1660,8 @@ AI 분석: ${_cmpData.aiAnalysis || '없음'}
     const data = await callApi({
       mode: 'cmp-chat',
       message: q,
-      context: context
+      context: context,
+      model: _cmpModel
     });
 
     const answer = data.reply || data.message || '답변을 받지 못했습니다.';
