@@ -887,7 +887,11 @@ JSON 없이 자연스러운 한국어 대화체로 답하세요.`;
 
     // ⑰ 포스트 추적기 (내 블로그 포스트 키워드 분석)
     else if (mode === 'post-tracker') {
-      const blogId = (blogUrl || '').replace(/^https?:\/\/blog\.naver\.com\//i, '').replace(/\/$/, '').trim();
+      const blogId = (blogUrl || '')
+        .replace(/^https?:\/\//i, '')
+        .replace(/^blog\.naver\.com\//i, '')
+        .replace(/\/$/, '')
+        .trim();
       if (!blogId) return res.status(400).json({ error: '블로그 URL을 입력해주세요.' });
 
       // RSS 가져오기
