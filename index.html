@@ -665,31 +665,48 @@ textarea.form-control{resize:vertical;min-height:100px}
   <div class="loading" id="cmp-loading"><div class="spinner"></div><div class="loading-text">두 블로그 포스트 수집 및 분석 중...</div></div>
   <div class="result-area" id="cmp-result"></div>
 
-  <!-- 상시 대화창 -->
-  <div style="margin-top:16px">
-    <div class="card" style="padding:0;overflow:hidden">
-      <div style="background:linear-gradient(135deg,var(--navy),var(--navy-mid));padding:12px 16px;display:flex;align-items:center;gap:8px">
-        <span style="font-size:1.1rem">💬</span>
-        <div>
-          <div style="font-weight:700;color:#fff;font-size:.9rem">블로그 분석 대화</div>
-          <div style="font-size:.72rem;color:rgba(255,255,255,.65)">비교 결과, 내 생각, 전략 등 자유롭게 이야기하세요</div>
+  <!-- 블로그 분석 채팅 -->
+  <div style="margin-top:20px;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.10);background:#fff">
+
+    <!-- 헤더 -->
+    <div style="background:linear-gradient(135deg,#0d1f3c,#2b6cb0);padding:14px 18px;display:flex;align-items:center;gap:10px">
+      <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0">🤖</div>
+      <div>
+        <div style="font-weight:700;color:#fff;font-size:.92rem;letter-spacing:-.2px">블로그 전략 AI</div>
+        <div style="font-size:.7rem;color:rgba(255,255,255,.55);display:flex;align-items:center;gap:4px">
+          <span style="width:6px;height:6px;border-radius:50%;background:#68d391;display:inline-block"></span> 온라인
         </div>
-      </div>
-      <div id="cmp-qa-history" style="min-height:120px;max-height:340px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px">
-        <div style="align-self:flex-start;background:#f0f4f8;padding:10px 14px;border-radius:14px 14px 14px 4px;font-size:.84rem;color:var(--text-mid);max-width:85%;line-height:1.6">
-          안녕하세요! 비교 분석을 먼저 실행하면 데이터를 바탕으로 이야기해드릴 수 있어요.<br>
-          분석 전이라도 <b>"이 블로그는 어떤 것 같아?"</b> 또는 <b>"내 블로그 방향이 맞는 걸까?"</b> 같은 질문 편하게 해주세요. 😊
-        </div>
-      </div>
-      <div style="border-top:1px solid var(--border);padding:10px 12px;display:flex;gap:8px;background:#fafbfc">
-        <textarea id="cmp-qa-input" rows="2"
-          placeholder="예) 이 블로그는 분양 홍보 느낌인데 내 블로그랑 뭐가 다른 거야? / 내가 이쪽 방향으로 가면 어때?"
-          style="flex:1;resize:none;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:.84rem;font-family:inherit;outline:none;line-height:1.5"
-          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();askCmpQuestion()}"></textarea>
-        <button class="btn btn-primary" onclick="askCmpQuestion()"
-          style="align-self:flex-end;padding:8px 16px;white-space:nowrap">전송 ↑</button>
       </div>
     </div>
+
+    <!-- 메시지 영역 -->
+    <div id="cmp-qa-history" style="height:320px;overflow-y:auto;padding:18px 16px;display:flex;flex-direction:column;gap:14px;background:#f7f9fc;scroll-behavior:smooth">
+      <!-- AI 첫 메시지 -->
+      <div style="display:flex;align-items:flex-end;gap:8px">
+        <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#2b6cb0,#63b3ed);display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0">AI</div>
+        <div style="background:#fff;border:1px solid #e2e8f0;padding:10px 14px;border-radius:18px 18px 18px 4px;font-size:.84rem;color:#2d3748;max-width:80%;line-height:1.65;box-shadow:0 1px 3px rgba(0,0,0,.06)">
+          안녕하세요! 비교 분석 후 궁금한 점이나 블로그 전략에 대해 자유롭게 이야기해 주세요. 😊<br>
+          <span style="color:#718096;font-size:.78rem">비교 전에도 질문 가능합니다.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 입력창 -->
+    <div style="background:#fff;border-top:1px solid #e2e8f0;padding:12px 14px;display:flex;align-items:flex-end;gap:10px">
+      <textarea id="cmp-qa-input" rows="1"
+        placeholder="메시지를 입력하세요... (Enter 전송 / Shift+Enter 줄바꿈)"
+        style="flex:1;resize:none;border:1.5px solid #e2e8f0;border-radius:22px;padding:10px 16px;font-size:.85rem;font-family:inherit;outline:none;line-height:1.5;max-height:120px;transition:border .2s;background:#f7f9fc"
+        onfocus="this.style.borderColor='#63b3ed';this.style.background='#fff'"
+        onblur="this.style.borderColor='#e2e8f0';this.style.background='#f7f9fc'"
+        oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();askCmpQuestion()}"></textarea>
+      <button onclick="askCmpQuestion()"
+        style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#2b6cb0,#63b3ed);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(43,108,176,.35);transition:transform .15s"
+        onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+
   </div>
 </div>
 
