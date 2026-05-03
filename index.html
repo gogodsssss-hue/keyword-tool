@@ -335,6 +335,8 @@ textarea.form-control{resize:vertical;min-height:100px}
 .draft-script h3{color:var(--navy);font-size:.95rem;margin:14px 0 6px}
 .draft-copy-row{display:flex;justify-content:flex-end;margin-top:10px}
 </style>
+<!-- 엑셀 파일 파싱 라이브러리 -->
+<script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -1898,19 +1900,36 @@ function mergeKwDb(newKws) {
   return Object.values(map);
 }
 
+function applyKwDbParsed(parsed) {
+  if (!parsed.length) { alert('키워드를 찾을 수 없어요.\n네이버 키워드 도구에서 받은 파일인지 확인해주세요.'); return; }
+  const merged = mergeKwDb(parsed);
+  saveKwDb(merged);
+  renderKwDbTable();
+  const drop = document.getElementById('kw-db-drop');
+  if (drop) { drop.style.background='#f0fff4'; drop.style.borderColor='#38a169'; setTimeout(()=>{drop.style.background='#f7fbff';drop.style.borderColor='#90cdf4';},2000); }
+  alert(`✅ ${parsed.length.toLocaleString()}개 추가 완료!\n총 ${merged.length.toLocaleString()}개 키워드 저장됨\n\n이제 마법의 키워드에서 실제 검색량으로 분석됩니다!`);
+}
+
 function processKwDbFile(file) {
-  const reader = new FileReader();
-  reader.onload = e => {
-    const parsed = parseNaverCsv(e.target.result);
-    if (!parsed.length) { alert('키워드를 찾을 수 없어요. 네이버 키워드 도구 CSV인지 확인해주세요.'); return; }
-    const merged = mergeKwDb(parsed);
-    saveKwDb(merged);
-    renderKwDbTable();
-    const drop = document.getElementById('kw-db-drop');
-    if (drop) { drop.style.background='#f0fff4'; drop.style.borderColor='#38a169'; setTimeout(()=>{drop.style.background='#f7fbff';drop.style.borderColor='#90cdf4';},2000); }
-    alert(`✅ ${parsed.length.toLocaleString()}개 추가 완료!\n총 ${merged.length.toLocaleString()}개 키워드 저장됨\n\n이제 마법의 키워드에서 실제 검색량으로 분석됩니다!`);
-  };
-  reader.readAsText(file, 'UTF-8');
+  const isExcel = /\.xlsx?$/i.test(file.name);
+  if (isExcel) {
+    // 엑셀 파일 처리 (SheetJS)
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const csvText = XLSX.utils.sheet_to_csv(ws);
+        applyKwDbParsed(parseNaverCsv(csvText));
+      } catch(err) { alert('엑셀 파일 읽기 실패: ' + err.message); }
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    // CSV 파일 처리
+    const reader = new FileReader();
+    reader.onload = e => applyKwDbParsed(parseNaverCsv(e.target.result));
+    reader.readAsText(file, 'UTF-8');
+  }
 }
 function handleKwDbFile(e) { if (e.target.files[0]) processKwDbFile(e.target.files[0]); }
 function handleKwDbDrop(e) {
