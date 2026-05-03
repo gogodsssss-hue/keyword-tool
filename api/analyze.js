@@ -277,9 +277,18 @@ mainKeywords 5개, longtailKeywords 10개. 플랫폼이 "네이버 블로그만"
         .slice(0, 15);
 
       if (!candidates.length && topic) {
-        // Ad API 관련 키워드 없으면 topic 자체를 직접 조회
-        const directVol = hasAds ? await naverSearchVolume(topic, AD_KEY, AD_SECRET, AD_CUSTOMER) : null;
-        candidates = [{ keyword: topic, pc: directVol?.pc || 0, mobile: directVol?.mobile || 0, total: directVol?.total || 0 }];
+        // Ad API 관련 키워드 없으면 topic + 변형으로 직접 조회
+        const variants = [topic, topic + ' 조건', topic + ' 방법', topic + ' 금리', topic + ' 한도'];
+        for (const v of variants) {
+          const vol = hasAds ? await naverSearchVolume(v, AD_KEY, AD_SECRET, AD_CUSTOMER) : null;
+          if (vol && vol.total > 0) {
+            candidates.push({ keyword: v, pc: vol.pc, mobile: vol.mobile, total: vol.total });
+          }
+          await sleep(200);
+        }
+        if (!candidates.length) {
+          candidates = [{ keyword: topic, pc: 0, mobile: 0, total: 0 }];
+        }
       }
 
       const sleep = ms => new Promise(r => setTimeout(r, ms));

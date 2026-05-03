@@ -1874,9 +1874,21 @@ async function runMagicKeyword() {
         </div>
         <div style="font-size:.78rem;color:var(--text-mid);margin-bottom:6px">${gradeDesc(k.goldenScore)}</div>
         <div style="display:flex;gap:12px;font-size:.78rem">
-          <span style="color:var(--text-light)">월검색 <b style="color:var(--navy)">${k.monthlyTotal?.toLocaleString() ?? '-'}회</b></span>
+          <span style="color:var(--text-light)">월검색 <b style="color:var(--navy)">${k.monthlyTotal > 0 ? k.monthlyTotal.toLocaleString()+'회' : '조회불가'}</b></span>
           <span style="color:var(--text-light)">블로그경쟁 <b style="color:${(k.blogCount||0)<10000?'#22543d':'#c53030'}">${k.blogCount?.toLocaleString() ?? '-'}개</b></span>
         </div>
+        ${k.goldenScore === 'C' && k.monthlyTotal === 0 ? `
+        <div style="margin-top:8px;background:#fff8e1;border-radius:8px;padding:8px 10px;font-size:.76rem;color:#7d5a00;line-height:1.6">
+          💡 <b>이 키워드로 할 수 있는 것:</b><br>
+          1. 키워드를 줄여보세요 → <b>"전세대출"</b>, <b>"전세금리"</b><br>
+          2. 수식어 추가 → <b>"${escHtml(k.keyword)} 조건"</b>, <b>"${escHtml(k.keyword)} 2026"</b><br>
+          3. 아래 <b>대본 생성</b>으로 글을 써서 노출 테스트해보세요
+        </div>` : ''}
+        ${k.goldenScore === 'C' && k.monthlyTotal > 0 ? `
+        <div style="margin-top:8px;background:#fff5f5;border-radius:8px;padding:8px 10px;font-size:.76rem;color:#742a2a;line-height:1.6">
+          ⚠️ <b>경쟁이 많은 키워드입니다.</b><br>
+          → 롱테일로 바꾸세요: <b>"${escHtml(k.keyword)} 조건"</b>, <b>"${escHtml(k.keyword)} 방법"</b>, <b>"${escHtml(k.keyword)} 2026"</b>
+        </div>` : ''}
         <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
           <button onclick="document.getElementById('magic-topic').value='';document.getElementById('rank-keyword').value=${JSON.stringify(k.keyword)};document.getElementById('rank-keyword').scrollIntoView({behavior:'smooth'})"
             style="font-size:.72rem;padding:4px 10px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:#fff;font-family:inherit">🏆 순위 확인</button>
