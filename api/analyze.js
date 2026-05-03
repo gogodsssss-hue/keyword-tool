@@ -222,16 +222,22 @@ async function claude(apiKey, system, user, maxTokens = 2500) {
     })
   });
   if (!res.ok) {
-    const e = await res.json();
-    throw new Error(e.error?.message || 'Claude API 오류');
+    let errBody = {};
+    try { errBody = await res.json(); } catch {}
+    throw new Error(errBody.error?.message || `Claude API 오류 (${res.status})`);
   }
   const d = await res.json();
   const text = d.content?.[0]?.text || '';
-  try { return JSON.parse(text); } catch {
-    const m = text.match(/\{[\s\S]*\}/);
-    if (m) return JSON.parse(m[0]);
-    throw new Error('응답 파싱 오류');
-  }
+  // JSON 파싱 시도 1: 그대로 파싱
+  try { return JSON.parse(text); } catch {}
+  // JSON 파싱 시도 2: 코드블록 제거 후 파싱
+  const stripped = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+  try { return JSON.parse(stripped); } catch {}
+  // JSON 파싱 시도 3: 첫 { ~ 마지막 } 추출
+  const m = text.match(/\{[\s\S]*\}/);
+  if (m) { try { return JSON.parse(m[0]); } catch {} }
+  // 파싱 완전 실패 → 원문 포함해서 에러
+  throw new Error(`JSON 파싱 실패: ${text.slice(0, 200)}`);
 }
 
 // ── 메인 핸들러 ──────────────────────────────────────────────
@@ -503,49 +509,13 @@ mainKeywords 5개, longtailKeywords 10개. 플랫폼이 "네이버 블로그만"
       }
 
       result = await claude(CLAUDE_KEY,
-        `한국 블로그 SEO 전문가. ${topic ? topic + ' 분야 특화.' : '전 분야 대응.'} 순수 JSON만 반환.
+        `당신은 한국 블로그 SEO 전문가입니다.${topic ? ' ' + topic + ' 분야 전문.' : ''}
+반드시 아래 JSON 형식만 반환하세요. 마크다운, 설명 텍스트 없이 순수 JSON만.
 
-[키워드마스터 기준 블로그 레벨]
-Level 0: 신생(포스팅 0~5개, 방문자 거의 없음)
-Level 1: 입문(5~20개, 이웃 100~500명, 전체방문자 ~5만)
-Level 2: 초보(20~50개, 이웃 500~1000명, 일방문자 50~100)
-Level 3: 성장(50~100개, 이웃 1000~2000명, 일방문자 100~200)
-Level 4: 활성(100~200개, 이웃 2000~5000명, 일방문자 200~500)
-Level 5: 중급(200~400개, 이웃 5000~1만, 일방문자 500~1000)
-Level 6: 숙련(400~700개, 이웃 1만~3만, 일방문자 1000~2000)
-Level 7: 고급(700~1000개, 이웃 3만~5만, 일방문자 2000~5000)
-Level 8: 전문가(1000~1500개, 인플루언서급, 일방문자 5000+)
-Level 9: 파워블로거(1500~2000개, 상위1%)
-Level 10: 최고권위(2000개+, 네이버 인플루언서 최상위)
+레벨 기준(0~10): 0=신생 1=입문 2=초보 3=성장 4=활성 5=중급 6=숙련 7=고급 8=전문가 9=파워블로거 10=최고권위
+입력 수치 있으면 그것으로 판단, 없으면 URL로 추정.
 
-입력된 현황 수치가 있으면 그것을 최우선으로 레벨 판단. 없으면 URL로 추정.
-
-[분석 원칙]
-- 충분히 클 수 있는데 못 크고 있는 이유를 구체적으로 진단하라.
-- "열심히 하세요" 같은 추상적 조언 금지.
-- 수치를 인용하며 "이 수치가 이 레벨 평균 대비 낮다/높다"는 식으로 비교 분석.
-- growthBlockers는 가장 치명적인 성장 방해 요인 3가지. 각각 원인+구체적 해결책.
-
-순수 JSON만 반환:
-{
-  "estimatedLevel": 0,
-  "levelReason": "레벨 근거 — 수치 직접 인용 (1~2문장)",
-  "scores": [
-    {"label":"콘텐츠 품질","value":"A~F","sub":"구체적 한줄 평가"},
-    {"label":"업로드 주기","value":"A~F","sub":"몇 개월에 몇 개 수준인지"},
-    {"label":"이웃/방문자","value":"A~F","sub":"실제 수치 vs 레벨 평균"},
-    {"label":"키워드 최적화","value":"A~F","sub":"구체적 개선 포인트"},
-    {"label":"SEO 구조","value":"A~F","sub":"구체적 개선 포인트"}
-  ],
-  "growthBlockers": [
-    {"rank":1,"title":"성장을 막는 가장 큰 원인 제목","diagnosis":"왜 문제인지 수치 근거 포함 2문장","action":"당장 이번 주 할 수 있는 구체적 행동 1가지"},
-    {"rank":2,"title":"두 번째 원인","diagnosis":"","action":""},
-    {"rank":3,"title":"세 번째 원인","diagnosis":"","action":""}
-  ],
-  "nextLevelTips": ["다음 레벨 달성 조건 3가지 (구체적 수치 포함)"],
-  "summary": "종합 브리핑 — 이 블로그가 충분히 클 수 있는 이유와 현재 못 크는 핵심 이유 (3~4문장)",
-  "tips": ["지수 향상 전략 5가지 (각각 구체적 행동 포함)"]
-}`,
+{"estimatedLevel":3,"levelReason":"레벨 근거 1~2문장","scores":[{"label":"콘텐츠 품질","value":"B","sub":"평가"},{"label":"업로드 주기","value":"C","sub":"평가"},{"label":"이웃/방문자","value":"B","sub":"평가"},{"label":"키워드 최적화","value":"C","sub":"평가"},{"label":"SEO 구조","value":"B","sub":"평가"}],"growthBlockers":[{"rank":1,"title":"원인제목","diagnosis":"진단 2문장","action":"구체적 행동"},{"rank":2,"title":"원인제목","diagnosis":"진단","action":"행동"},{"rank":3,"title":"원인제목","diagnosis":"진단","action":"행동"}],"nextLevelTips":["조건1","조건2","조건3"],"summary":"종합 브리핑 3~4문장","tips":["전략1","전략2","전략3","전략4","전략5"]}`,
         `블로그 주소: ${blogUrl}\n주제 분야: ${topic || '미입력'}\n\n[현황 수치]\n${statsCtx}`
       );
 
