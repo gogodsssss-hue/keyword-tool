@@ -831,6 +831,59 @@ textarea.form-control{resize:vertical;min-height:100px}
   </div>
 </div>
 
+<!-- =================== 키워드 DB =================== -->
+<div class="page" id="page-kw-db">
+  <div class="page-header">
+    <h2>📂 키워드 DB</h2>
+    <p>네이버 키워드 도구에서 엑셀을 받아 저장하면, 마법의 키워드에서 <b>실제 검색량</b>으로 분석합니다.</p>
+  </div>
+  <div class="card">
+    <div class="card-title">📋 사용 방법</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+      <div style="background:#ebf8ff;border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:1.3rem;margin-bottom:4px">1️⃣</div>
+        <div style="font-size:.78rem;font-weight:600;color:#2b6cb0">네이버 광고센터</div>
+        <div style="font-size:.73rem;color:#4a5568;margin-top:3px">searchad.naver.com<br>도구 → 키워드 도구</div>
+      </div>
+      <div style="background:#f0fff4;border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:1.3rem;margin-bottom:4px">2️⃣</div>
+        <div style="font-size:.78rem;font-weight:600;color:#276749">키워드 검색 후 다운로드</div>
+        <div style="font-size:.73rem;color:#4a5568;margin-top:3px">주담대·전세·청약 등<br>전체 다운로드</div>
+      </div>
+      <div style="background:#fffbeb;border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:1.3rem;margin-bottom:4px">3️⃣</div>
+        <div style="font-size:.78rem;font-weight:600;color:#975a16">여기 업로드</div>
+        <div style="font-size:.73rem;color:#4a5568;margin-top:3px">한 번만 하면<br>영구 저장됨</div>
+      </div>
+    </div>
+    <div id="kw-db-drop"
+         style="border:2px dashed #90cdf4;border-radius:14px;padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s;background:#f7fbff"
+         onclick="document.getElementById('kw-db-file').click()"
+         ondragover="event.preventDefault();this.style.borderColor='#2b6cb0';this.style.background='#ebf8ff'"
+         ondragleave="this.style.borderColor='#90cdf4';this.style.background='#f7fbff'"
+         ondrop="handleKwDbDrop(event)">
+      <div style="font-size:2.5rem;margin-bottom:10px">📂</div>
+      <div style="font-weight:700;color:#2b6cb0;font-size:1rem">여기를 클릭하거나 파일을 드래그하세요</div>
+      <div style="font-size:.82rem;color:#718096;margin-top:8px">엑셀(.xls/.xlsx) 또는 CSV 파일 모두 가능</div>
+      <div style="margin-top:12px;display:inline-block;padding:8px 24px;background:#2b6cb0;color:#fff;border-radius:8px;font-size:.85rem;font-weight:600">📤 파일 선택</div>
+    </div>
+    <input type="file" id="kw-db-file" accept=".csv,.xls,.xlsx" style="display:none" onchange="handleKwDbFile(event)">
+  </div>
+  <div class="card" style="margin-top:0">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div>
+        <div class="card-title" style="margin:0">💾 저장된 키워드</div>
+        <div id="kw-db-count" style="font-size:.83rem;color:var(--text-mid);margin-top:3px">0개 저장됨</div>
+      </div>
+      <button onclick="clearKwDb()" style="font-size:.75rem;padding:6px 14px;border:1px solid #fc8181;border-radius:8px;color:#c53030;background:#fff5f5;cursor:pointer;font-family:inherit">🗑️ 전체 삭제</button>
+    </div>
+    <input type="text" id="kw-db-search" placeholder="🔍 저장된 키워드 검색..."
+           oninput="renderKwDbTable()"
+           style="width:100%;padding:9px 14px;border:1px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;box-sizing:border-box;margin-bottom:10px">
+    <div id="kw-db-table"></div>
+  </div>
+</div>
+
 </main>
 </div>
 
@@ -2642,67 +2695,6 @@ async function sendFloatChat() {
   history.scrollTop = history.scrollHeight;
 }
 </script>
-
-<!-- =================== 키워드 DB =================== -->
-<div class="page" id="page-kw-db">
-  <div class="page-header">
-    <h2>📂 키워드 DB</h2>
-    <p>네이버 키워드 도구에서 CSV를 받아 저장하면, 마법의 키워드에서 <b>실제 검색량</b>으로 분석합니다.</p>
-  </div>
-
-  <!-- 업로드 안내 -->
-  <div class="card">
-    <div class="card-title">📋 사용 방법</div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
-      <div style="background:#ebf8ff;border-radius:10px;padding:12px;text-align:center">
-        <div style="font-size:1.3rem;margin-bottom:4px">1️⃣</div>
-        <div style="font-size:.78rem;font-weight:600;color:#2b6cb0">네이버 광고센터</div>
-        <div style="font-size:.73rem;color:#4a5568;margin-top:3px">searchad.naver.com<br>도구 → 키워드 도구</div>
-      </div>
-      <div style="background:#f0fff4;border-radius:10px;padding:12px;text-align:center">
-        <div style="font-size:1.3rem;margin-bottom:4px">2️⃣</div>
-        <div style="font-size:.78rem;font-weight:600;color:#276749">키워드 검색 후 다운로드</div>
-        <div style="font-size:.73rem;color:#4a5568;margin-top:3px">주담대, 전세, 청약 등<br>전체 다운로드 CSV</div>
-      </div>
-      <div style="background:#fffbeb;border-radius:10px;padding:12px;text-align:center">
-        <div style="font-size:1.3rem;margin-bottom:4px">3️⃣</div>
-        <div style="font-size:.78rem;font-weight:600;color:#975a16">여기 업로드</div>
-        <div style="font-size:.73rem;color:#4a5568;margin-top:3px">한 번만 하면<br>영구 저장됨</div>
-      </div>
-    </div>
-
-    <!-- 드래그 & 드롭 영역 -->
-    <div id="kw-db-drop"
-         style="border:2px dashed #90cdf4;border-radius:14px;padding:36px 20px;text-align:center;cursor:pointer;transition:all .2s;background:#f7fbff"
-         onclick="document.getElementById('kw-db-file').click()"
-         ondragover="event.preventDefault();this.style.borderColor='#2b6cb0';this.style.background='#ebf8ff'"
-         ondragleave="this.style.borderColor='#90cdf4';this.style.background='#f7fbff'"
-         ondrop="handleKwDbDrop(event)">
-      <div style="font-size:2.2rem;margin-bottom:8px">📎</div>
-      <div style="font-weight:700;color:#2b6cb0;font-size:.92rem">CSV 파일을 여기에 드래그하거나 클릭해서 선택</div>
-      <div style="font-size:.78rem;color:#718096;margin-top:6px">네이버 키워드 도구 → 전체 다운로드 → 여기 업로드</div>
-      <div style="font-size:.73rem;color:#a0aec0;margin-top:4px">여러 번 올려도 됩니다 — 자동으로 합쳐져요</div>
-    </div>
-    <input type="file" id="kw-db-file" accept=".csv,.xls,.xlsx" style="display:none" onchange="handleKwDbFile(event)">
-  </div>
-
-  <!-- 저장 현황 -->
-  <div class="card" style="margin-top:0">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <div>
-        <div class="card-title" style="margin:0">💾 저장된 키워드</div>
-        <div id="kw-db-count" style="font-size:.83rem;color:var(--text-mid);margin-top:3px">0개 저장됨</div>
-      </div>
-      <button onclick="clearKwDb()" style="font-size:.75rem;padding:6px 14px;border:1px solid #fc8181;border-radius:8px;color:#c53030;background:#fff5f5;cursor:pointer;font-family:inherit">🗑️ 전체 삭제</button>
-    </div>
-
-    <input type="text" id="kw-db-search" placeholder="🔍 저장된 키워드 검색..."
-           oninput="renderKwDbTable()"
-           style="width:100%;padding:9px 14px;border:1px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;box-sizing:border-box;margin-bottom:10px">
-
-    <div id="kw-db-table"></div>
-  </div>
-</div>
 
 <!-- ═══ 플로팅 채팅 버튼 ═══ -->
 <button id="float-chat-btn" onclick="toggleFloatChat()"
