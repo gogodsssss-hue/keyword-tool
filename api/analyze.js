@@ -265,31 +265,48 @@ mainKeywords 5개, longtailKeywords 10개. 플랫폼이 "네이버 블로그만"
     // ② 황금 키워드 추출
     else if (mode === 'golden-keyword') {
       const sleep = ms => new Promise(r => setTimeout(r, ms));
-      // 1단계: 네이버 Ad API에서 실제 연관 키워드 가져오기 (AI 생성 아님)
-      const relKws = hasAds
-        ? await naverRelatedKeywords(topic, AD_KEY, AD_SECRET, AD_CUSTOMER)
-        : [];
 
-      // 2단계: 검색량 10 이상만 필터링 후 경쟁도(블로그 수) 순차 조회
-      // 관련 키워드가 없으면 topic 자체를 후보로 사용
-      let candidates = relKws
-        .filter(k => k.total >= 10)
+      // 줄임말 → 전체 단어 확장 (Naver Ad API가 줄임말을 못 찾는 경우 대비)
+      const abbrevMap = {
+        '주담대': '주택담보대출', '전세대': '전세자금대출', '신생아대': '신생아특례대출',
+        '버팀목': '버팀목전세자금대출', '디딤돌': '디딤돌대출', '보금자리': '보금자리론',
+        '청약': '아파트청약', '재건축': '재건축아파트', '갭투자': '갭투자방법',
+        '종부세': '종합부동산세', '양도세': '양도소득세', '취득세': '취득세계산',
+      };
+      const fullTopic = abbrevMap[topic] || topic;
+
+      // 1단계: 원어 + 확장어로 네이버 Ad API 연관 키워드 가져오기
+      const relKws1 = hasAds ? await naverRelatedKeywords(topic, AD_KEY, AD_SECRET, AD_CUSTOMER) : [];
+      await sleep(200);
+      const relKws2 = (hasAds && fullTopic !== topic)
+        ? await naverRelatedKeywords(fullTopic, AD_KEY, AD_SECRET, AD_CUSTOMER)
+        : [];
+      const relKwsAll = [...relKws1, ...relKws2];
+
+      // 2단계: 검색량 있는 것 우선, 없어도 포함 (threshold 제거)
+      const seen = new Set();
+      let candidates = relKwsAll
+        .filter(k => { if (seen.has(k.keyword)) return false; seen.add(k.keyword); return true; })
         .sort((a, b) => b.total - a.total)
         .slice(0, 10);
 
-      if (!candidates.length && topic) {
-        // Ad API 관련 키워드 없으면 topic + 변형으로 직접 조회
-        const variants = [topic, topic + ' 조건', topic + ' 방법', topic + ' 금리', topic + ' 한도'];
-        for (const v of variants) {
+      // 관련 키워드가 부족하면 변형어로 직접 조회
+      if (candidates.length < 5 && topic) {
+        const suffixes = ['금리', '한도', '조건', '자격', '신청방법', '계산', '규제', '완화', '비교', '추천'];
+        const extra = [topic, fullTopic, ...suffixes.map(s => `${fullTopic} ${s}`)];
+        for (const v of extra) {
+          if (seen.has(v)) continue;
+          seen.add(v);
           const vol = hasAds ? await naverSearchVolume(v, AD_KEY, AD_SECRET, AD_CUSTOMER) : null;
-          if (vol && vol.total > 0) {
-            candidates.push({ keyword: v, pc: vol.pc, mobile: vol.mobile, total: vol.total });
-          }
+          candidates.push({ keyword: v, pc: vol?.pc || 0, mobile: vol?.mobile || 0, total: vol?.total || 0 });
           await sleep(150);
+          if (candidates.length >= 10) break;
         }
-        if (!candidates.length) {
-          candidates = [{ keyword: topic, pc: 0, mobile: 0, total: 0 }];
-        }
+      }
+
+      // 최소 1개는 보장
+      if (!candidates.length) {
+        candidates = [{ keyword: topic, pc: 0, mobile: 0, total: 0 }];
       }
 
       const withBlogCount = [];
