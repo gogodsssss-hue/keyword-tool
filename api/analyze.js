@@ -269,20 +269,21 @@ mainKeywords 5개, longtailKeywords 10개. 플랫폼이 "네이버 블로그만"
         ? await naverRelatedKeywords(topic, AD_KEY, AD_SECRET, AD_CUSTOMER)
         : [];
 
-      // 2단계: 검색량 500 이상만 필터링 후 경쟁도(블로그 수) 조회
+      // 2단계: 검색량 100 이상만 필터링 후 경쟁도(블로그 수) 순차 조회
       const candidates = relKws
-        .filter(k => k.total >= 500)
+        .filter(k => k.total >= 100)
         .sort((a, b) => b.total - a.total)
-        .slice(0, 20);
+        .slice(0, 15);
 
-      const withBlogCount = await Promise.all(
-        candidates.map(async k => {
-          const bc = hasNaver
-            ? await naverBlogSearch(k.keyword, NAVER_CID, NAVER_CSEC)
-            : null;
-          return { ...k, blogCount: bc };
-        })
-      );
+      const sleep = ms => new Promise(r => setTimeout(r, ms));
+      const withBlogCount = [];
+      for (const k of candidates) {
+        const bc = hasNaver
+          ? await naverBlogSearch(k.keyword, NAVER_CID, NAVER_CSEC)
+          : null;
+        withBlogCount.push({ ...k, blogCount: bc });
+        await sleep(200);
+      }
 
       // 3단계: 황금도 계산 (검색량 / 경쟁 포스트 수 비율)
       const goldenScore = (vol, comp) => {

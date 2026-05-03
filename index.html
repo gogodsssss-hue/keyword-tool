@@ -614,7 +614,8 @@ textarea.form-control{resize:vertical;min-height:100px}
     </div>
     <div class="form-group" style="margin-top:12px">
       <label>글 쓸 주제</label>
-      <input type="text" class="form-control" id="magic-topic" placeholder="예) 미국 기준금리, 전세자금대출, 아파트 청약" />
+      <input type="text" class="form-control" id="magic-topic" placeholder="예) 미국 기준금리, 전세자금대출, 아파트 청약"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopPropagation();runMagicKeyword()}" />
     </div>
     <button class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,#b7791f,#d4af37);box-shadow:0 3px 12px rgba(180,120,20,.3)" onclick="runMagicKeyword()">✨ 마법의 키워드 추출</button>
     <div class="loading" id="magic-loading" style="padding:24px"><div class="spinner"></div><div class="loading-text">네이버에서 황금 조합 찾는 중...</div></div>
