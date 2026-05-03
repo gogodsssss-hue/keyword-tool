@@ -275,7 +275,7 @@ mainKeywords 5개, longtailKeywords 10개. 플랫폼이 "네이버 블로그만"
       let candidates = relKws
         .filter(k => k.total >= 10)
         .sort((a, b) => b.total - a.total)
-        .slice(0, 15);
+        .slice(0, 10);
 
       if (!candidates.length && topic) {
         // Ad API 관련 키워드 없으면 topic + 변형으로 직접 조회
@@ -285,21 +285,20 @@ mainKeywords 5개, longtailKeywords 10개. 플랫폼이 "네이버 블로그만"
           if (vol && vol.total > 0) {
             candidates.push({ keyword: v, pc: vol.pc, mobile: vol.mobile, total: vol.total });
           }
-          await sleep(200);
+          await sleep(150);
         }
         if (!candidates.length) {
           candidates = [{ keyword: topic, pc: 0, mobile: 0, total: 0 }];
         }
       }
 
-      const sleep = ms => new Promise(r => setTimeout(r, ms));
       const withBlogCount = [];
       for (const k of candidates) {
         const bc = hasNaver
           ? await naverBlogSearch(k.keyword, NAVER_CID, NAVER_CSEC)
           : null;
         withBlogCount.push({ ...k, blogCount: bc });
-        await sleep(200);
+        await sleep(150);
       }
 
       // 3단계: 황금도 계산 (검색량 / 경쟁 포스트 수 비율)
@@ -962,7 +961,7 @@ JSON 없이 자연스러운 한국어 대화체로 답하세요.`;
       let volumeMap = {};
       if (hasAds && allKeywords.length > 0) {
         const sleep = ms => new Promise(r => setTimeout(r, ms));
-        const kwsToCheck = allKeywords.slice(0, 12);
+        const kwsToCheck = allKeywords.slice(0, 8);
         for (const kw of kwsToCheck) {
           const vol = await naverSearchVolume(kw, AD_KEY, AD_SECRET, AD_CUSTOMER);
           if (vol) volumeMap[kw] = vol;
