@@ -955,7 +955,11 @@ async function callApi(body) {
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(body)
   });
-  if (!res.ok) throw new Error(`서버 오류: ${res.status}`);
+  if (!res.ok) {
+    let msg = `서버 오류: ${res.status}`;
+    try { const d = await res.json(); if (d.error) msg = d.error; } catch {}
+    throw new Error(msg);
+  }
   return res.json();
 }
 function openUrl(url) {
@@ -1210,12 +1214,13 @@ function bindexHandleFile(file) {
   const url = URL.createObjectURL(file);
   img.onload = () => {
     let w = img.width, h = img.height;
-    if (w > 1400) { h = Math.round(h * 1400 / w); w = 1400; }
+    // 최대 900px로 줄여서 body 크기 절감 (통계 숫자 읽기엔 충분)
+    if (w > 900) { h = Math.round(h * 900 / w); w = 900; }
     const canvas = document.createElement('canvas');
     canvas.width = w; canvas.height = h;
     canvas.getContext('2d').drawImage(img, 0, 0, w, h);
     URL.revokeObjectURL(url);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.75); // 품질 0.75로 줄임
     _bindexImg = { data: dataUrl.split(',')[1], type: 'image/jpeg', src: dataUrl };
     document.getElementById('bindex-img-thumb').src = dataUrl;
     document.getElementById('bindex-img-preview').style.display = 'block';

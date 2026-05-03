@@ -460,28 +460,33 @@ mainKeywords 5개, longtailKeywords 10개. 플랫폼이 "네이버 블로그만"
       let extractedFromImage = false;
 
       if (imageData && imageType) {
-        const visionRes = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-api-key': CLAUDE_KEY, 'anthropic-version': '2023-06-01' },
-          body: JSON.stringify({
-            model: 'claude-haiku-4-5',
-            max_tokens: 400,
-            messages: [{
-              role: 'user',
-              content: [
-                { type: 'image', source: { type: 'base64', media_type: imageType, data: imageData } },
-                { type: 'text', text: '이 네이버 블로그 통계 스크린샷에서 숫자만 추출해. 다음 형식으로만 답해:\n총 포스팅 수: N개\n이웃수: N명\n오늘 방문자: N명\n전체 방문자: N명\n일 평균 방문자: N명\n없는 항목은 생략.' }
-              ]
-            }]
-          })
-        });
-        if (visionRes.ok) {
-          const vd = await visionRes.json();
-          const extracted = vd.content?.[0]?.text || '';
-          if (extracted && extracted.includes('명') || extracted.includes('개')) {
-            statsCtx = extracted.trim();
-            extractedFromImage = true;
+        try {
+          const visionRes = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-api-key': CLAUDE_KEY, 'anthropic-version': '2023-06-01' },
+            body: JSON.stringify({
+              model: 'claude-haiku-4-5',
+              max_tokens: 400,
+              messages: [{
+                role: 'user',
+                content: [
+                  { type: 'image', source: { type: 'base64', media_type: imageType, data: imageData } },
+                  { type: 'text', text: '이 네이버 블로그 통계 스크린샷에서 숫자만 추출해. 다음 형식으로만 답해:\n총 포스팅 수: N개\n이웃수: N명\n오늘 방문자: N명\n전체 방문자: N명\n일 평균 방문자: N명\n없는 항목은 생략.' }
+                ]
+              }]
+            })
+          });
+          if (visionRes.ok) {
+            const vd = await visionRes.json();
+            const extracted = vd.content?.[0]?.text || '';
+            if (extracted && (extracted.includes('명') || extracted.includes('개'))) {
+              statsCtx = extracted.trim();
+              extractedFromImage = true;
+            }
           }
+        } catch (imgErr) {
+          // 이미지 분석 실패해도 계속 진행 (URL 기반 추정으로 대체)
+          console.error('Vision 분석 실패(무시):', imgErr.message);
         }
       }
 
