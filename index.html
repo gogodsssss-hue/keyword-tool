@@ -369,6 +369,7 @@ textarea.form-control{resize:vertical;min-height:100px}
 
   <div class="sidebar-section">벤치마킹</div>
   <div class="sidebar-item" data-page="top-bloggers"><span class="si-icon">🏅</span>상위 블로거 목록</div>
+  <div class="sidebar-item" data-page="blog-compare"><span class="si-icon">⚔️</span>블로그 비교 분석</div>
 </nav>
 
 <!-- ── MAIN ── -->
@@ -627,6 +628,33 @@ textarea.form-control{resize:vertical;min-height:100px}
   </div>
   <div class="loading" id="tracker-loading"><div class="spinner"></div><div class="loading-text">RSS 불러오는 중...</div></div>
   <div class="result-area" id="tracker-result"></div>
+</div>
+
+<!-- =================== 블로그 비교 분석 =================== -->
+<div class="page" id="page-blog-compare">
+  <div class="page-header">
+    <h2>⚔️ 블로그 비교 분석</h2>
+    <p>내 블로그와 벤치마킹할 블로그를 비교합니다. 상대방의 키워드 전략과 나의 갭을 분석해드립니다.</p>
+  </div>
+  <div class="card">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label class="form-label">📌 내 블로그 URL</label>
+        <input class="form-input" id="cmp-my-url" placeholder="https://blog.naver.com/내아이디">
+      </div>
+      <div>
+        <label class="form-label">🎯 비교할 블로그 URL</label>
+        <input class="form-input" id="cmp-comp-url" placeholder="https://blog.naver.com/상대블로그">
+      </div>
+    </div>
+    <div style="margin-bottom:12px">
+      <label class="form-label">🔍 비교 주제 (선택) — 비워두면 전체 비교</label>
+      <input class="form-input" id="cmp-topic" placeholder="예: 부동산, 금리, 다이어트 등">
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="runBlogCompare()">⚔️ 비교 분석 시작</button>
+  </div>
+  <div class="loading" id="cmp-loading"><div class="spinner"></div><div class="loading-text">두 블로그 포스트 수집 및 분석 중...</div></div>
+  <div class="result-area" id="cmp-result"></div>
 </div>
 
 <!-- =================== 상위 블로거 목록 =================== -->
@@ -1345,6 +1373,144 @@ async function loadGoldenKeywords(topic) {
   } catch(e) {
     kwResult.innerHTML = `<div class="card" style="color:var(--red-text)">황금 키워드 오류: ${escHtml(e.message)}</div>`;
   }
+}
+
+// ═══════════════════════════════════════════
+//  블로그 비교 분석
+// ═══════════════════════════════════════════
+
+async function runBlogCompare() {
+  const myUrl   = document.getElementById('cmp-my-url').value.trim();
+  const compUrl = document.getElementById('cmp-comp-url').value.trim();
+  const topic   = document.getElementById('cmp-topic').value.trim();
+  if (!myUrl)   { alert('내 블로그 URL을 입력해주세요.'); return; }
+  if (!compUrl) { alert('비교할 블로그 URL을 입력해주세요.'); return; }
+
+  showLoading('cmp'); hideResult('cmp');
+  try {
+    const data = await callApi({ mode: 'blog-compare', myBlogUrl: myUrl, compBlogUrl: compUrl, topic });
+
+    const { myId, compId, myCount, compCount, myKws, compKws, gapKws, myDates, compDates, myRecent, compRecent, aiAnalysis } = data;
+
+    // 키워드 태그 렌더
+    const kwTags = (kws, color) => kws.map(k =>
+      `<span style="display:inline-block;padding:3px 8px;margin:2px;border-radius:12px;font-size:.74rem;background:${color};white-space:nowrap">${escHtml(k.kw)} <b>${k.cnt}</b></span>`
+    ).join('');
+
+    // 갭 키워드
+    const gapHtml = gapKws.length ? gapKws.map(k =>
+      `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+        <span style="font-weight:600;color:var(--navy-mid)">${escHtml(k.kw)}</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span style="font-size:.74rem;color:var(--text-light)">경쟁블로그 ${k.cnt}회</span>
+          <button onclick="document.getElementById('kw-input').value=${JSON.stringify(k.kw)};switchPage('keyword-analysis')"
+            style="font-size:.7rem;padding:2px 8px;border:1px solid var(--sky);border-radius:10px;cursor:pointer;background:#ebf8ff;color:#2c5282;font-family:inherit">
+            분석 →
+          </button>
+        </div>
+      </div>`
+    ).join('') : '<div style="color:var(--text-light);font-size:.82rem">갭 키워드를 찾지 못했습니다.</div>';
+
+    // 최근 포스트
+    const recentHtml = (posts, id) => posts.length
+      ? posts.map(p => `<div style="padding:5px 0;border-bottom:1px solid var(--border);font-size:.8rem">
+          <a href="${escHtml(p.link)}" target="_blank" style="color:var(--navy-mid);text-decoration:none">${escHtml(p.title)}</a>
+          <span style="color:var(--text-light);margin-left:6px">${p.date}</span>
+        </div>`).join('')
+      : `<div style="color:var(--text-light);font-size:.8rem">"${escHtml(id)}" 포스트를 찾지 못했습니다.</div>`;
+
+    // 포스팅 빈도 바
+    const freqBar = (dates) => dates.map(d =>
+      `<div style="text-align:center;flex:1">
+        <div style="height:${Math.min(60, d.cnt * 10)}px;background:linear-gradient(180deg,var(--sky),var(--navy-mid));border-radius:3px 3px 0 0;margin-bottom:2px"></div>
+        <div style="font-size:.65rem;color:var(--text-light)">${d.ym.slice(4)}월</div>
+        <div style="font-size:.68rem;font-weight:700">${d.cnt}</div>
+      </div>`
+    ).join('');
+
+    showResult('cmp', `
+      <div class="result-fade" style="display:flex;flex-direction:column;gap:14px">
+
+        <!-- 요약 카드 -->
+        <div class="card">
+          <div class="card-title">📊 수집 요약</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div style="background:#f0f7ff;border-radius:8px;padding:12px;text-align:center">
+              <div style="font-size:.78rem;color:var(--text-light);margin-bottom:4px">📌 내 블로그 (${escHtml(myId)})</div>
+              <div style="font-size:1.8rem;font-weight:800;color:var(--navy-mid)">${myCount}</div>
+              <div style="font-size:.74rem;color:var(--text-light)">포스트 수집</div>
+            </div>
+            <div style="background:#fff5f5;border-radius:8px;padding:12px;text-align:center">
+              <div style="font-size:.78rem;color:var(--text-light);margin-bottom:4px">🎯 경쟁 블로그 (${escHtml(compId)})</div>
+              <div style="font-size:1.8rem;font-weight:800;color:#c53030">${compCount}</div>
+              <div style="font-size:.74rem;color:var(--text-light)">포스트 수집</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 포스팅 빈도 비교 -->
+        ${(myDates.length || compDates.length) ? `
+        <div class="card">
+          <div class="card-title">📅 최근 포스팅 빈도</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div>
+              <div style="font-size:.78rem;color:var(--text-light);margin-bottom:8px">내 블로그</div>
+              <div style="display:flex;align-items:flex-end;gap:4px;height:70px">${freqBar(myDates)}</div>
+            </div>
+            <div>
+              <div style="font-size:.78rem;color:var(--text-light);margin-bottom:8px">경쟁 블로그</div>
+              <div style="display:flex;align-items:flex-end;gap:4px;height:70px">${freqBar(compDates)}</div>
+            </div>
+          </div>
+        </div>` : ''}
+
+        <!-- 키워드 비교 -->
+        <div class="card">
+          <div class="card-title">🔑 키워드 전략 비교</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div>
+              <div style="font-size:.8rem;font-weight:700;margin-bottom:8px;color:var(--navy-mid)">📌 내 블로그 키워드</div>
+              <div>${kwTags(myKws, '#ebf8ff')}</div>
+            </div>
+            <div>
+              <div style="font-size:.8rem;font-weight:700;margin-bottom:8px;color:#c53030">🎯 경쟁 블로그 키워드</div>
+              <div>${kwTags(compKws, '#fff5f5')}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 갭 키워드 -->
+        <div class="card">
+          <div class="card-title">🚨 갭 키워드 — 상대방은 쓰는데 내가 안 쓴 키워드</div>
+          <div style="font-size:.76rem;color:var(--text-light);margin-bottom:10px">지금 당장 써야 할 키워드들입니다. 클릭하면 키워드 분석으로 이동합니다.</div>
+          ${gapHtml}
+        </div>
+
+        <!-- AI 전략 분석 -->
+        ${aiAnalysis ? `
+        <div class="card">
+          <div class="card-title">🤖 AI 전략 분석</div>
+          <div style="font-size:.85rem;line-height:1.7;white-space:pre-wrap;color:var(--text-mid)">${escHtml(aiAnalysis)}</div>
+        </div>` : ''}
+
+        <!-- 최근 포스트 비교 -->
+        <div class="card">
+          <div class="card-title">📝 최근 포스트 비교</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div>
+              <div style="font-size:.78rem;font-weight:700;margin-bottom:8px">내 블로그</div>
+              ${recentHtml(myRecent, myId)}
+            </div>
+            <div>
+              <div style="font-size:.78rem;font-weight:700;margin-bottom:8px">경쟁 블로그</div>
+              ${recentHtml(compRecent, compId)}
+            </div>
+          </div>
+        </div>
+
+      </div>
+    `);
+  } catch(e) { showError('cmp', e.message); }
 }
 
 // ═══════════════════════════════════════════
