@@ -1100,9 +1100,9 @@ JSON 없이 자연스러운 한국어 대화체로 답하세요.`;
     // ⑳ 블로그 비교 분석
     else if (mode === 'blog-compare') {
       if (!hasNaver) return res.status(400).json({ error: '네이버 API가 필요합니다.' });
-      const myBlogUrl   = body.myBlogUrl   || '';
-      const compBlogUrl = body.compBlogUrl || '';
-      const cmpTopic    = body.topic       || '';
+      const myBlogUrl   = req.body.myBlogUrl   || '';
+      const compBlogUrl = req.body.compBlogUrl || '';
+      const cmpTopic    = topic || '';
       if (!myBlogUrl || !compBlogUrl) return res.status(400).json({ error: '두 블로그 URL을 모두 입력해주세요.' });
 
       const extractId = url => url.replace(/^https?:\/\//i,'').replace(/^blog\.naver\.com\//i,'').replace(/\/$/,'').split('/')[0].toLowerCase();
@@ -1167,12 +1167,12 @@ JSON 없이 자연스러운 한국어 대화체로 답하세요.`;
 
       // Claude 분석
       let aiAnalysis = '';
-      if (ANTHROPIC_KEY && myPosts.length && compPosts.length) {
+      if (CLAUDE_KEY && myPosts.length && compPosts.length) {
         const myTitles   = myPosts.slice(0,15).map(p=>p.title).join('\n');
         const compTitles = compPosts.slice(0,15).map(p=>p.title).join('\n');
         const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
           method:'POST',
-          headers:{'x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01','content-type':'application/json'},
+          headers:{'x-api-key':CLAUDE_KEY,'anthropic-version':'2023-06-01','content-type':'application/json'},
           body: JSON.stringify({
             model:'claude-haiku-4-5', max_tokens:600,
             messages:[{ role:'user', content:
