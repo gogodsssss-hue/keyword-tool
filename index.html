@@ -1680,11 +1680,12 @@ async function loadTopBloggers() {
             </div>
             ${b.titles.length ? `<div style="font-size:.74rem;color:var(--text-light)">${b.titles.map(t => `"${escHtml(t)}"`).join(' · ')}</div>` : ''}
           </div>
-          <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
-            <button onclick="openUrl(window._tbLinks[${i}])"
-              style="font-size:.72rem;padding:4px 10px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:#fff;font-family:inherit;color:var(--text-mid);text-align:center">
-              방문 →
+          <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;align-items:flex-end">
+            <button onclick="navigator.clipboard.writeText(window._tbLinks[${i}]).then(()=>{this.textContent='✅ 복사됨';setTimeout(()=>this.textContent='📋 URL 복사',1500)})"
+              style="font-size:.72rem;padding:4px 10px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:#fff;font-family:inherit;color:var(--text-mid);text-align:center;white-space:nowrap">
+              📋 URL 복사
             </button>
+            <div style="font-size:.65rem;color:var(--text-light);word-break:break-all;max-width:160px;text-align:right">${escHtml(b.link)}</div>
             <button onclick="document.getElementById('rank-blogurl').value=window._tbLinks[${i}];switchPage('rank-checker')"
               style="font-size:.68rem;padding:3px 8px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:#fff;font-family:inherit;color:var(--text-mid)">
               순위비교
