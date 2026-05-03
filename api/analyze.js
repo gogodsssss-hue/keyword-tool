@@ -1099,45 +1099,48 @@ JSON 없이 자연스러운 한국어 대화체로 답하세요.`;
 
     // ⑳ 블로그 비교 분석
     else if (mode === 'blog-compare') {
-      if (!hasNaver) return res.status(400).json({ error: '네이버 API가 필요합니다.' });
       const myBlogUrl   = req.body.myBlogUrl   || '';
       const compBlogUrl = req.body.compBlogUrl || '';
-      const cmpTopic    = topic || '';
       if (!myBlogUrl || !compBlogUrl) return res.status(400).json({ error: '두 블로그 URL을 모두 입력해주세요.' });
 
       const extractId = url => url.replace(/^https?:\/\//i,'').replace(/^blog\.naver\.com\//i,'').replace(/\/$/,'').split('/')[0].toLowerCase();
       const myId   = extractId(myBlogUrl);
       const compId = extractId(compBlogUrl);
       const strip  = s => (s || '').replace(/<[^>]*>/g,'').trim();
-      const sleep  = ms => new Promise(r => setTimeout(r, ms));
 
-      const queries = cmpTopic
-        ? [cmpTopic, `${cmpTopic} 방법`, `${cmpTopic} 정리`, `${cmpTopic} 후기`, `${cmpTopic} 분석`, `${cmpTopic} 추천`]
-        : ['블로그', '정보', '리뷰', '후기', '방법', '정리'];
-
-      const myPosts   = [];
-      const compPosts = [];
-
-      for (const q of queries) {
-        const r = await naverBlogSearchItems(q, NAVER_CID, NAVER_CSEC, 100);
-        if (r?.items) {
-          for (const item of r.items) {
-            const bl = (item.bloggerlink || '').toLowerCase();
-            const t  = strip(item.title);
-            const d  = item.postdate || '';
-            if (bl.includes(myId))   myPosts.push({ title: t, date: d, link: item.link || '' });
-            if (bl.includes(compId)) compPosts.push({ title: t, date: d, link: item.link || '' });
+      // RSS 피드로 포스트 직접 수집
+      const fetchBlogRss = async (blogId) => {
+        try {
+          const res = await fetch(`https://rss.blog.naver.com/${blogId}.xml`, {
+            headers: { 'User-Agent': 'Mozilla/5.0' }
+          });
+          if (!res.ok) return [];
+          const xml = await res.text();
+          const items = [];
+          const itemReg = /<item>([\s\S]*?)<\/item>/g;
+          let m;
+          while ((m = itemReg.exec(xml)) !== null) {
+            const block = m[1];
+            const title   = strip((block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || block.match(/<title>(.*?)<\/title>/) || [])[1] || '');
+            const link    = strip((block.match(/<link>(.*?)<\/link>/) || [])[1] || '');
+            const pubDate = strip((block.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] || '');
+            if (title) items.push({ title, link, date: pubDate });
           }
-        }
-        await sleep(200);
-      }
+          return items;
+        } catch { return []; }
+      };
 
-      // 제목에서 주요 키워드 추출 (2글자 이상 한글)
+      const [myPosts, compPosts] = await Promise.all([
+        fetchBlogRss(myId),
+        fetchBlogRss(compId)
+      ]);
+
+      // 제목에서 주요 키워드 추출
       const extractKws = (posts) => {
         const freq = {};
         const stopW = new Set(['있는','없는','하는','이런','저런','그런','에서','으로','에게','부터','까지','이란','이라','이며','그리고','하지만','그래서','때문','경우','관련','정도','이상','이하','위해','통해','대한','있어','없어','합니다','됩니다','있습니다','없습니다']);
         for (const p of posts) {
-          const words = p.title.split(/[\s\[\]()「」『』【】《》<>""''!?!?…·•\/\\|@#$%^&*+=~`—\-,]+/).filter(Boolean);
+          const words = p.title.split(/[\s\[\]()「」『』【】《》<>""''!?…·•\/\\|@#$%^&*+=~\-,]+/).filter(Boolean);
           for (const w of words) {
             const clean = w.replace(/(은|는|이|가|을|를|의|에|로|도|만|와|과|서|며|나|랑|인데|이고|하고)$/, '').trim();
             if (clean.length >= 2 && /[가-힣]/.test(clean) && !stopW.has(clean)) {
@@ -1145,38 +1148,39 @@ JSON 없이 자연스러운 한국어 대화체로 답하세요.`;
             }
           }
         }
-        return Object.entries(freq).sort((a,b) => b[1]-a[1]).slice(0, 30).map(([kw, cnt]) => ({ kw, cnt }));
+        return Object.entries(freq).sort((a,b) => b[1]-a[1]).slice(0,30).map(([kw,cnt]) => ({ kw, cnt }));
       };
 
       const myKws   = extractKws(myPosts);
       const compKws = extractKws(compPosts);
-
-      const myKwSet   = new Set(myKws.map(k => k.kw));
-      const compKwSet = new Set(compKws.map(k => k.kw));
-      const gapKws    = compKws.filter(k => !myKwSet.has(k.kw)).slice(0, 15); // 상대방만 쓰는 키워드
+      const myKwSet = new Set(myKws.map(k => k.kw));
+      const gapKws  = compKws.filter(k => !myKwSet.has(k.kw)).slice(0, 15);
 
       // 날짜 분포 (최근 6개월)
       const dateFreq = (posts) => {
         const m = {};
         for (const p of posts) {
-          const ym = (p.date || '').slice(0,6);
-          if (ym) m[ym] = (m[ym]||0)+1;
+          // pubDate: "Wed, 30 Apr 2026 10:00:00 +0900"
+          const d = new Date(p.date);
+          if (isNaN(d)) continue;
+          const ym = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}`;
+          m[ym] = (m[ym]||0)+1;
         }
         return Object.entries(m).sort((a,b)=>a[0].localeCompare(b[0])).slice(-6).map(([ym,cnt])=>({ym,cnt}));
       };
 
       // Claude 분석
       let aiAnalysis = '';
-      if (CLAUDE_KEY && myPosts.length && compPosts.length) {
-        const myTitles   = myPosts.slice(0,15).map(p=>p.title).join('\n');
-        const compTitles = compPosts.slice(0,15).map(p=>p.title).join('\n');
+      if (CLAUDE_KEY && (myPosts.length || compPosts.length)) {
+        const myTitles   = myPosts.slice(0,20).map(p=>p.title).join('\n') || '(포스트 없음)';
+        const compTitles = compPosts.slice(0,20).map(p=>p.title).join('\n') || '(포스트 없음)';
         const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
           method:'POST',
           headers:{'x-api-key':CLAUDE_KEY,'anthropic-version':'2023-06-01','content-type':'application/json'},
           body: JSON.stringify({
-            model:'claude-haiku-4-5', max_tokens:600,
+            model:'claude-haiku-4-5', max_tokens:700,
             messages:[{ role:'user', content:
-              `네이버 블로그 두 개를 비교해줘. 한국어로 답변.\n\n내 블로그(${myId}) 포스트 제목:\n${myTitles}\n\n경쟁 블로그(${compId}) 포스트 제목:\n${compTitles}\n\n다음을 분석해줘 (각 항목 1~2줄):\n1. 경쟁 블로그의 강점\n2. 내 블로그가 따라야 할 전략\n3. 내가 당장 써야 할 키워드/주제 3가지 (번호 목록)`
+              `네이버 블로그 두 개를 비교해줘. 한국어로 답변.\n\n내 블로그(${myId}) 최근 포스트 제목:\n${myTitles}\n\n경쟁 블로그(${compId}) 최근 포스트 제목:\n${compTitles}\n\n다음을 분석해줘 (각 항목 1~2줄):\n1. 경쟁 블로그의 강점\n2. 내 블로그가 따라야 할 전략\n3. 내가 당장 써야 할 키워드/주제 3가지 (번호 목록)`
             }]
           })
         });
@@ -1188,14 +1192,14 @@ JSON 없이 자연스러운 한국어 대화체로 답하세요.`;
 
       result = {
         myId, compId,
-        myCount:   myPosts.length,
-        compCount: compPosts.length,
-        myKws:     myKws.slice(0,15),
-        compKws:   compKws.slice(0,15),
+        myCount:    myPosts.length,
+        compCount:  compPosts.length,
+        myKws:      myKws.slice(0,15),
+        compKws:    compKws.slice(0,15),
         gapKws,
-        myDates:   dateFreq(myPosts),
-        compDates: dateFreq(compPosts),
-        myRecent:  myPosts.slice(0,5),
+        myDates:    dateFreq(myPosts),
+        compDates:  dateFreq(compPosts),
+        myRecent:   myPosts.slice(0,5),
         compRecent: compPosts.slice(0,5),
         aiAnalysis
       };
