@@ -379,6 +379,9 @@ textarea.form-control{resize:vertical;min-height:100px}
   <div class="sidebar-section">벤치마킹</div>
   <div class="sidebar-item" data-page="top-bloggers"><span class="si-icon">🏅</span>상위 블로거 목록</div>
   <div class="sidebar-item" data-page="blog-compare"><span class="si-icon">⚔️</span>블로그 비교 분석</div>
+
+  <div class="sidebar-section">데이터</div>
+  <div class="sidebar-item" data-page="kw-db"><span class="si-icon">📂</span>키워드 DB</div>
 </nav>
 
 <!-- ── MAIN ── -->
@@ -1826,6 +1829,132 @@ async function checkMyRank() {
   } catch(e) { showError('rank', e.message); }
 }
 
+// ═══════════════════════════════════════════
+//  키워드 DB (localStorage)
+// ═══════════════════════════════════════════
+const KW_DB_KEY = 'naver_kw_db_v1';
+
+function loadKwDb() {
+  try { return JSON.parse(localStorage.getItem(KW_DB_KEY) || '[]'); } catch { return []; }
+}
+function saveKwDb(arr) {
+  localStorage.setItem(KW_DB_KEY, JSON.stringify(arr));
+  updateKwDbCount();
+}
+function updateKwDbCount() {
+  const db = loadKwDb();
+  const el = document.getElementById('kw-db-count');
+  if (el) el.textContent = `${db.length.toLocaleString()}개 저장됨`;
+}
+function clearKwDb() {
+  if (!confirm('저장된 키워드를 모두 삭제할까요?')) return;
+  localStorage.removeItem(KW_DB_KEY);
+  updateKwDbCount();
+  renderKwDbTable();
+}
+
+function parseNaverCsv(text) {
+  text = text.replace(/^﻿/, ''); // BOM 제거
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) return [];
+
+  const parseRow = line => {
+    const res = []; let inQ = false, cur = '';
+    for (const ch of line) {
+      if (ch === '"') inQ = !inQ;
+      else if (ch === ',' && !inQ) { res.push(cur.trim()); cur = ''; }
+      else cur += ch;
+    }
+    res.push(cur.trim());
+    return res;
+  };
+
+  const headers = parseRow(lines[0]);
+  const findCol = (...terms) => headers.findIndex(h => terms.some(t => h.replace(/\s/g,'').includes(t)));
+  const kwCol   = findCol('연관키워드','키워드');
+  const pcCol   = findCol('월간검색수_PC','PC검색','PC');
+  const mobCol  = findCol('월간검색수_모바일','모바일검색','모바일');
+  const compCol = findCol('경쟁정도','경쟁');
+  const parseNum = s => { if (!s || s==='-') return 0; return parseInt(String(s).replace(/,/g,''))||0; };
+
+  const results = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = parseRow(lines[i]);
+    const keyword = (cols[kwCol>=0?kwCol:0]||'').replace(/^'+|'+$/g,'').trim();
+    if (!keyword || keyword==='연관키워드' || keyword==='키워드') continue;
+    const pc     = parseNum(cols[pcCol>=0?pcCol:1]);
+    const mobile = parseNum(cols[mobCol>=0?mobCol:2]);
+    const competition = compCol>=0 ? cols[compCol] : '';
+    results.push({ keyword, pc, mobile, total: pc+mobile, competition });
+  }
+  return results;
+}
+
+function mergeKwDb(newKws) {
+  const existing = loadKwDb();
+  const map = {};
+  for (const k of existing) map[k.keyword] = k;
+  for (const k of newKws) map[k.keyword] = k;
+  return Object.values(map);
+}
+
+function processKwDbFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const parsed = parseNaverCsv(e.target.result);
+    if (!parsed.length) { alert('키워드를 찾을 수 없어요. 네이버 키워드 도구 CSV인지 확인해주세요.'); return; }
+    const merged = mergeKwDb(parsed);
+    saveKwDb(merged);
+    renderKwDbTable();
+    const drop = document.getElementById('kw-db-drop');
+    if (drop) { drop.style.background='#f0fff4'; drop.style.borderColor='#38a169'; setTimeout(()=>{drop.style.background='#f7fbff';drop.style.borderColor='#90cdf4';},2000); }
+    alert(`✅ ${parsed.length.toLocaleString()}개 추가 완료!\n총 ${merged.length.toLocaleString()}개 키워드 저장됨\n\n이제 마법의 키워드에서 실제 검색량으로 분석됩니다!`);
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+function handleKwDbFile(e) { if (e.target.files[0]) processKwDbFile(e.target.files[0]); }
+function handleKwDbDrop(e) {
+  e.preventDefault();
+  const drop = document.getElementById('kw-db-drop');
+  if (drop) { drop.style.borderColor='#90cdf4'; drop.style.background='#f7fbff'; }
+  if (e.dataTransfer.files[0]) processKwDbFile(e.dataTransfer.files[0]);
+}
+
+function renderKwDbTable() {
+  const db = loadKwDb();
+  const q = (document.getElementById('kw-db-search')?.value||'').trim();
+  let filtered = q ? db.filter(k=>k.keyword.includes(q)) : db;
+  filtered = filtered.sort((a,b)=>b.total-a.total);
+  const el = document.getElementById('kw-db-table');
+  if (!el) return;
+  if (!filtered.length) {
+    el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-light);font-size:.85rem">${db.length?'검색 결과 없음':'CSV를 업로드하면 여기 표시됩니다'}</div>`;
+    return;
+  }
+  const compColor = c => c==='낮음'?'#22543d':c==='중간'?'#975a16':'#c53030';
+  const rows = filtered.slice(0,200).map(k=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:.82rem">
+      <span style="flex:1;font-weight:500">${escHtml(k.keyword)}</span>
+      <span style="color:#2b6cb0;font-weight:600;min-width:70px;text-align:right">월 ${k.total.toLocaleString()}회</span>
+      <span style="font-size:.73rem;min-width:28px;text-align:right;color:${compColor(k.competition)}">${k.competition||'-'}</span>
+      <button onclick="document.getElementById('magic-topic').value='${k.keyword.replace(/'/g,"\\'")}';switchPage('magic-keyword')"
+        style="font-size:.68rem;padding:2px 8px;border:1px solid #bee3f8;border-radius:6px;background:#ebf8ff;color:#2b6cb0;cursor:pointer;white-space:nowrap;font-family:inherit">분석</button>
+    </div>`).join('');
+  el.innerHTML = `<div style="font-size:.75rem;color:var(--text-light);margin-bottom:8px">${filtered.length.toLocaleString()}개 (최대 200개 표시) · 검색량 높은 순</div>${rows}`;
+}
+
+function searchKwDbForTopic(topic) {
+  const db = loadKwDb();
+  if (!db.length) return [];
+  return db.filter(k => k.keyword.includes(topic) || topic.includes(k.keyword) ||
+    k.keyword.split(' ').some(w=>w.length>=2&&topic.includes(w)) ||
+    topic.split(' ').some(w=>w.length>=2&&k.keyword.includes(w)))
+    .sort((a,b)=>b.total-a.total).slice(0,15);
+}
+
+// 페이지 로드시 DB 카운트 초기화
+document.addEventListener('DOMContentLoaded', () => { updateKwDbCount(); renderKwDbTable(); });
+
 async function runMagicKeyword() {
   const topic = document.getElementById('magic-topic').value.trim();
   if (!topic) { alert('주제를 입력해주세요.'); return; }
@@ -1834,6 +1963,42 @@ async function runMagicKeyword() {
   const resultEl = document.getElementById('magic-result');
   loading.classList.add('show');
   resultEl.innerHTML = '';
+
+  // DB에 데이터 있으면 DB 우선 사용
+  const dbMatches = searchKwDbForTopic(topic);
+  if (dbMatches.length >= 3) {
+    try {
+      // 블로그 경쟁 수만 API로 조회
+      const bcData = await callApi({ mode: 'kw-checker', keywords: dbMatches.map(k=>k.keyword) });
+      loading.classList.remove('show');
+      const bcMap = {};
+      for (const r of bcData.rows||[]) bcMap[r.keyword] = r.blogCount;
+
+      const goldenScore = (vol, comp) => {
+        const v=vol||0, c=comp||999999, ratio=v/(c+1);
+        if (ratio>=1&&v>=5000) return 'A+';
+        if (ratio>=0.5&&v>=2000) return 'A';
+        if (ratio>=0.2&&v>=1000) return 'B+';
+        if (ratio>=0.1) return 'B';
+        if (v>=5000) return 'B';
+        if (c<=30000) return 'B';
+        if (c<=150000) return 'C+';
+        return 'C';
+      };
+
+      const keywords = dbMatches.map(k=>({
+        keyword: k.keyword, monthlyPc: k.pc, monthlyMobile: k.mobile, monthlyTotal: k.total,
+        blogCount: bcMap[k.keyword]??null,
+        goldenScore: goldenScore(k.total, bcMap[k.keyword]??null),
+        competition: bcMap[k.keyword]!=null ? (bcMap[k.keyword]<=30000?'낮음':bcMap[k.keyword]<=150000?'중간':'높음') : '조회불가',
+        reason: `월 ${k.total.toLocaleString()}회 · 블로그 ${(bcMap[k.keyword]??0).toLocaleString()}개`,
+        fromDb: true
+      })).sort((a,b)=>{const o={'A+':0,'A':1,'B+':2,'B':3,'C+':4,'C':5};return(o[a.goldenScore]??6)-(o[b.goldenScore]??6);});
+
+      renderMagicResult(keywords, topic, true);
+      return;
+    } catch {}
+  }
 
   try {
     const data = await callApi({ mode: 'golden-keyword', topic });
@@ -1848,22 +2013,43 @@ async function runMagicKeyword() {
       return;
     }
 
-    const gradeStyle = g => ({
-      'A+': 'background:linear-gradient(135deg,#d4af37,#f0c040);color:#5a3e0a;font-size:1rem',
-      'A':  'background:#c6f6d5;color:#22543d;font-size:.9rem',
-      'B+': 'background:#bee3f8;color:#2c5282;font-size:.85rem',
-      'B':  'background:#e2e8f0;color:#4a5568;font-size:.82rem',
-      'C':  'background:#fed7d7;color:#742a2a;font-size:.78rem'
-    })[g] || 'background:#e2e8f0;color:#4a5568';
+    renderMagicResult(keywords, topic, false);
+  } catch(e) {
+    loading.classList.remove('show');
+    resultEl.innerHTML = `<div style="color:var(--red-text)">오류: ${escHtml(e.message)}</div>`;
+  }
+}
 
-    const gradeDesc = g => ({
-      'A+': '🔥 지금 바로 써라 — 검색 많고 경쟁 적음',
-      'A':  '✅ 상위 노출 가능 — 도전 가치 있음',
-      'B+': '👍 도전할 만함 — 꾸준히 써야 함',
-      'B':  '📝 경쟁 있지만 써볼 수 있음',
-      'C+': '🟡 경쟁 있음 — 롱테일로 변형 추천',
-      'C':  '⚠️ 경쟁 많음 — 상위 노출 어려움'
-    })[g] || '';
+function renderMagicResult(keywords, topic, fromDb) {
+  const loading = document.getElementById('magic-loading');
+  const resultEl = document.getElementById('magic-result');
+  loading.classList.remove('show');
+
+  if (!keywords.length) {
+    resultEl.innerHTML = `<div style="background:#fff8e1;border:1px solid #f6c90e;border-radius:10px;padding:14px 16px;font-size:.84rem;color:#7d5a00">
+      ⚠️ <b>"${escHtml(topic)}"</b> 관련 키워드 데이터가 부족합니다.<br>
+      <span style="font-size:.78rem;color:#a07000;margin-top:4px;display:block">💡 좀 더 짧게 입력하거나, 📂 키워드 DB에 CSV를 먼저 업로드해보세요.</span>
+    </div>`;
+    return;
+  }
+
+  const gradeStyle = g => ({
+    'A+': 'background:linear-gradient(135deg,#d4af37,#f0c040);color:#5a3e0a;font-size:1rem',
+    'A':  'background:#c6f6d5;color:#22543d;font-size:.9rem',
+    'B+': 'background:#bee3f8;color:#2c5282;font-size:.85rem',
+    'B':  'background:#e2e8f0;color:#4a5568;font-size:.82rem',
+    'C+': 'background:#fefcbf;color:#975a16;font-size:.78rem',
+    'C':  'background:#fed7d7;color:#742a2a;font-size:.78rem'
+  })[g] || 'background:#e2e8f0;color:#4a5568';
+
+  const gradeDesc = g => ({
+    'A+': '🔥 지금 바로 써라 — 검색 많고 경쟁 적음',
+    'A':  '✅ 상위 노출 가능 — 도전 가치 있음',
+    'B+': '👍 도전할 만함 — 꾸준히 써야 함',
+    'B':  '📝 경쟁 있지만 써볼 수 있음',
+    'C+': '🟡 경쟁 있음 — 롱테일로 변형 추천',
+    'C':  '⚠️ 경쟁 많음 — 상위 노출 어려움'
+  })[g] || '';
 
     const cards = keywords.map((k, i) => {
       const hasRealVol = k.monthlyTotal > 0;
@@ -1905,16 +2091,14 @@ async function runMagicKeyword() {
       </div>`;
     }).join('');
 
-    const topGrade = keywords[0]?.goldenScore;
-    resultEl.innerHTML = `
-      <div style="background:#fffbeb;border:1px solid #d4af37;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:.82rem;color:#92400e">
-        ✨ <b>${escHtml(topic)}</b> 주제로 ${keywords.length}개 키워드 분석 완료 — 최고 등급: <b>${topGrade}</b> · 네이버 광고 API 실데이터
-      </div>
-      ${cards}`;
-  } catch(e) {
-    loading.classList.remove('show');
-    resultEl.innerHTML = `<div style="color:var(--red-text)">오류: ${escHtml(e.message)}</div>`;
-  }
+  const topGrade = keywords[0]?.goldenScore;
+  resultEl.innerHTML = `
+    <div style="background:${fromDb?'#ebf8ff':'#fffbeb'};border:1px solid ${fromDb?'#90cdf4':'#d4af37'};border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:.82rem;color:${fromDb?'#2b6cb0':'#92400e'}">
+      ${fromDb?'📂 <b>내 키워드 DB</b> 실데이터':'✨ <b>네이버 광고 API</b> 실데이터'} —
+      <b>${escHtml(topic)}</b> 관련 ${keywords.length}개 · 최고 등급: <b>${topGrade}</b>
+      ${fromDb?'':'<span style="font-size:.73rem;opacity:.7;margin-left:6px">(검색량 0이면 서버 IP 제한 — 📂 키워드 DB 사용 권장)</span>'}
+    </div>
+    ${cards}`;
 }
 
 async function checkRankVolume() {
@@ -2439,6 +2623,67 @@ async function sendFloatChat() {
   history.scrollTop = history.scrollHeight;
 }
 </script>
+
+<!-- =================== 키워드 DB =================== -->
+<div class="page" id="page-kw-db">
+  <div class="page-header">
+    <h2>📂 키워드 DB</h2>
+    <p>네이버 키워드 도구에서 CSV를 받아 저장하면, 마법의 키워드에서 <b>실제 검색량</b>으로 분석합니다.</p>
+  </div>
+
+  <!-- 업로드 안내 -->
+  <div class="card">
+    <div class="card-title">📋 사용 방법</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+      <div style="background:#ebf8ff;border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:1.3rem;margin-bottom:4px">1️⃣</div>
+        <div style="font-size:.78rem;font-weight:600;color:#2b6cb0">네이버 광고센터</div>
+        <div style="font-size:.73rem;color:#4a5568;margin-top:3px">searchad.naver.com<br>도구 → 키워드 도구</div>
+      </div>
+      <div style="background:#f0fff4;border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:1.3rem;margin-bottom:4px">2️⃣</div>
+        <div style="font-size:.78rem;font-weight:600;color:#276749">키워드 검색 후 다운로드</div>
+        <div style="font-size:.73rem;color:#4a5568;margin-top:3px">주담대, 전세, 청약 등<br>전체 다운로드 CSV</div>
+      </div>
+      <div style="background:#fffbeb;border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:1.3rem;margin-bottom:4px">3️⃣</div>
+        <div style="font-size:.78rem;font-weight:600;color:#975a16">여기 업로드</div>
+        <div style="font-size:.73rem;color:#4a5568;margin-top:3px">한 번만 하면<br>영구 저장됨</div>
+      </div>
+    </div>
+
+    <!-- 드래그 & 드롭 영역 -->
+    <div id="kw-db-drop"
+         style="border:2px dashed #90cdf4;border-radius:14px;padding:36px 20px;text-align:center;cursor:pointer;transition:all .2s;background:#f7fbff"
+         onclick="document.getElementById('kw-db-file').click()"
+         ondragover="event.preventDefault();this.style.borderColor='#2b6cb0';this.style.background='#ebf8ff'"
+         ondragleave="this.style.borderColor='#90cdf4';this.style.background='#f7fbff'"
+         ondrop="handleKwDbDrop(event)">
+      <div style="font-size:2.2rem;margin-bottom:8px">📎</div>
+      <div style="font-weight:700;color:#2b6cb0;font-size:.92rem">CSV 파일을 여기에 드래그하거나 클릭해서 선택</div>
+      <div style="font-size:.78rem;color:#718096;margin-top:6px">네이버 키워드 도구 → 전체 다운로드 → 여기 업로드</div>
+      <div style="font-size:.73rem;color:#a0aec0;margin-top:4px">여러 번 올려도 됩니다 — 자동으로 합쳐져요</div>
+    </div>
+    <input type="file" id="kw-db-file" accept=".csv,.xls,.xlsx" style="display:none" onchange="handleKwDbFile(event)">
+  </div>
+
+  <!-- 저장 현황 -->
+  <div class="card" style="margin-top:0">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div>
+        <div class="card-title" style="margin:0">💾 저장된 키워드</div>
+        <div id="kw-db-count" style="font-size:.83rem;color:var(--text-mid);margin-top:3px">0개 저장됨</div>
+      </div>
+      <button onclick="clearKwDb()" style="font-size:.75rem;padding:6px 14px;border:1px solid #fc8181;border-radius:8px;color:#c53030;background:#fff5f5;cursor:pointer;font-family:inherit">🗑️ 전체 삭제</button>
+    </div>
+
+    <input type="text" id="kw-db-search" placeholder="🔍 저장된 키워드 검색..."
+           oninput="renderKwDbTable()"
+           style="width:100%;padding:9px 14px;border:1px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;box-sizing:border-box;margin-bottom:10px">
+
+    <div id="kw-db-table"></div>
+  </div>
+</div>
 
 <!-- ═══ 플로팅 채팅 버튼 ═══ -->
 <button id="float-chat-btn" onclick="toggleFloatChat()"
