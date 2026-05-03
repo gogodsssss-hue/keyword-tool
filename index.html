@@ -2716,8 +2716,34 @@ async function runKwChecker() {
   if (!keywords.length) { alert('키워드를 입력해주세요.'); return; }
   showLoading('kwc');
   try {
+    // ① 키워드 DB에서 먼저 조회
+    const db = loadKwDb();
+    const dbMap = {};
+    keywords.forEach(kw => {
+      const kwLow = kw.toLowerCase().replace(/\s/g, '');
+      let hit = db.find(d => d.keyword.toLowerCase().replace(/\s/g, '') === kwLow);
+      if (!hit) hit = db.find(d => {
+        const dLow = d.keyword.toLowerCase().replace(/\s/g, '');
+        return dLow.includes(kwLow) || kwLow.includes(dLow);
+      });
+      if (hit) dbMap[kw] = hit;
+    });
+    const dbHitCount = Object.keys(dbMap).length;
+
+    // ② API로 블로그 경쟁 수 조회
     const data = await callApi({ mode: 'kw-checker', keywords });
-    const rows = data.rows || [];
+    const rows = (data.rows || []).map(r => {
+      const dbHit = dbMap[r.keyword];
+      if (dbHit) {
+        r.pc     = dbHit.pc;
+        r.mobile = dbHit.mobile;
+        r.total  = dbHit.total;
+        const ratio = r.blogCount > 0 ? r.total / r.blogCount : 0;
+        r.score = ratio >= 3 ? 'A+' : ratio >= 1 ? 'A' : ratio >= 0.3 ? 'B+' : ratio >= 0.1 ? 'B' : 'C';
+        r._fromDb = true;
+      }
+      return r;
+    });
 
     const scoreColor = { 'A+':'#22543d','A':'#276749','B+':'#2b6cb0','B':'#4a5568','C':'#9b2c2c' };
     const scoreBg    = { 'A+':'#c6f6d5','A':'#c6f6d5','B+':'#bee3f8','B':'#e2e8f0','C':'#fed7d7' };
@@ -2726,12 +2752,15 @@ async function runKwChecker() {
       const sc = r.score || 'C';
       const volColor  = (r.total||0) >= 10000 ? '#22543d' : (r.total||0) >= 2000 ? '#744210' : '#4a5568';
       const compColor = (r.blogCount||999999) <= 5000 ? '#22543d' : (r.blogCount||999999) <= 30000 ? '#744210' : '#9b2c2c';
+      const volCell = r._fromDb
+        ? `<td style="padding:12px 8px;text-align:right;color:#22543d;font-weight:700">${(r.total||0).toLocaleString()} <span style="font-size:.65rem;background:#c6f6d5;color:#22543d;padding:1px 5px;border-radius:6px">DB</span></td>`
+        : `<td style="padding:12px 8px;text-align:right;color:${volColor};font-weight:700">${r.total !== null && r.total > 0 ? r.total.toLocaleString() : '-'}</td>`;
       return `
-        <tr style="border-bottom:1px solid var(--border)">
+        <tr style="border-bottom:1px solid var(--border)${r._fromDb ? ';background:#f0fff4' : ''}">
           <td style="padding:12px 8px;font-weight:600">${escHtml(r.keyword)}</td>
-          <td style="padding:12px 8px;text-align:right;color:${volColor};font-weight:700">${r.total !== null ? r.total.toLocaleString() : '-'}</td>
-          <td style="padding:12px 8px;text-align:right;font-size:.78rem;color:var(--text-mid)">${r.pc !== null ? r.pc.toLocaleString() : '-'}</td>
-          <td style="padding:12px 8px;text-align:right;font-size:.78rem;color:var(--text-mid)">${r.mobile !== null ? r.mobile.toLocaleString() : '-'}</td>
+          ${volCell}
+          <td style="padding:12px 8px;text-align:right;font-size:.78rem;color:var(--text-mid)">${r.pc !== null && r.pc > 0 ? r.pc.toLocaleString() : '-'}</td>
+          <td style="padding:12px 8px;text-align:right;font-size:.78rem;color:var(--text-mid)">${r.mobile !== null && r.mobile > 0 ? r.mobile.toLocaleString() : '-'}</td>
           <td style="padding:12px 8px;text-align:right;color:${compColor};font-weight:700">${r.blogCount !== null ? r.blogCount.toLocaleString() : '-'}</td>
           <td style="padding:12px 8px;text-align:center">
             <span style="background:${scoreBg[sc]||'#e2e8f0'};color:${scoreColor[sc]||'#4a5568'};font-weight:700;font-size:.85rem;padding:3px 12px;border-radius:20px">${sc}</span>
@@ -2739,12 +2768,21 @@ async function runKwChecker() {
         </tr>`;
     }).join('');
 
+    const dbBanner = dbHitCount > 0
+      ? `<div style="padding:8px 18px;background:#f0fff4;border-bottom:1px solid #9ae6b4;font-size:.78rem;color:#276749">
+           📂 <b>${dbHitCount}개</b> 키워드는 내 키워드 DB에서 실제 검색량을 가져왔습니다 (초록 행)
+         </div>`
+      : `<div style="padding:8px 18px;background:#fffbeb;border-bottom:1px solid #f6e05e;font-size:.78rem;color:#744210">
+           💡 키워드 DB에 일치하는 항목이 없습니다. <b>키워드 DB</b> 메뉴에서 네이버 엑셀을 업로드하면 정확한 검색량을 볼 수 있어요.
+         </div>`;
+
     showResult('kwc', `
       <div class="card result-fade" style="margin-top:0;padding:0;overflow:hidden">
         <div style="padding:14px 18px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
           <div class="card-title" style="margin:0">🔬 실데이터 조회 결과</div>
           <span style="font-size:.72rem;color:var(--naver);font-weight:600">🟢 네이버 API · AI 추측 없음</span>
         </div>
+        ${dbBanner}
         <div style="overflow-x:auto">
           <table style="width:100%;border-collapse:collapse;font-size:.85rem">
             <thead>
