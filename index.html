@@ -344,7 +344,16 @@ textarea.form-control{resize:vertical;min-height:100px}
     <div class="header-title">블로그 SEO 분석기</div>
     <div class="header-sub">Blog & Keyword Intelligence Tool</div>
   </div>
-  <span class="header-badge">whereispost.com</span>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+    <button id="copy-blog-btn" onclick="copyMyUrl('blog.naver.com/eunb2016', this)"
+      style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.9);font-size:.72rem;padding:5px 12px;border-radius:20px;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap">
+      📋 blog.naver.com/eunb2016
+    </button>
+    <button id="copy-site-btn" onclick="copyMyUrl('irir4r.com', this)"
+      style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.9);font-size:.72rem;padding:5px 12px;border-radius:20px;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap">
+      📋 irir4r.com
+    </button>
+  </div>
 </header>
 
 <div class="layout">
@@ -839,6 +848,15 @@ function copyText(text, btn) {
     const orig = btn.textContent;
     btn.textContent = '✓ 복사됨';
     setTimeout(() => { btn.classList.remove('copied'); btn.textContent = orig; }, 2000);
+  });
+}
+function copyMyUrl(url, btn) {
+  navigator.clipboard.writeText(url).then(() => {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '✅ 복사됨!';
+    btn.style.background = 'rgba(99,230,139,.25)';
+    btn.style.borderColor = '#68d391';
+    setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; btn.style.borderColor = ''; }, 1800);
   });
 }
 function escHtml(str) {
