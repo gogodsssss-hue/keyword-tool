@@ -762,7 +762,7 @@ keywords 배열에 50개 모두 포함. totalCount는 50.`,
 - 현재 레벨: Level ${ctx.estimatedLevel ?? '?'} / 10
 - 레벨 근거: ${ctx.levelReason || ''}
 - 현황 수치: ${statsLines || '미입력'}
-- 분석 요약: ${ctx.summary || ''}
+- 분석 요약: ${ctx.customContext || ctx.summary || ''}
 - 다음 레벨 조건: ${(ctx.nextLevelTips || []).join(' / ')}
 
 [대화 원칙]

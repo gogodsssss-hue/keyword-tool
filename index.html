@@ -1618,8 +1618,8 @@ AI 분석: ${_cmpData.aiAnalysis || '없음'}
 
     const data = await callApi({
       mode: 'chat',
-      message: q,
-      blogContext: { customContext: context }
+      messages: [{ role: 'user', content: q }],
+      blogContext: { customContext: context, summary: context }
     });
 
     const answer = data.reply || data.message || '답변을 받지 못했습니다.';
