@@ -954,18 +954,33 @@ JSON 없이 자연스러운 한국어 대화체로 답하세요.`;
 
     // ⑰ 포스트 추적기 (내 블로그 포스트 키워드 분석)
     else if (mode === 'post-tracker') {
-      const blogId = (blogUrl || '')
-        .replace(/^https?:\/\//i, '')
-        .replace(/^blog\.naver\.com\//i, '')
-        .replace(/\/$/, '')
-        .trim();
-      if (!blogId) return res.status(400).json({ error: '블로그 URL을 입력해주세요.' });
+      const rawUrl = (blogUrl || '').trim();
+      const cleanUrl = rawUrl.replace(/^https?:\/\//i, '').replace(/\/$/, '');
+      const isNaver = /^blog\.naver\.com\//i.test(cleanUrl);
+      const isTistory = /\.tistory\.com/i.test(cleanUrl) || (!isNaver && !cleanUrl.includes('blog.naver.com'));
+
+      if (!cleanUrl) return res.status(400).json({ error: '블로그 URL을 입력해주세요.' });
+
+      // RSS URL 결정
+      let rssUrl;
+      if (isNaver) {
+        const blogId = cleanUrl.replace(/^blog\.naver\.com\//i, '').replace(/\/$/, '');
+        rssUrl = `https://rss.blog.naver.com/${blogId}.xml`;
+      } else {
+        // 티스토리 또는 커스텀 도메인: /rss 시도
+        const base = `https://${cleanUrl}`;
+        rssUrl = `${base}/rss`;
+      }
+
+      const blogId = isNaver
+        ? cleanUrl.replace(/^blog\.naver\.com\//i, '').replace(/\/$/, '')
+        : cleanUrl.split('/')[0];
 
       // RSS 가져오기
-      const rssRes = await fetch(`https://rss.blog.naver.com/${blogId}.xml`, {
+      const rssRes = await fetch(rssUrl, {
         headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SEOBot/1.0)' }
       });
-      if (!rssRes.ok) return res.status(400).json({ error: `RSS 불러오기 실패 (${rssRes.status}). 블로그 ID를 확인하세요.` });
+      if (!rssRes.ok) return res.status(400).json({ error: `RSS 불러오기 실패 (${rssRes.status}). 네이버 블로그는 아이디만, 티스토리는 전체 주소를 입력해주세요.` });
       const rssText = await rssRes.text();
 
       // XML 파싱 (간단한 regex 파서)
