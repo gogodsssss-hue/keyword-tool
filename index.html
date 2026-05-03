@@ -2155,9 +2155,9 @@ function renderMagicResult(keywords, topic, fromDb) {
           💡 더 좁혀서 써보세요: <b>"${escHtml(k.keyword)} 2026"</b>, <b>"${escHtml(k.keyword)} 후기"</b>, <b>"${escHtml(k.keyword)} 실제"</b>
         </div>` : ''}
         <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
-          <button onclick="document.getElementById('magic-topic').value='';document.getElementById('rank-keyword').value=${JSON.stringify(k.keyword)};document.getElementById('rank-keyword').scrollIntoView({behavior:'smooth'})"
+          <button onclick="document.getElementById('rank-keyword').value='${k.keyword.replace(/'/g,"\\'")}';document.getElementById('rank-keyword').scrollIntoView({behavior:'smooth'});switchPage('rank-checker')"
             style="font-size:.72rem;padding:4px 10px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:#fff;font-family:inherit">🏆 순위 확인</button>
-          <button onclick="switchPage('draft-helper');setTimeout(()=>{document.getElementById('kw-to-draft-input').value=${JSON.stringify(k.keyword)};switchDraftTab('to-draft')},300)"
+          <button onclick="switchPage('draft-helper');setTimeout(()=>{document.getElementById('kw-to-draft-input').value='${k.keyword.replace(/'/g,"\\'")}';switchDraftTab('to-draft')},300)"
             style="font-size:.72rem;padding:4px 10px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:#fff;font-family:inherit">✍️ 대본 생성</button>
         </div>
       </div>`;
