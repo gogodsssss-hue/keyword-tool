@@ -1205,6 +1205,30 @@ JSON 없이 자연스러운 한국어 대화체로 답하세요.`;
       };
     }
 
+    // 블로그 비교 대화
+    else if (mode === 'cmp-chat') {
+      const userMsg  = req.body.message || '';
+      const context  = req.body.context || '';
+      if (!userMsg) return res.status(400).json({ error: '메시지가 없습니다.' });
+
+      const chatRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'x-api-key': CLAUDE_KEY, 'anthropic-version':'2023-06-01' },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5',
+          max_tokens: 600,
+          system: `당신은 한국 블로그 SEO 전문 코치입니다. 짧고 솔직하게 3~5문장으로 답하세요. 한국어로.${context ? '\n\n[블로그 비교 데이터]\n' + context : ''}`,
+          messages: [{ role: 'user', content: userMsg }]
+        })
+      });
+      if (!chatRes.ok) {
+        const e = await chatRes.json();
+        return res.status(chatRes.status).json({ error: e.error?.message || 'Claude API 오류' });
+      }
+      const chatData = await chatRes.json();
+      return res.status(200).json({ reply: chatData.content?.[0]?.text || '' });
+    }
+
     else {
       return res.status(400).json({ error: '지원하지 않는 모드입니다.' });
     }

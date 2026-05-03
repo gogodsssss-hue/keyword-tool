@@ -1617,9 +1617,9 @@ AI 분석: ${_cmpData.aiAnalysis || '없음'}
     `.trim() : '(비교 분석 데이터 없음 — 일반 블로그 전략 관점으로 답변)';
 
     const data = await callApi({
-      mode: 'chat',
-      messages: [{ role: 'user', content: q }],
-      blogContext: { customContext: context, summary: context }
+      mode: 'cmp-chat',
+      message: q,
+      context: context
     });
 
     const answer = data.reply || data.message || '답변을 받지 못했습니다.';
