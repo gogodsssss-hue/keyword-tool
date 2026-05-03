@@ -931,26 +931,16 @@ JSON 없이 자연스러운 한국어 대화체로 답하세요.`;
           ...(fullDesc.match(/#([가-힣a-zA-Z0-9_]+)/g) || []).map(h => h.slice(1)),
           ...(desc.match(/#([가-힣a-zA-Z0-9_]+)/g) || []).map(h => h.slice(1))
         ])].slice(0, 8);
-        // 제목에서 의미있는 2~3단어 복합 키워드 추출
-        const stopWords = new Set(['이다','있다','없다','하다','되다','오늘','내일','이번','다음','그냥','아직','정말','매우','너무','가장','많이','그리고','하지만','그래서','위해','통해','대해','함께','이후','이전','분석','정리','총정리','완벽','최신','심층','방문','감사','공유','내용','발표','보완','대책','오를까','오르나','왜','꼭','알아야','들의','잃은','넘을까','바로','모든','중']);
-        // 공백/특수문자로 분리 후 토씨 제거
-        const rawWords = title.split(/[\s,·[\]「」『』【】《》<>()（）""''!?!?…·•\/\\|@#$%^&*+=~`—\-]+/).filter(Boolean);
-        const cleanWords = rawWords
-          .map(w => w
-            .replace(/^[^가-힣a-zA-Z0-9]+|[^가-힣a-zA-Z0-9]+$/g, '')
-            .replace(/(은|는|이|가|을|를|의|에|로|도|만|와|과|서|며|나|랑|인데|이고|하고|한데|으로|에서|부터|까지|에게|한테|이란|이면|이든|이나|거나|지만|라도|라서|라고|이라|다면|다고|다는|이는|한다|된다|된|한|들의|들도|들은|들이|들을)$/, ''))
-          .filter(w => w.length >= 2 && /[가-힣]/.test(w) && !stopWords.has(w));
-        // 2단어 조합 키워드 생성 (인접한 두 단어)
-        const titleKeywords = [];
-        for (let i = 0; i < cleanWords.length && titleKeywords.length < 4; i++) {
-          if (cleanWords[i].length >= 2) {
-            if (i + 1 < cleanWords.length && cleanWords[i+1]?.length >= 2) {
-              titleKeywords.push(`${cleanWords[i]} ${cleanWords[i+1]}`); // 2단어 조합
-            } else {
-              titleKeywords.push(cleanWords[i]);
-            }
-          }
-        }
+        // 제목에서 의미있는 단어 추출 (개별 명사, 2단어 억지 조합 X)
+        const stopWords = new Set(['이다','있다','없다','하다','되다','오늘','내일','이번','다음','그냥','아직','정말','매우','너무','가장','많이','그리고','하지만','그래서','위해','통해','대해','함께','이후','이전','분석','정리','총정리','완벽','최신','심층','방문','감사','공유','내용','발표','보완','대책','오를까','오르나','왜','꼭','알아야','들의','잃은','넘을까','바로','모든','중','정도','관련','경우','또한','그러나','따라서','때문','같은','새로운','좋은','나쁜','높은','낮은','많은','적은','큰','작은','된다','최근','지금','올해']);
+        const rawWords = title.split(/[\s,·[\]「」『』【】《》<>()（）""''!?！？…·•\/\\|@#$%^&*+=~`—\-]+/).filter(Boolean);
+        const titleKeywords = [...new Set(
+          rawWords
+            .map(w => w
+              .replace(/^[^가-힣a-zA-Z0-9]+|[^가-힣a-zA-Z0-9]+$/g, '')
+              .replace(/(은|는|이|가|을|를|의|에|로|도|만|와|과|서|며|나|랑|인데|이고|하고|한데|으로|에서|부터|까지|에게|한테|이란|이면|이든|이나|거나|지만|라도|라서|라고|이라|다면|다고|다는|이는|한다|된다|된|한|들의|들도|들은|들이|들을)$/, ''))
+            .filter(w => w.length >= 2 && /[가-힣]/.test(w) && !stopWords.has(w))
+        )].slice(0, 5);
         return { title, link, pubDate, desc, hashtags, titleKeywords };
       });
 
@@ -991,7 +981,42 @@ JSON 없이 자연스러운 한국어 대화체로 답하세요.`;
         .slice(0, 10)
         .map(([kw, v]) => ({ keyword: kw, total: v.total, pc: v.pc, mobile: v.mobile, compIdx: v.compIdx }));
 
-      result = { posts: enrichedPosts, bestKeywords, blogId, totalPosts: posts.length };
+      // AI 코치: 각 포스트에 SEO 개선 제안
+      let aiSuggestions = [];
+      if (CLAUDE_KEY && posts.length > 0) {
+        try {
+          const postTitles = posts.slice(0, 10).map((p, i) => `${i}. ${p.title}`).join('\n');
+          const aiCoachRes = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-api-key': CLAUDE_KEY, 'anthropic-version': '2023-06-01' },
+            body: JSON.stringify({
+              model: 'claude-haiku-4-5',
+              max_tokens: 1500,
+              system: '네이버 블로그 SEO 전문가. JSON 배열만 출력. 다른 텍스트 없이.',
+              messages: [{ role: 'user', content: `블로그 포스트 제목들을 분석해서 SEO 코칭을 JSON으로 주세요.
+
+형식 (반드시 이 형식만):
+[{"idx":0,"type":"뉴스성","issue":"날짜가 포함되어 시간이 지나면 검색이 안됩니다","betterTitle":"주담대 금리 오르는 이유와 대처법","keyword":"주담대 금리"}]
+
+type: "뉴스성"(시사·날짜 포함, 유통기한 짧음) / "상록성"(시간 지나도 검색됨) / "혼합"
+issue: 왜 검색이 어려운지 한 문장 (뉴스성이면 솔직하게)
+betterTitle: 같은 주제지만 검색에 더 오래 살아남을 제목
+keyword: 핵심 타깃 키워드 1개
+
+포스트 목록:
+${postTitles}` }]
+            })
+          });
+          if (aiCoachRes.ok) {
+            const aiCoachData = await aiCoachRes.json();
+            const raw = aiCoachData.content?.[0]?.text || '[]';
+            const jsonMatch = raw.match(/\[[\s\S]*\]/);
+            if (jsonMatch) aiSuggestions = JSON.parse(jsonMatch[0]);
+          }
+        } catch {}
+      }
+
+      result = { posts: enrichedPosts, bestKeywords, blogId, totalPosts: posts.length, aiSuggestions };
     }
 
     // 키워드 실데이터 조회 (AI 없음 — 네이버 API 직접)

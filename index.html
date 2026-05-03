@@ -1975,13 +1975,26 @@ async function analyzePostTracker() {
 
     const compLabel = c => ({ low:'낮음', middle:'중간', high:'높음' }[c] || c || '-');
 
-    const postCards = posts.map(p => `
-      <div style="padding:14px 0;border-bottom:1px solid var(--border)">
+    const suggestions = data.aiSuggestions || [];
+    const getSug = idx => suggestions.find(s => s.idx === idx);
+
+    const typeStyle = type => {
+      if (type === '상록성') return { bg:'#f0fff4', color:'#276749', label:'🌿 상록성' };
+      if (type === '혼합')   return { bg:'#fffbeb', color:'#975a16', label:'🔶 혼합형' };
+      return { bg:'#fff5f5', color:'#c53030', label:'📰 뉴스성' };
+    };
+
+    const postCards = posts.map((p, idx) => {
+      const sug = getSug(idx);
+      const ts = sug ? typeStyle(sug.type) : null;
+      return `
+      <div style="padding:16px 0;border-bottom:1px solid var(--border)">
         <div style="display:flex;align-items:flex-start;gap:10px">
           <div style="flex:1;min-width:0">
             <a href="${escHtml(p.link)}" target="_blank" style="font-weight:600;font-size:.9rem;color:var(--navy-mid);text-decoration:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(p.title)}">${escHtml(p.title)}</a>
             <div style="font-size:.75rem;color:var(--text-light);margin-top:2px">${escHtml(p.pubDate)}</div>
           </div>
+          ${ts ? `<span style="flex-shrink:0;font-size:.68rem;padding:2px 9px;border-radius:10px;font-weight:700;background:${ts.bg};color:${ts.color}">${ts.label}</span>` : ''}
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px">
           ${p.keywords.length ? p.keywords.map(k => `
@@ -1990,7 +2003,15 @@ async function analyzePostTracker() {
               ${volBadge(k.vol)}
             </span>`).join('') : `<span style="font-size:.78rem;color:var(--text-light)">키워드 없음</span>`}
         </div>
-      </div>`).join('');
+        ${sug ? `
+        <div style="margin-top:10px;padding:11px 14px;background:linear-gradient(135deg,#ebf8ff,#f0f4ff);border-left:3px solid #4299e1;border-radius:0 10px 10px 0">
+          <div style="font-size:.7rem;font-weight:700;color:#2b6cb0;margin-bottom:5px;letter-spacing:.3px">💡 AI 코치 제안</div>
+          <div style="font-size:.78rem;color:#744210;margin-bottom:6px">⚠️ ${escHtml(sug.issue)}</div>
+          <div style="font-size:.8rem;color:#1a365d;font-weight:600;margin-bottom:4px">✏️ 더 나은 제목: "${escHtml(sug.betterTitle)}"</div>
+          <div style="font-size:.73rem;color:#4a5568">🎯 타깃 키워드: <b style="color:#2b6cb0">${escHtml(sug.keyword)}</b></div>
+        </div>` : ''}
+      </div>`;
+    }).join('');
 
     const bestRows = best.length ? best.map((k, i) => `
       <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
@@ -2011,7 +2032,7 @@ async function analyzePostTracker() {
           <div class="card-title" style="margin:0">📌 최근 포스트 (${posts.length}개)</div>
           <span style="font-size:.72rem;color:var(--text-light)">${escHtml(data.blogId)}</span>
         </div>
-        <div style="font-size:.8rem;color:var(--text-light);margin-bottom:12px">키워드 뱃지 숫자 = 월간 검색량. 🔥10,000+ ⭐3,000+</div>
+        <div style="font-size:.8rem;color:var(--text-light);margin-bottom:12px">🌿상록성 = 오래 검색됨 &nbsp;|&nbsp; 📰뉴스성 = 단기 트래픽 &nbsp;|&nbsp; 🔥10,000+ ⭐3,000+ = 월간 검색량</div>
         ${postCards}
       </div>`);
   } catch(e) { showError('tracker', e.message); }
