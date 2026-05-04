@@ -1371,7 +1371,9 @@ ${postTitles}` }]
       const url = `${endpoint}?serviceKey=${MOLIT_KEY}&LAWD_CD=${region}&DEAL_YMD=${yearMonth}&numOfRows=1000&pageNo=1`;
 
       try {
-        const r = await fetch(url);
+        const r = await fetch(url, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; KeywordTool/1.0)' }
+        });
         if (!r.ok) return res.status(502).json({ error: `국토부 API 오류 (${r.status})` });
         const xml = await r.text();
 
