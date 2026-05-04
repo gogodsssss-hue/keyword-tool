@@ -965,9 +965,15 @@ textarea.form-control{resize:vertical;min-height:100px}
         <input class="form-control" id="re-yearmonth" type="text" placeholder="예: 2026 또는 202602" maxlength="6">
       </div>
     </div>
-    <div class="form-group">
-      <label>단지명 필터 <span style="font-weight:400;color:var(--text-light)">(선택 — 비우면 전체)</span></label>
-      <input class="form-control" id="re-complex" type="text" placeholder="예: 래미안, 자이, 푸르지오 (부분 일치)" value="이편한세상수지">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group">
+        <label>법정동 필터 <span style="font-weight:400;color:var(--text-light)">(선택)</span></label>
+        <input class="form-control" id="re-umd" type="text" placeholder="예: 풍덕천동, 죽전동 (부분 일치)" value="풍덕천동">
+      </div>
+      <div class="form-group">
+        <label>단지명 필터 <span style="font-weight:400;color:var(--text-light)">(선택)</span></label>
+        <input class="form-control" id="re-complex" type="text" placeholder="예: 래미안, 자이, 푸르지오" value="이편한세상수지">
+      </div>
     </div>
     <button class="btn btn-primary" style="width:100%" onclick="runRealEstate()">🏠 실거래가 조회</button>
   </div>
@@ -2881,6 +2887,7 @@ async function runRealEstate() {
   const region = document.getElementById('re-region').value;
   const yearMonth = document.getElementById('re-yearmonth').value.trim();
   const complexFilter = document.getElementById('re-complex').value.trim();
+  const umdFilter = document.getElementById('re-umd').value.trim();
 
   if (!region) { alert('지역을 선택해주세요.'); return; }
   if (!/^\d{4}$/.test(yearMonth) && !/^\d{6}$/.test(yearMonth)) { alert('거래기간은 YYYY (예: 2026) 또는 YYYYMM (예: 202602) 형식으로 입력해주세요.'); return; }
@@ -2892,7 +2899,8 @@ async function runRealEstate() {
       region,
       dealType: _reDealType,
       yearMonth,
-      complexFilter
+      complexFilter,
+      umdFilter
     });
 
     if (!data.deals || !data.deals.length) {

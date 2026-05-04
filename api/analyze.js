@@ -1357,7 +1357,7 @@ ${postTitles}` }]
 
     // 실거래가 조회 (국토교통부 API)
     else if (mode === 'realestate-deals') {
-      const { region, dealType, yearMonth, complexFilter } = req.body;
+      const { region, dealType, yearMonth, complexFilter, umdFilter } = req.body;
       const MOLIT_KEY = process.env.MOLIT_API_KEY;
 
       if (!MOLIT_KEY) return res.status(500).json({ error: '국토부 API 키가 설정되지 않았습니다. (MOLIT_API_KEY)' });
@@ -1463,6 +1463,12 @@ ${postTitles}` }]
             if (!apt || !f) return false;
             return apt.includes(f) || f.includes(apt);
           });
+        }
+
+        // 법정동 필터
+        if (umdFilter && umdFilter.trim()) {
+          const u = umdFilter.trim();
+          filtered = filtered.filter(i => (i.법정동 || '').includes(u));
         }
 
         // 거래일 최신순 정렬
