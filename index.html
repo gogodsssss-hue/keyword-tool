@@ -964,8 +964,8 @@ textarea.form-control{resize:vertical;min-height:100px}
         </select>
       </div>
       <div class="form-group">
-        <label>거래월 (YYYYMM)</label>
-        <input class="form-control" id="re-yearmonth" type="text" placeholder="예: 202604" maxlength="6">
+        <label>거래기간 <span style="font-weight:400;color:var(--text-light)">(YYYY=연도전체, YYYYMM=특정월)</span></label>
+        <input class="form-control" id="re-yearmonth" type="text" placeholder="예: 2026 또는 202602" maxlength="6">
       </div>
     </div>
     <div class="form-group">
@@ -2886,7 +2886,7 @@ async function runRealEstate() {
   const complexFilter = document.getElementById('re-complex').value.trim();
 
   if (!region) { alert('지역을 선택해주세요.'); return; }
-  if (!/^\d{6}$/.test(yearMonth)) { alert('거래월은 YYYYMM 형식 6자리 숫자로 입력해주세요. (예: 202604)'); return; }
+  if (!/^\d{4}$/.test(yearMonth) && !/^\d{6}$/.test(yearMonth)) { alert('거래기간은 YYYY (예: 2026) 또는 YYYYMM (예: 202602) 형식으로 입력해주세요.'); return; }
 
   showLoading('re');
   try {
@@ -2977,7 +2977,7 @@ async function runRealEstate() {
     showResult('re', `
       <div class="card">
         <div class="card-title">📊 실거래가 ${data.total}건 조회됨 ${complexFilter ? `(필터: "${complexFilter}")` : ''}</div>
-        <div style="color:#718096;font-size:.85rem;margin-bottom:14px">${summary} · 거래월: ${yearMonth.slice(0,4)}년 ${parseInt(yearMonth.slice(4,6))}월</div>
+        <div style="color:#718096;font-size:.85rem;margin-bottom:14px">${summary} · 거래기간: ${yearMonth.length===4?yearMonth+'년 전체':yearMonth.slice(0,4)+'년 '+parseInt(yearMonth.slice(4,6))+'월'}</div>
         <div style="overflow-x:auto;max-height:600px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:8px">
           <table style="width:100%;border-collapse:collapse;font-size:.82rem">
             <thead style="background:#f7fafc;position:sticky;top:0;z-index:1">

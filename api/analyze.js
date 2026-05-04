@@ -1362,20 +1362,37 @@ ${postTitles}` }]
 
       if (!MOLIT_KEY) return res.status(500).json({ error: '국토부 API 키가 설정되지 않았습니다. (MOLIT_API_KEY)' });
       if (!region) return res.status(400).json({ error: '지역을 선택해주세요.' });
-      if (!yearMonth) return res.status(400).json({ error: '거래월을 입력해주세요.' });
+      if (!yearMonth) return res.status(400).json({ error: '거래년 또는 거래월을 입력해주세요.' });
 
       const endpoint = dealType === 'rent'
         ? 'https://apis.data.go.kr/1613000/RTMSDataSvcAptRent/getRTMSDataSvcAptRent'
         : 'https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev';
 
-      const url = `${endpoint}?serviceKey=${MOLIT_KEY}&LAWD_CD=${region}&DEAL_YMD=${yearMonth}&numOfRows=1000&pageNo=1`;
+      // YYYY (4자리) → 12개월 조회, YYYYMM (6자리) → 1개월 조회
+      const yms = [];
+      if (/^\d{4}$/.test(yearMonth)) {
+        // 전체 연도
+        for (let m = 1; m <= 12; m++) {
+          yms.push(`${yearMonth}${String(m).padStart(2, '0')}`);
+        }
+      } else if (/^\d{6}$/.test(yearMonth)) {
+        yms.push(yearMonth);
+      } else {
+        return res.status(400).json({ error: '거래월은 YYYY (예: 2026) 또는 YYYYMM (예: 202602) 형식이어야 합니다.' });
+      }
 
       try {
-        const r = await fetch(url, {
-          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; KeywordTool/1.0)' }
-        });
-        if (!r.ok) return res.status(502).json({ error: `국토부 API 오류 (${r.status})` });
-        const xml = await r.text();
+        // 모든 월 병렬 조회
+        const fetchOne = async (ym) => {
+          const url = `${endpoint}?serviceKey=${MOLIT_KEY}&LAWD_CD=${region}&DEAL_YMD=${ym}&numOfRows=1000&pageNo=1`;
+          const r = await fetch(url, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (compatible; KeywordTool/1.0)' }
+          });
+          if (!r.ok) return '';
+          return await r.text();
+        };
+        const xmls = await Promise.all(yms.map(fetchOne));
+        const xml = xmls.join('');
 
         // XML 파싱
         const items = [];
