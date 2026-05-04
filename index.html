@@ -385,6 +385,7 @@ textarea.form-control{resize:vertical;min-height:100px}
   <div class="sidebar-section">부동산</div>
   <div class="sidebar-item" data-page="realestate"><span class="si-icon">🏠</span>실거래가 조회</div>
   <div class="sidebar-item" data-page="re-news"><span class="si-icon">📰</span>부동산 뉴스</div>
+  <div class="sidebar-item" data-page="listings"><span class="si-icon">📒</span>이실장 매물 노트</div>
 </nav>
 
 <!-- ── MAIN ── -->
@@ -829,6 +830,76 @@ textarea.form-control{resize:vertical;min-height:100px}
     </div>
     <div class="loading" id="kw-draft-loading"><div class="spinner"></div><div class="loading-text">대본 초안을 작성 중...</div></div>
     <div class="result-area" id="kw-draft-result"></div>
+  </div>
+</div>
+
+<!-- =================== 이실장 매물 노트 =================== -->
+<div class="page" id="page-listings">
+  <div class="page-header">
+    <h2>📒 이실장 매물 노트</h2>
+    <p>이실장이 알려준 매물을 클라우드에 저장. 어디서든 (집/사무실/폰) 접근 가능.</p>
+  </div>
+  <div class="card">
+    <div class="card-title">➕ 새 매물 추가</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+      <div class="form-group">
+        <label>단지명 *</label>
+        <input class="form-control" id="lst-apt" type="text" placeholder="예: 성복역롯데캐슬골드타운">
+      </div>
+      <div class="form-group">
+        <label>동</label>
+        <input class="form-control" id="lst-dong" type="text" placeholder="예: 105">
+      </div>
+      <div class="form-group">
+        <label>호수</label>
+        <input class="form-control" id="lst-ho" type="text" placeholder="예: 2503">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+      <div class="form-group">
+        <label>거래유형</label>
+        <select class="form-control" id="lst-type">
+          <option value="매매">매매</option>
+          <option value="전세">전세</option>
+          <option value="월세">월세</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>평형(㎡ 또는 평)</label>
+        <input class="form-control" id="lst-area" type="text" placeholder="예: 84㎡ 또는 34평">
+      </div>
+      <div class="form-group">
+        <label>층</label>
+        <input class="form-control" id="lst-floor" type="text" placeholder="예: 25">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="form-group">
+        <label>가격 (만원)</label>
+        <input class="form-control" id="lst-price" type="text" placeholder="예: 230000 (=23억)">
+      </div>
+      <div class="form-group">
+        <label>월세(있으면, 만원)</label>
+        <input class="form-control" id="lst-rent" type="text" placeholder="예: 150">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>메모/조건</label>
+      <textarea class="form-control" id="lst-memo" rows="2" placeholder="예: 즉시입주, 풀옵션, 남향, 이실장 010-XXXX-XXXX, 매도자 김XX 사장님" style="resize:vertical"></textarea>
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="addListing()">💾 매물 저장</button>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="card-title" style="margin:0">📋 저장된 매물</div>
+      <div style="display:flex;gap:6px">
+        <input class="form-control" id="lst-search" type="text" placeholder="단지/동/호수/메모 검색" style="width:200px;padding:6px 10px;font-size:.82rem" oninput="renderListings()">
+        <button onclick="loadListings()" style="background:#6366f1;color:#fff;border:none;padding:7px 12px;border-radius:6px;cursor:pointer;font-size:.78rem;font-weight:600">🔄 새로고침</button>
+        <button onclick="downloadListingsExcel()" style="background:#16a34a;color:#fff;border:none;padding:7px 12px;border-radius:6px;cursor:pointer;font-size:.78rem;font-weight:600">📥 엑셀</button>
+      </div>
+    </div>
+    <div id="lst-list-container" style="min-height:100px"></div>
   </div>
 </div>
 
@@ -3066,6 +3137,168 @@ document.addEventListener('DOMContentLoaded', () => {
     d.setMonth(d.getMonth() - 1); // 지난달 (이번달은 데이터 없을 수 있음)
     ym.value = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}`;
   }
+});
+
+// ═══════════════════════════════════════════
+//  이실장 매물 노트 (Vercel KV)
+// ═══════════════════════════════════════════
+let _allListings = [];
+
+async function loadListings() {
+  const container = document.getElementById('lst-list-container');
+  container.innerHTML = `<div style="text-align:center;padding:30px;color:#718096"><div class="spinner" style="margin:0 auto 8px"></div>로딩 중...</div>`;
+  try {
+    const data = await callApi({ mode: 'listing-list' });
+    _allListings = data.listings || [];
+    renderListings();
+  } catch (e) {
+    container.innerHTML = `<div style="text-align:center;padding:30px;color:#c53030">오류: ${e.message}<br><small style="color:#718096">Vercel KV 설정이 필요할 수 있어요</small></div>`;
+  }
+}
+
+function renderListings() {
+  const container = document.getElementById('lst-list-container');
+  const search = (document.getElementById('lst-search').value || '').toLowerCase().trim();
+  const filtered = search
+    ? _allListings.filter(l => JSON.stringify(l).toLowerCase().includes(search))
+    : _allListings;
+
+  if (!filtered.length) {
+    container.innerHTML = `<div style="text-align:center;padding:30px;color:#a0aec0">${search ? '검색 결과가 없습니다.' : '저장된 매물이 없습니다. 위에서 추가해보세요!'}</div>`;
+    return;
+  }
+
+  const formatPrice = (v) => {
+    if (!v) return '-';
+    const n = parseInt(String(v).replace(/[^0-9]/g, ''));
+    if (isNaN(n)) return v;
+    if (n >= 10000) return (n/10000).toFixed(2).replace(/\.?0+$/,'') + '억';
+    return n.toLocaleString() + '만';
+  };
+
+  container.innerHTML = `
+    <div style="overflow-x:auto;border:1px solid #e2e8f0;border-radius:8px">
+      <table style="width:100%;border-collapse:collapse;font-size:.83rem">
+        <thead style="background:#f7fafc">
+          <tr>
+            <th style="padding:9px 10px;text-align:left">유형</th>
+            <th style="padding:9px 10px;text-align:left">단지명</th>
+            <th style="padding:9px 10px;text-align:center">동</th>
+            <th style="padding:9px 10px;text-align:center">호수</th>
+            <th style="padding:9px 10px">평형</th>
+            <th style="padding:9px 10px;text-align:center">층</th>
+            <th style="padding:9px 10px;text-align:right">가격</th>
+            <th style="padding:9px 10px;text-align:right">월세</th>
+            <th style="padding:9px 10px">메모</th>
+            <th style="padding:9px 10px">등록일</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filtered.map(l => {
+            const date = l.createdAt ? new Date(l.createdAt).toLocaleDateString('ko-KR') : '';
+            const typeColor = l.거래유형==='매매'?'#fee2e2':l.거래유형==='전세'?'#e6fffa':'#fffaf0';
+            const typeText = l.거래유형==='매매'?'#7f1d1d':l.거래유형==='전세'?'#234e52':'#7b341e';
+            return `<tr style="border-top:1px solid #edf2f7">
+              <td style="padding:9px 10px"><span style="background:${typeColor};color:${typeText};padding:2px 8px;border-radius:10px;font-size:.74rem;font-weight:700">${l.거래유형||'-'}</span></td>
+              <td style="padding:9px 10px"><b>${l.단지명||'-'}</b></td>
+              <td style="padding:9px 10px;text-align:center;color:#3b82f6;font-weight:700">${l.동||'-'}</td>
+              <td style="padding:9px 10px;text-align:center;color:#dc2626;font-weight:700">${l.호수||'-'}</td>
+              <td style="padding:9px 10px">${l.평형||'-'}</td>
+              <td style="padding:9px 10px;text-align:center">${l.층||'-'}</td>
+              <td style="padding:9px 10px;text-align:right;color:#c53030;font-weight:700">${formatPrice(l.가격)}</td>
+              <td style="padding:9px 10px;text-align:right">${l.월세 ? l.월세+'만' : '-'}</td>
+              <td style="padding:9px 10px;font-size:.78rem;color:#4a5568;max-width:240px">${l.메모||'-'}</td>
+              <td style="padding:9px 10px;font-size:.72rem;color:#a0aec0">${date}</td>
+              <td style="padding:9px 10px"><button onclick="deleteListing('${l.id}')" style="background:none;border:none;cursor:pointer;color:#c53030;font-size:1rem" title="삭제">✕</button></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:8px;font-size:.75rem;color:#a0aec0;text-align:right">총 ${filtered.length}건${search ? ` (전체 ${_allListings.length}건 중)` : ''}</div>
+  `;
+}
+
+async function addListing() {
+  const apt = document.getElementById('lst-apt').value.trim();
+  if (!apt) { alert('단지명은 필수입니다.'); return; }
+  const listing = {
+    단지명: apt,
+    동: document.getElementById('lst-dong').value.trim(),
+    호수: document.getElementById('lst-ho').value.trim(),
+    거래유형: document.getElementById('lst-type').value,
+    평형: document.getElementById('lst-area').value.trim(),
+    층: document.getElementById('lst-floor').value.trim(),
+    가격: document.getElementById('lst-price').value.trim(),
+    월세: document.getElementById('lst-rent').value.trim(),
+    메모: document.getElementById('lst-memo').value.trim()
+  };
+  try {
+    await callApi({ mode: 'listing-add', listing });
+    // 폼 초기화 (단지명만 유지)
+    document.getElementById('lst-dong').value = '';
+    document.getElementById('lst-ho').value = '';
+    document.getElementById('lst-area').value = '';
+    document.getElementById('lst-floor').value = '';
+    document.getElementById('lst-price').value = '';
+    document.getElementById('lst-rent').value = '';
+    document.getElementById('lst-memo').value = '';
+    await loadListings();
+  } catch (e) {
+    alert('저장 실패: ' + e.message);
+  }
+}
+
+async function deleteListing(id) {
+  if (!confirm('정말 삭제할까요?')) return;
+  try {
+    await callApi({ mode: 'listing-delete', id });
+    await loadListings();
+  } catch (e) {
+    alert('삭제 실패: ' + e.message);
+  }
+}
+
+function downloadListingsExcel() {
+  const list = _allListings;
+  if (!list.length) { alert('저장된 매물이 없습니다.'); return; }
+  const headers = ['거래유형','단지명','동','호수','평형','층','가격(만원)','월세(만원)','메모','등록일'];
+  const rows = list.map(l => [
+    l.거래유형 || '',
+    l.단지명 || '',
+    l.동 || '',
+    l.호수 || '',
+    l.평형 || '',
+    l.층 || '',
+    l.가격 || '',
+    l.월세 || '',
+    l.메모 || '',
+    l.createdAt ? new Date(l.createdAt).toLocaleDateString('ko-KR') : ''
+  ]);
+  const csv = '﻿' + [headers, ...rows]
+    .map(row => row.map(c => {
+      const s = String(c == null ? '' : c);
+      if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+      return s;
+    }).join(','))
+    .join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date();
+  a.href = url;
+  a.download = `이실장매물_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// 사이드바에서 매물 노트 메뉴 클릭 시 자동 로드
+document.addEventListener('DOMContentLoaded', () => {
+  const item = document.querySelector('[data-page="listings"]');
+  if (item) item.addEventListener('click', loadListings);
 });
 
 // 부동산 뉴스 페이지

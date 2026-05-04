@@ -1355,6 +1355,62 @@ ${postTitles}` }]
       return res.status(200).json({ reply: chatData.content?.[0]?.text || '' });
     }
 
+    // 이실장 매물 노트 (Vercel KV)
+    else if (mode === 'listing-list' || mode === 'listing-add' || mode === 'listing-delete' || mode === 'listing-update') {
+      const KV_URL = process.env.KV_REST_API_URL;
+      const KV_TOKEN = process.env.KV_REST_API_TOKEN;
+      if (!KV_URL || !KV_TOKEN) {
+        return res.status(500).json({ error: 'Vercel KV가 설정되지 않았습니다. KV_REST_API_URL, KV_REST_API_TOKEN 필요.' });
+      }
+
+      const kvHeaders = { 'Authorization': `Bearer ${KV_TOKEN}`, 'Content-Type': 'application/json' };
+      const kvKey = 'broker_listings';
+
+      const kvGet = async () => {
+        const r = await fetch(`${KV_URL}/get/${kvKey}`, { headers: kvHeaders });
+        if (!r.ok) return [];
+        const d = await r.json();
+        try { return JSON.parse(d.result || '[]'); } catch { return []; }
+      };
+      const kvSet = async (data) => {
+        await fetch(`${KV_URL}/set/${kvKey}`, {
+          method: 'POST',
+          headers: kvHeaders,
+          body: JSON.stringify(JSON.stringify(data))
+        });
+      };
+
+      if (mode === 'listing-list') {
+        const list = await kvGet();
+        result = { listings: list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)) };
+      } else if (mode === 'listing-add') {
+        const list = await kvGet();
+        const newItem = {
+          ...req.body.listing,
+          id: 'L' + Date.now() + Math.random().toString(36).slice(2, 7),
+          createdAt: Date.now()
+        };
+        list.push(newItem);
+        await kvSet(list);
+        result = { listing: newItem, total: list.length };
+      } else if (mode === 'listing-delete') {
+        const list = await kvGet();
+        const filtered = list.filter(l => l.id !== req.body.id);
+        await kvSet(filtered);
+        result = { deleted: list.length - filtered.length, total: filtered.length };
+      } else if (mode === 'listing-update') {
+        const list = await kvGet();
+        const idx = list.findIndex(l => l.id === req.body.listing.id);
+        if (idx >= 0) {
+          list[idx] = { ...list[idx], ...req.body.listing, updatedAt: Date.now() };
+          await kvSet(list);
+          result = { listing: list[idx] };
+        } else {
+          return res.status(404).json({ error: '매물을 찾을 수 없습니다.' });
+        }
+      }
+    }
+
     // 실거래가 부동산 뉴스 통합 조회
     else if (mode === 'realestate-news') {
       const { complexes, region } = req.body;
