@@ -1408,9 +1408,13 @@ ${postTitles}` }]
           if (dealType === 'rent') {
             const deposit = get('deposit');
             const monthlyRent = get('monthlyRent');
+            const preDeposit = get('preDeposit');
+            const preMonthlyRent = get('preMonthlyRent');
             items.push({
               단지명: get('aptNm'),
+              동: get('aptDong'),
               법정동: get('umdNm'),
+              지번: get('jibun'),
               전용면적: parseFloat(get('excluUseAr')) || 0,
               층: get('floor'),
               건축년도: get('buildYear'),
@@ -1421,7 +1425,11 @@ ${postTitles}` }]
               계약월: get('dealMonth'),
               계약일: get('dealDay'),
               계약기간: get('contractTerm') || '',
-              계약구분: get('contractType') || ''
+              계약구분: get('contractType') || '',
+              종전보증금: preDeposit && preDeposit.trim() ? preDeposit : '',
+              종전월세: preMonthlyRent && preMonthlyRent.trim() ? preMonthlyRent : '',
+              갱신요구권사용: get('useRRRight') || '',
+              등기일자: get('rgstDate') || ''
             });
           } else {
             items.push({
@@ -1438,7 +1446,13 @@ ${postTitles}` }]
               계약월: get('dealMonth'),
               계약일: get('dealDay'),
               거래유형: get('dealingGbn') || '',
-              해제여부: get('cdealType') === 'O' ? '해제' : ''
+              매수자: get('buyerGbn') || '',
+              매도자: get('slerGbn') || '',
+              중개사소재: get('estateAgentSggNm') || '',
+              등기일자: get('rgstDate') || '',
+              해제여부: get('cdealType') === 'O' ? '해제' : '',
+              해제사유발생일: get('cdealDay') || '',
+              토지임대부: get('landLeaseholdGbn') === 'Y' ? '토지임대부' : ''
             });
           }
         }
