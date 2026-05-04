@@ -840,7 +840,18 @@ textarea.form-control{resize:vertical;min-height:100px}
     <p>이실장이 알려준 매물을 클라우드에 저장. 어디서든 (집/사무실/폰) 접근 가능.</p>
   </div>
   <div class="card">
-    <div class="card-title">➕ 새 매물 추가</div>
+    <div class="card-title">⚡ 빠른 입력 (카톡 메시지 그대로 붙여넣기)</div>
+    <div class="form-group">
+      <textarea class="form-control" id="lst-quick" rows="5" placeholder="이실장 메시지를 그대로 붙여넣으세요!&#10;&#10;예시:&#10;성복역롯데캐슬골드타운 105동 2503호 25층 84㎡&#10;매매 23억&#10;즉시입주 풀옵션 남향&#10;매도자 010-1234-5678" style="resize:vertical;font-family:inherit"></textarea>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="quickAddListing()">🤖 AI가 분석해서 저장</button>
+      <button onclick="document.getElementById('lst-detail-form').style.display=document.getElementById('lst-detail-form').style.display==='none'?'block':'none'" style="background:#e2e8f0;border:none;padding:10px 16px;border-radius:6px;cursor:pointer;font-size:.85rem;font-weight:600">✏️ 수동 입력</button>
+    </div>
+  </div>
+
+  <div class="card" id="lst-detail-form" style="display:none">
+    <div class="card-title">➕ 수동 매물 입력</div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
       <div class="form-group">
         <label>단지명 *</label>
@@ -865,8 +876,8 @@ textarea.form-control{resize:vertical;min-height:100px}
         </select>
       </div>
       <div class="form-group">
-        <label>평형(㎡ 또는 평)</label>
-        <input class="form-control" id="lst-area" type="text" placeholder="예: 84㎡ 또는 34평">
+        <label>평형</label>
+        <input class="form-control" id="lst-area" type="text" placeholder="예: 84㎡">
       </div>
       <div class="form-group">
         <label>층</label>
@@ -876,16 +887,16 @@ textarea.form-control{resize:vertical;min-height:100px}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="form-group">
         <label>가격 (만원)</label>
-        <input class="form-control" id="lst-price" type="text" placeholder="예: 230000 (=23억)">
+        <input class="form-control" id="lst-price" type="text" placeholder="예: 230000">
       </div>
       <div class="form-group">
-        <label>월세(있으면, 만원)</label>
+        <label>월세 (만원)</label>
         <input class="form-control" id="lst-rent" type="text" placeholder="예: 150">
       </div>
     </div>
     <div class="form-group">
-      <label>메모/조건</label>
-      <textarea class="form-control" id="lst-memo" rows="2" placeholder="예: 즉시입주, 풀옵션, 남향, 이실장 010-XXXX-XXXX, 매도자 김XX 사장님" style="resize:vertical"></textarea>
+      <label>메모</label>
+      <textarea class="form-control" id="lst-memo" rows="2" placeholder="조건/특이사항" style="resize:vertical"></textarea>
     </div>
     <button class="btn btn-primary" style="width:100%" onclick="addListing()">💾 매물 저장</button>
   </div>
@@ -3218,6 +3229,47 @@ function renderListings() {
     </div>
     <div style="margin-top:8px;font-size:.75rem;color:#a0aec0;text-align:right">총 ${filtered.length}건${search ? ` (전체 ${_allListings.length}건 중)` : ''}</div>
   `;
+}
+
+// AI로 카톡 메시지 파싱 후 자동 저장
+async function quickAddListing() {
+  const text = document.getElementById('lst-quick').value.trim();
+  if (!text) { alert('이실장 메시지를 붙여넣으세요!'); return; }
+
+  const btn = event.target;
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '🤖 AI 분석 중...';
+  btn.disabled = true;
+
+  try {
+    const data = await callApi({ mode: 'listing-parse', text });
+    const listing = data.listing;
+    if (!listing.단지명) {
+      alert('단지명을 찾을 수 없어요. 메시지를 다시 확인하세요.');
+      return;
+    }
+    // 미리보기 확인
+    const preview = `📋 분석 결과:\n\n` +
+      `단지: ${listing.단지명}\n` +
+      `동/호수: ${listing.동||'-'}동 ${listing.호수||'-'}호\n` +
+      `거래: ${listing.거래유형||'-'}\n` +
+      `평형: ${listing.평형||'-'} / ${listing.층||'-'}층\n` +
+      `가격: ${listing.가격||'-'}만원\n` +
+      (listing.월세 ? `월세: ${listing.월세}만원\n` : '') +
+      `메모: ${listing.메모||'-'}\n\n` +
+      `저장하시겠습니까?`;
+    if (!confirm(preview)) return;
+
+    await callApi({ mode: 'listing-add', listing });
+    document.getElementById('lst-quick').value = '';
+    await loadListings();
+    alert('✅ 저장 완료!');
+  } catch (e) {
+    alert('오류: ' + e.message);
+  } finally {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  }
 }
 
 async function addListing() {
