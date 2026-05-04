@@ -2861,9 +2861,7 @@ let _floatOpen  = false;
 function toggleFloatChat() {
   _floatOpen = !_floatOpen;
   document.getElementById('float-chat-panel').style.display = _floatOpen ? 'flex' : 'none';
-  document.getElementById('float-chat-btn').innerHTML = _floatOpen
-    ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
-    : '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+  document.getElementById('float-chat-btn').style.display = _floatOpen ? 'none' : 'flex';
   if (_floatOpen) document.getElementById('float-chat-input').focus();
 }
 
