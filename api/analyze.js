@@ -98,7 +98,7 @@ async function naverSearchVolume(keyword, apiKey, secretKey, customerId) {
                       .update(`${ts}_GET_/keywordstool`)
                       .digest('base64');
     const res = await fetch(
-      `https://api.naver.com/keywordstool?hintKeywords=${encodeURIComponent(keyword)}&showDetail=1`,
+      `${process.env.NAVER_AD_API_BASE_URL || 'https://api.naver.com'}/keywordstool?hintKeywords=${encodeURIComponent(keyword)}&showDetail=1`,
       {
         headers: {
           'X-Timestamp': ts,
@@ -140,7 +140,7 @@ async function naverRelatedKeywords(hint, apiKey, secretKey, customerId) {
                       .update(`${ts}_GET_/keywordstool`)
                       .digest('base64');
     const res = await fetch(
-      `https://api.naver.com/keywordstool?hintKeywords=${encodeURIComponent(hint)}&showDetail=1`,
+      `${process.env.NAVER_AD_API_BASE_URL || 'https://api.naver.com'}/keywordstool?hintKeywords=${encodeURIComponent(hint)}&showDetail=1`,
       { headers: { 'X-Timestamp': ts, 'X-API-KEY': apiKey, 'X-Customer': customerId, 'X-Signature': sig } }
     );
     if (!res.ok) return [];
