@@ -1355,6 +1355,101 @@ ${postTitles}` }]
       return res.status(200).json({ reply: chatData.content?.[0]?.text || '' });
     }
 
+    // 실거래가 조회 (국토교통부 API)
+    else if (mode === 'realestate-deals') {
+      const { region, dealType, yearMonth, complexFilter } = req.body;
+      const MOLIT_KEY = process.env.MOLIT_API_KEY;
+
+      if (!MOLIT_KEY) return res.status(500).json({ error: '국토부 API 키가 설정되지 않았습니다. (MOLIT_API_KEY)' });
+      if (!region) return res.status(400).json({ error: '지역을 선택해주세요.' });
+      if (!yearMonth) return res.status(400).json({ error: '거래월을 입력해주세요.' });
+
+      const endpoint = dealType === 'rent'
+        ? 'https://apis.data.go.kr/1613000/RTMSDataSvcAptRent/getRTMSDataSvcAptRent'
+        : 'https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev';
+
+      const url = `${endpoint}?serviceKey=${MOLIT_KEY}&LAWD_CD=${region}&DEAL_YMD=${yearMonth}&numOfRows=1000&pageNo=1`;
+
+      try {
+        const r = await fetch(url);
+        if (!r.ok) return res.status(502).json({ error: `국토부 API 오류 (${r.status})` });
+        const xml = await r.text();
+
+        // XML 파싱
+        const items = [];
+        const itemRe = /<item>([\s\S]*?)<\/item>/g;
+        let m;
+        while ((m = itemRe.exec(xml)) !== null) {
+          const block = m[1];
+          const get = tag => {
+            const t = block.match(new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`));
+            return t ? t[1].trim() : '';
+          };
+
+          if (dealType === 'rent') {
+            const deposit = get('deposit');
+            const monthlyRent = get('monthlyRent');
+            items.push({
+              단지명: get('aptNm'),
+              법정동: get('umdNm'),
+              전용면적: parseFloat(get('excluUseAr')) || 0,
+              층: get('floor'),
+              건축년도: get('buildYear'),
+              보증금: deposit,
+              월세: monthlyRent,
+              구분: (monthlyRent === '0' || !monthlyRent) ? '전세' : '월세',
+              계약년: get('dealYear'),
+              계약월: get('dealMonth'),
+              계약일: get('dealDay'),
+              계약기간: get('contractTerm') || '',
+              계약구분: get('contractType') || ''
+            });
+          } else {
+            items.push({
+              단지명: get('aptNm'),
+              법정동: get('umdNm'),
+              지번: get('jibun'),
+              도로명: `${get('roadNm') || ''} ${get('roadNmBonbun') || ''}${get('roadNmBubun') ? '-'+get('roadNmBubun') : ''}`.trim(),
+              전용면적: parseFloat(get('excluUseAr')) || 0,
+              층: get('floor'),
+              건축년도: get('buildYear'),
+              거래금액: get('dealAmount').replace(/,/g, '').trim(),
+              계약년: get('dealYear'),
+              계약월: get('dealMonth'),
+              계약일: get('dealDay'),
+              거래유형: get('dealingGbn') || '',
+              해제여부: get('cdealType') === 'O' ? '해제' : ''
+            });
+          }
+        }
+
+        // 단지명 필터
+        let filtered = items;
+        if (complexFilter && complexFilter.trim()) {
+          const f = complexFilter.trim().toLowerCase();
+          filtered = items.filter(i => (i.단지명 || '').toLowerCase().includes(f));
+        }
+
+        // 거래일 최신순 정렬
+        filtered.sort((a, b) => {
+          const da = `${a.계약년}${(a.계약월||'').padStart(2,'0')}${(a.계약일||'').padStart(2,'0')}`;
+          const db = `${b.계약년}${(b.계약월||'').padStart(2,'0')}${(b.계약일||'').padStart(2,'0')}`;
+          return db.localeCompare(da);
+        });
+
+        result = {
+          deals: filtered,
+          total: filtered.length,
+          totalRaw: items.length,
+          region,
+          yearMonth,
+          dealType
+        };
+      } catch (e) {
+        return res.status(500).json({ error: '국토부 API 호출 실패: ' + e.message });
+      }
+    }
+
     else {
       return res.status(400).json({ error: '지원하지 않는 모드입니다.' });
     }
