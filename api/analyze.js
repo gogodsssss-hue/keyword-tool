@@ -1457,25 +1457,22 @@ ${postTitles}` }]
           }
         }
 
-        // 단지명 필터 (스마트 정규화 + 엄격 매칭)
+        // 단지명 필터 (스마트 정규화 + 엄격 매칭, 다중 단지 지원)
         let filtered = items;
         if (complexFilter && complexFilter.trim()) {
-          // 영문/한글 표기 통일만 (브랜드 접두어 제거 X - 단지 이름 일부일 수 있어서)
           const norm = s => {
             let r = (s || '').toLowerCase().replace(/[\s\-_·\(\)\[\]]/g, '');
-            // 'e편한세상' = 'E편한세상' = '이편한세상' 통일
             r = r.replace(/이편한/g, 'e편한');
             r = r.replace(/e편한/g, 'e편한');
-            // '대림이편한세상' → 'e편한세상' (대림 빌더명 제거, 이→e)
             r = r.replace(/^대림e편한/, 'e편한');
             return r;
           };
-          const f = norm(complexFilter);
-          // 양방향 부분일치 (단, 빈 문자열 제외)
+          // | 또는 , 로 구분된 여러 단지 지원
+          const filters = complexFilter.split(/[\|,]/).map(s => s.trim()).filter(Boolean).map(norm);
           filtered = items.filter(i => {
             const apt = norm(i.단지명);
-            if (!apt || !f) return false;
-            return apt.includes(f) || f.includes(apt);
+            if (!apt) return false;
+            return filters.some(f => apt.includes(f) || f.includes(apt));
           });
         }
 

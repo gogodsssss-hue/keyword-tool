@@ -968,11 +968,20 @@ textarea.form-control{resize:vertical;min-height:100px}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div class="form-group">
         <label>법정동 필터 <span style="font-weight:400;color:var(--text-light)">(선택)</span></label>
-        <input class="form-control" id="re-umd" type="text" placeholder="예: 풍덕천동, 죽전동 (부분 일치)" value="풍덕천동">
+        <input class="form-control" id="re-umd" type="text" placeholder="예: 풍덕천동, 죽전동 (부분 일치)">
       </div>
       <div class="form-group">
-        <label>단지명 필터 <span style="font-weight:400;color:var(--text-light)">(선택)</span></label>
-        <input class="form-control" id="re-complex" type="text" placeholder="예: 래미안, 자이, 푸르지오" value="이편한세상수지">
+        <label>단지명 필터 <span style="font-weight:400;color:var(--text-light)">(여러 개는 | 로 구분)</span></label>
+        <input class="form-control" id="re-complex" type="text" placeholder="예: 롯데캐슬|태영데시앙|이편한세상" value="이편한세상수지">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>빠른 선택 <span style="font-weight:400;color:var(--text-light)">(클릭하면 자동 입력)</span></label>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <button type="button" onclick="setRePreset('main')" style="background:#fef3c7;border:1.5px solid #f59e0b;color:#92400e;padding:7px 14px;border-radius:18px;cursor:pointer;font-size:.78rem;font-weight:600">⭐ 핵심 3단지 (롯데캐슬골드타운+태영데시앙+이편한세상)</button>
+        <button type="button" onclick="setRePreset('seongbok')" style="background:#dbeafe;border:1.5px solid #3b82f6;color:#1e40af;padding:7px 14px;border-radius:18px;cursor:pointer;font-size:.78rem;font-weight:600">🚇 성복역 라인 (롯데캐슬+KCC+서희+아이파크+금호+리버파크)</button>
+        <button type="button" onclick="setRePreset('all')" style="background:#dcfce7;border:1.5px solid #16a34a;color:#166534;padding:7px 14px;border-radius:18px;cursor:pointer;font-size:.78rem;font-weight:600">🌟 전체 (10개 단지 모두)</button>
+        <button type="button" onclick="setRePreset('clear')" style="background:#f3f4f6;border:1.5px solid #9ca3af;color:#374151;padding:7px 14px;border-radius:18px;cursor:pointer;font-size:.78rem;font-weight:600">✖ 필터 비우기</button>
       </div>
     </div>
     <button class="btn btn-primary" style="width:100%" onclick="runRealEstate()">🏠 실거래가 조회</button>
@@ -2881,6 +2890,20 @@ function setRealEstateType(btn) {
   document.querySelectorAll('#re-deal-type .platform-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   _reDealType = btn.dataset.val;
+}
+
+const _rePresets = {
+  main: '롯데캐슬골드타운|태영데시앙|이편한세상수지',
+  seongbok: '성복역롯데캐슬|성복역KCC|성복역 서희|성복역 아이파크|성복역 금호|성복역 리버파크',
+  all: '롯데캐슬골드타운|태영데시앙|이편한세상수지|성복역롯데캐슬|성복역KCC|성복역 서희|성복역 아이파크|성복역 금호|성복역 리버파크',
+  clear: ''
+};
+
+function setRePreset(key) {
+  const v = _rePresets[key] || '';
+  document.getElementById('re-complex').value = v;
+  // 법정동 필터는 비우기 (전체 수지구에서 찾도록)
+  document.getElementById('re-umd').value = '';
 }
 
 async function runRealEstate() {
