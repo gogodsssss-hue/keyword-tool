@@ -2899,7 +2899,33 @@ async function runRealEstate() {
     });
 
     if (!data.deals || !data.deals.length) {
-      showResult('re', `<div class="card"><div style="text-align:center;padding:40px;color:#718096">📭 해당 조건의 거래 데이터가 없습니다.<br><small>전체 ${data.totalRaw || 0}건 조회됨${complexFilter ? ` · "${complexFilter}" 필터 일치 0건` : ''}</small></div></div>`);
+      // 필터 매칭 0건이면 비슷한 단지명 제안
+      let suggestionHtml = '';
+      if (complexFilter && data.totalRaw > 0) {
+        // 전체 데이터 다시 가져와서 비슷한 이름 추출
+        const dataAll = await callApi({ mode: 'realestate-deals', region: document.getElementById('re-region').value, dealType: _reDealType, yearMonth: document.getElementById('re-yearmonth').value.trim(), complexFilter: '' });
+        const uniqueNames = [...new Set((dataAll.deals||[]).map(d => d.단지명))];
+        const f = complexFilter.toLowerCase();
+        // 부분 일치 또는 비슷한 단어
+        const similar = uniqueNames.filter(n => {
+          const nl = (n||'').toLowerCase();
+          if (nl.includes(f) || f.includes(nl)) return true;
+          // 2글자 이상 공통 부분
+          for (let i = 0; i < f.length - 1; i++) {
+            if (nl.includes(f.substring(i, i+2))) return true;
+          }
+          return false;
+        }).slice(0, 15);
+        if (similar.length) {
+          suggestionHtml = `<div style="margin-top:20px;padding:15px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px">
+            <div style="font-weight:600;color:#92400e;margin-bottom:10px">💡 비슷한 단지명 (클릭하면 자동 검색)</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px">
+              ${similar.map(n => `<button onclick="document.getElementById('re-complex').value='${n.replace(/'/g,"\\'")}';runRealEstate()" style="background:#fff;border:1px solid #fbbf24;padding:5px 11px;border-radius:14px;font-size:.78rem;cursor:pointer;color:#92400e;font-weight:500">${n}</button>`).join('')}
+            </div>
+          </div>`;
+        }
+      }
+      showResult('re', `<div class="card"><div style="text-align:center;padding:30px;color:#718096">📭 해당 조건의 거래 데이터가 없습니다.<br><small>전체 ${data.totalRaw || 0}건 조회됨${complexFilter ? ` · "${complexFilter}" 필터 일치 0건` : ''}</small>${suggestionHtml}</div></div>`);
       return;
     }
 
