@@ -1409,6 +1409,7 @@ ${postTitles}` }]
           } else {
             items.push({
               단지명: get('aptNm'),
+              동: get('aptDong'),
               법정동: get('umdNm'),
               지번: get('jibun'),
               도로명: `${get('roadNm') || ''} ${get('roadNmBonbun') || ''}${get('roadNmBubun') ? '-'+get('roadNmBubun') : ''}`.trim(),
@@ -1425,11 +1426,39 @@ ${postTitles}` }]
           }
         }
 
-        // 단지명 필터
+        // 단지명 필터 (스마트 매칭)
         let filtered = items;
         if (complexFilter && complexFilter.trim()) {
-          const f = complexFilter.trim().toLowerCase();
-          filtered = items.filter(i => (i.단지명 || '').toLowerCase().includes(f));
+          const norm = s => (s || '').toLowerCase().replace(/[\s\-_·\(\)\[\]]/g, '');
+          const f = norm(complexFilter);
+          // 1차: 일반 부분일치
+          filtered = items.filter(i => norm(i.단지명).includes(f));
+          // 2차: 매칭 0건이면 공백/특수문자 제거 후 단어단위 OR 매칭
+          if (!filtered.length) {
+            // 입력에서 의미있는 단어 추출 (2글자 이상)
+            const words = complexFilter
+              .toLowerCase()
+              .split(/[\s\-_·]+/)
+              .map(w => w.replace(/[가-힣a-z0-9]/gi, ''))
+              .filter(Boolean);
+            // 한국어 단어 분리 (2글자씩)
+            const fragments = [];
+            const cleanInput = complexFilter.replace(/[\s\-_·\(\)]/g, '').toLowerCase();
+            for (let i = 0; i < cleanInput.length - 1; i++) {
+              fragments.push(cleanInput.substring(i, i + 3)); // 3글자 단위
+            }
+            // 가장 매칭 많은 단지 반환
+            const scored = items.map(item => {
+              const apt = norm(item.단지명);
+              let score = 0;
+              for (const frag of fragments) {
+                if (apt.includes(frag)) score++;
+              }
+              return { item, score };
+            }).filter(x => x.score >= 2);
+            scored.sort((a, b) => b.score - a.score);
+            filtered = scored.map(x => x.item);
+          }
         }
 
         // 거래일 최신순 정렬

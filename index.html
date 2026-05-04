@@ -2914,7 +2914,7 @@ async function runRealEstate() {
 
     const headerCols = isRent
       ? `<th>거래일</th><th>구분</th><th>단지명</th><th>법정동</th><th>면적</th><th>층</th><th>보증금</th><th>월세</th>`
-      : `<th>거래일</th><th>단지명</th><th>법정동</th><th>면적</th><th>층</th><th>거래금액</th><th>건축</th><th>해제</th>`;
+      : `<th>거래일</th><th>단지명</th><th>동</th><th>법정동</th><th>면적</th><th>층</th><th>거래금액</th><th>건축</th><th>해제</th>`;
 
     const rows = data.deals.map(d => {
       const date = `${d.계약년}.${(d.계약월||'').padStart(2,'0')}.${(d.계약일||'').padStart(2,'0')}`;
@@ -2934,6 +2934,7 @@ async function runRealEstate() {
       return `<tr style="${d.해제여부?'opacity:.5;text-decoration:line-through':''}">
         <td>${date}</td>
         <td><b>${d.단지명||'-'}</b></td>
+        <td style="text-align:center">${(d.동||'').trim() || '-'}</td>
         <td>${d.법정동||'-'}</td>
         <td>${area}</td>
         <td>${d.층||'-'}</td>
