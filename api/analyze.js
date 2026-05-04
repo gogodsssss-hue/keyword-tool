@@ -1443,46 +1443,26 @@ ${postTitles}` }]
           }
         }
 
-        // 단지명 필터 (스마트 매칭)
+        // 단지명 필터 (스마트 정규화 + 엄격 매칭)
         let filtered = items;
         if (complexFilter && complexFilter.trim()) {
-          // 강력 정규화: 브랜드 접두어 제거 + 영문/한글 통일 + 공백 제거
-          const builderPrefixes = ['대림','현대','삼성','포스코','롯데','두산','sk','SK','GS','지에스','LG','엘지','대우','한화','코오롱','쌍용','금호','동부','한진','한신','우방','효성','일성','동원','진흥','대원','반도','신동아','풍림','신영','대광','우림','한라','벽산','보광','중앙','동문','경동','두진','진아','동아','동성','한승','신안','보성','두레','삼호','삼익','삼환','삼풍','삼부','삼익','jw','동일','동도','월드','코아','유진','한솔','대명','효원','유원','유성','대주','대성','거산','대건','삼익','삼한','보영','유토','이수','계룡','범양','새한','신화','명지','동화','강산','일성','갑을','금성','인성','형제','중흥','부영','이지','아이에스','IS','sl','한진','신원','신호','두산','진성'];
+          // 영문/한글 표기 통일만 (브랜드 접두어 제거 X - 단지 이름 일부일 수 있어서)
           const norm = s => {
             let r = (s || '').toLowerCase().replace(/[\s\-_·\(\)\[\]]/g, '');
-            // 영문 'e'와 한글 '이' 통일 (앞 글자가 영문이면 e로)
-            r = r.replace(/^이(편한|아이파크|편한세상)/, 'e$1');
-            r = r.replace(/^e(편한|아이파크|편한세상)/, 'e$1');
-            // 브랜드 접두어 제거
-            for (const p of builderPrefixes) {
-              const pl = p.toLowerCase();
-              if (r.startsWith(pl)) r = r.substring(pl.length);
-            }
+            // 'e편한세상' = 'E편한세상' = '이편한세상' 통일
+            r = r.replace(/이편한/g, 'e편한');
+            r = r.replace(/e편한/g, 'e편한');
+            // '대림이편한세상' → 'e편한세상' (대림 빌더명 제거, 이→e)
+            r = r.replace(/^대림e편한/, 'e편한');
             return r;
           };
           const f = norm(complexFilter);
-          // 1차: 정규화 부분일치
+          // 양방향 부분일치 (단, 빈 문자열 제외)
           filtered = items.filter(i => {
             const apt = norm(i.단지명);
+            if (!apt || !f) return false;
             return apt.includes(f) || f.includes(apt);
           });
-          // 2차: fragment 매칭 (2글자 단위)
-          if (!filtered.length) {
-            const fragments = [];
-            for (let i = 0; i < f.length - 1; i++) {
-              fragments.push(f.substring(i, i + 2));
-            }
-            const scored = items.map(item => {
-              const apt = norm(item.단지명);
-              let score = 0;
-              for (const frag of fragments) {
-                if (apt.includes(frag)) score++;
-              }
-              return { item, score };
-            }).filter(x => x.score >= Math.max(2, Math.floor(fragments.length * 0.5)));
-            scored.sort((a, b) => b.score - a.score);
-            filtered = scored.map(x => x.item);
-          }
         }
 
         // 거래일 최신순 정렬
