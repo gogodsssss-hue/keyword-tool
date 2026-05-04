@@ -3009,7 +3009,10 @@ async function runRealEstate() {
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <div class="card-title" style="margin:0">📊 실거래가 ${data.total}건 조회됨 ${complexFilter ? `(필터: "${complexFilter}")` : ''}</div>
-          <button onclick="downloadRealEstateExcel()" style="background:#16a34a;color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:.82rem;font-weight:600;display:flex;align-items:center;gap:5px">📥 엑셀 다운로드</button>
+          <div style="display:flex;gap:6px">
+            <button onclick="loadRealEstateNews()" style="background:#3b82f6;color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:.82rem;font-weight:600;display:flex;align-items:center;gap:5px">📰 부동산 뉴스</button>
+            <button onclick="downloadRealEstateExcel()" style="background:#16a34a;color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:.82rem;font-weight:600;display:flex;align-items:center;gap:5px">📥 엑셀 다운로드</button>
+          </div>
         </div>
         <div style="color:#718096;font-size:.85rem;margin-bottom:14px">${summary} · 거래기간: ${yearMonth.length===4?yearMonth+'년 전체':yearMonth.slice(0,4)+'년 '+parseInt(yearMonth.slice(4,6))+'월'}</div>
         <div style="overflow-x:auto;max-height:600px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:8px">
@@ -3037,6 +3040,66 @@ document.addEventListener('DOMContentLoaded', () => {
     ym.value = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}`;
   }
 });
+
+// 부동산 뉴스 로드
+async function loadRealEstateNews() {
+  const r = window._reLastResult;
+  if (!r) { alert('먼저 실거래가를 조회해주세요.'); return; }
+
+  // 단지명 추출 (Top 5 거래량)
+  const aptCount = {};
+  (r.deals || []).forEach(d => { aptCount[d.단지명] = (aptCount[d.단지명] || 0) + 1; });
+  const topComplexes = Object.entries(aptCount).sort((a,b) => b[1] - a[1]).slice(0, 3).map(x => x[0]);
+
+  // 뉴스 영역 표시
+  let newsBox = document.getElementById('re-news-box');
+  if (!newsBox) {
+    newsBox = document.createElement('div');
+    newsBox.id = 're-news-box';
+    newsBox.style.marginTop = '20px';
+    document.getElementById('re-result').appendChild(newsBox);
+  }
+  newsBox.innerHTML = `<div class="card"><div style="text-align:center;padding:30px;color:#718096"><div class="spinner" style="margin:0 auto 10px"></div>📰 부동산 뉴스 로딩 중...</div></div>`;
+
+  try {
+    const data = await callApi({
+      mode: 'realestate-news',
+      complexes: topComplexes,
+      region: '성복역 수지'
+    });
+
+    const sectionHtml = (title, color, icon, sections) => {
+      const items = sections.flatMap(s => s.news);
+      const unique = [];
+      const seen = new Set();
+      for (const it of items) {
+        if (!seen.has(it.link)) { seen.add(it.link); unique.push(it); }
+      }
+      const list = unique.slice(0, 8);
+      if (!list.length) return '';
+      return `<div style="margin-bottom:18px">
+        <div style="font-weight:700;color:${color};margin-bottom:10px;font-size:.95rem">${icon} ${title}</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${list.map(n => `<a href="${n.link}" target="_blank" style="display:block;padding:10px 14px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;text-decoration:none;color:inherit;transition:all .15s" onmouseover="this.style.borderColor='${color}';this.style.background='#f9fafb'" onmouseout="this.style.borderColor='#e2e8f0';this.style.background='#fff'">
+            <div style="font-weight:600;color:#1a365d;font-size:.86rem;margin-bottom:4px">${n.title}</div>
+            <div style="color:#718096;font-size:.78rem;line-height:1.5">${n.desc}</div>
+            <div style="color:#a0aec0;font-size:.7rem;margin-top:4px">${n.pubDate} · 검색: ${n.query}</div>
+          </a>`).join('')}
+        </div>
+      </div>`;
+    };
+
+    newsBox.innerHTML = `<div class="card">
+      <div class="card-title">📰 부동산 관련 뉴스 (전체 카테고리)</div>
+      ${sectionHtml('주요 단지 뉴스', '#3b82f6', '🏢', data.complexes || [])}
+      ${sectionHtml('지역 뉴스 (성복역/수지)', '#8b5cf6', '📍', data.region || [])}
+      ${sectionHtml('정책 / 규제', '#dc2626', '⚖️', data.policy || [])}
+      ${sectionHtml('시세 / 시장 동향', '#16a34a', '📊', data.market || [])}
+    </div>`;
+  } catch (e) {
+    newsBox.innerHTML = `<div class="card"><div style="color:#c53030;text-align:center;padding:20px">뉴스 로딩 실패: ${e.message}</div></div>`;
+  }
+}
 
 // 엑셀 다운로드
 function downloadRealEstateExcel() {

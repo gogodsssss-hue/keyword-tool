@@ -1355,6 +1355,57 @@ ${postTitles}` }]
       return res.status(200).json({ reply: chatData.content?.[0]?.text || '' });
     }
 
+    // 실거래가 부동산 뉴스 통합 조회
+    else if (mode === 'realestate-news') {
+      const { complexes, region } = req.body;
+      if (!hasNaver) return res.status(400).json({ error: '네이버 검색 API가 설정되지 않았습니다.' });
+
+      const queries = {
+        complexes: (complexes || []).slice(0, 5),
+        region: region ? [
+          `${region} 부동산`,
+          `${region} 아파트`,
+          `${region} 재건축`
+        ] : [],
+        policy: [
+          '부동산 정책 2026',
+          '주택담보대출 금리',
+          '재건축 규제',
+          '부동산 세금 양도세'
+        ],
+        market: [
+          '부동산 시세 전망',
+          '아파트 가격',
+          '청약 시장'
+        ]
+      };
+
+      const strip = s => (s || '').replace(/<[^>]*>/g, '').trim();
+      const fetchNews = async (q) => {
+        const r = await naverNewsSearch(q, NAVER_CID, NAVER_CSEC);
+        if (!r) return [];
+        return r.slice(0, 5).map(item => ({
+          title: strip(item.title),
+          desc: strip(item.description).slice(0, 120),
+          link: item.originallink || item.link,
+          pubDate: item.pubDate ? new Date(item.pubDate).toLocaleDateString('ko-KR') : '',
+          query: q
+        }));
+      };
+
+      // 각 카테고리별 뉴스 조회 (순차 - rate limit 방지)
+      const results = { complexes: [], region: [], policy: [], market: [] };
+      for (const cat of Object.keys(queries)) {
+        for (const q of queries[cat]) {
+          const news = await fetchNews(q);
+          results[cat].push({ query: q, news });
+          await new Promise(r => setTimeout(r, 200));
+        }
+      }
+
+      result = results;
+    }
+
     // 실거래가 조회 (국토교통부 API)
     else if (mode === 'realestate-deals') {
       const { region, dealType, yearMonth, complexFilter, umdFilter } = req.body;
