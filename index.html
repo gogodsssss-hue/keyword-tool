@@ -3026,8 +3026,50 @@ let _reAreaMin = 0, _reAreaMax = 9999;
 let _reAreaExact = null; // 정확한 면적값 필터 (타입 구분용)
 let _reDealsCache = null; // 조회된 전체 데이터 저장
 let _reUniqueAreas = []; // 현재 데이터의 고유 면적값 목록
+let _reCurrentComplex = ''; // 현재 검색 중인 단지명
 
-// ── 타입 라벨 관리 (localStorage 저장) ──
+// ── 단지별 타입 프리셋 (브로슈어 기준, 아파트만) ────────────
+// keys: 단지명에 포함될 키워드 목록
+// labels: { 전용면적(소수): '타입명' }
+const RE_TYPE_PRESETS = [
+  {
+    keys: ['성복역롯데캐슬골드타운', '성복역롯데캐슬', '롯데캐슬골드타운'],
+    labels: {
+      84.91: 'A타입',
+      84.99: 'B타입',
+      99.98: '40평(99㎡)'
+    }
+  },
+  {
+    keys: ['이편한세상수지', 'e편한세상수지', '용인수지e편한'],
+    labels: {
+      84.71: 'D타입',
+      84.88: 'C타입',
+      84.92: 'A·B·F타입',  // 세 타입이 동일 면적
+      84.93: 'G타입',
+      84.94: 'I타입',
+      84.96: 'E타입',
+      84.97: 'H타입',
+      98.89: '98㎡'
+    }
+  }
+];
+
+// 단지명 키워드로 프리셋 라벨 조회 (면적 소수점 ±0.005 허용)
+function _getPresetLabel(area, complexFilter) {
+  const f = (complexFilter || '').replace(/[\s\-]/g, '').toLowerCase();
+  if (!f) return null;
+  for (const preset of RE_TYPE_PRESETS) {
+    if (preset.keys.some(k => f.includes(k.replace(/[\s\-]/g, '').toLowerCase()))) {
+      for (const [pa, label] of Object.entries(preset.labels)) {
+        if (Math.abs(parseFloat(pa) - area) < 0.005) return label;
+      }
+    }
+  }
+  return null;
+}
+
+// ── 타입 라벨 관리 (localStorage — 사용자 직접 수정분) ──
 let _reTypeLabels = {};
 (function _loadTypeLabels() {
   try { _reTypeLabels = JSON.parse(localStorage.getItem('re_type_labels') || '{}'); } catch(e) { _reTypeLabels = {}; }
@@ -3041,25 +3083,27 @@ function _saveTypeLabels() {
 function _getAutoTypeLabel(area) {
   const base = Math.floor(area);
   const group = _reUniqueAreas.filter(a => Math.floor(a) === base).sort((a,b) => a-b);
-  if (group.length < 2) return ''; // 그룹이 1개면 표시 안 함
+  if (group.length < 2) return '';
   const idx = group.indexOf(area);
   return idx >= 0 ? String.fromCharCode(65 + idx) + '타입' : '';
 }
 
+// 우선순위: ① 사용자 직접 수정 ② 브로슈어 프리셋 ③ 자동 A,B,C...
 function _getTypeLabel(area) {
   const key = String(area);
-  return (_reTypeLabels[key] !== undefined && _reTypeLabels[key] !== '')
-    ? _reTypeLabels[key]
-    : _getAutoTypeLabel(area);
+  if (_reTypeLabels[key]) return _reTypeLabels[key];
+  const preset = _getPresetLabel(area, _reCurrentComplex);
+  if (preset) return preset;
+  return _getAutoTypeLabel(area);
 }
 
 function editTypeLabel(area) {
-  const current = _reTypeLabels[String(area)] || _getAutoTypeLabel(area);
+  const current = _reTypeLabels[String(area)] || _getPresetLabel(area, _reCurrentComplex) || _getAutoTypeLabel(area);
   const newLabel = prompt(
-    `${area}㎡ 의 타입명을 입력하세요\n예) A타입  B타입  84C  40평\n\n비워두면 자동 할당(면적 오름차순 A,B,C...)`,
+    `${area}㎡ 의 타입명 수정\n예) A타입  B타입  C타입  40평\n\n비워두면 자동(브로슈어 프리셋 또는 면적 오름차순)으로 돌아갑니다`,
     current
   );
-  if (newLabel === null) return; // 취소
+  if (newLabel === null) return;
   if (newLabel.trim() === '') {
     delete _reTypeLabels[String(area)];
   } else {
@@ -3170,6 +3214,7 @@ async function runRealEstate() {
     const isRent = _reDealType === 'rent';
 
     // 전체 데이터 캐시 (면적 필터용)
+    _reCurrentComplex = complexFilter; // 프리셋 매칭용 현재 단지명 저장
     _reDealsCache = { deals: data.deals, isRent, yearMonth, region, complexFilter };
     window._reLastResult = { deals: data.deals, isRent, yearMonth, region };
     _renderReDeals(_reDealsCache);
