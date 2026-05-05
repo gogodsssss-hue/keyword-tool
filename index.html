@@ -937,8 +937,8 @@ textarea.form-control{resize:vertical;min-height:100px}
   </div>
   <div class="card">
     <div class="form-group">
-      <label>관심 단지/지역 검색어 <span style="font-weight:400;color:var(--text-light)">(여러 개는 | 로 구분)</span></label>
-      <input class="form-control" id="ren-complexes" type="text" placeholder="예: 롯데캐슬골드타운|태영데시앙|이편한세상수지" value="롯데캐슬골드타운|태영데시앙|이편한세상수지">
+      <label>관심 단지/지역 검색어 <span style="font-weight:400;color:var(--text-light)">(여러 개는 , 로 구분)</span></label>
+      <input class="form-control" id="ren-complexes" type="text" placeholder="예: 롯데캐슬골드타운,태영데시앙,이편한세상수지" value="롯데캐슬골드타운,태영데시앙,이편한세상수지">
     </div>
     <div class="form-group">
       <label>지역 검색어</label>
@@ -1099,7 +1099,7 @@ textarea.form-control{resize:vertical;min-height:100px}
       </div>
       <div class="form-group">
         <label>단지명 필터 <span style="font-weight:400;color:var(--text-light)">(여러 개는 | 로 구분)</span></label>
-        <input class="form-control" id="re-complex" type="text" placeholder="예: 롯데캐슬|태영데시앙|이편한세상" value="이편한세상수지">
+        <input class="form-control" id="re-complex" type="text" placeholder="예: 롯데캐슬,태영데시앙,이편한세상" value="이편한세상수지">
       </div>
     </div>
     <div class="form-group">
@@ -3137,9 +3137,9 @@ function setRealEstateType(btn) {
 }
 
 const _rePresets = {
-  main: '롯데캐슬골드타운|태영데시앙|이편한세상수지',
-  seongbok: '성복역롯데캐슬|성복역KCC|성복역 서희|성복역 아이파크|성복역 금호|성복역 리버파크',
-  all: '롯데캐슬골드타운|태영데시앙|이편한세상수지|성복역롯데캐슬|성복역KCC|성복역 서희|성복역 아이파크|성복역 금호|성복역 리버파크',
+  main: '롯데캐슬골드타운,태영데시앙,이편한세상수지',
+  seongbok: '성복역롯데캐슬,성복역KCC,성복역 서희,성복역 아이파크,성복역 금호,성복역 리버파크',
+  all: '롯데캐슬골드타운,태영데시앙,이편한세상수지,성복역롯데캐슬,성복역KCC,성복역 서희,성복역 아이파크,성복역 금호,성복역 리버파크',
   clear: ''
 };
 
@@ -3554,7 +3554,7 @@ function setRenPreset(key) {
 async function runRealEstateNews() {
   const complexesStr = document.getElementById('ren-complexes').value.trim();
   const region = document.getElementById('ren-region').value.trim();
-  const complexes = complexesStr ? complexesStr.split('|').map(s => s.trim()).filter(Boolean).slice(0, 5) : [];
+  const complexes = complexesStr ? complexesStr.split(',').map(s => s.trim()).filter(Boolean).slice(0, 5) : [];
 
   showLoading('ren');
   try {
