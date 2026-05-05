@@ -273,6 +273,11 @@ textarea.form-control{resize:vertical;min-height:100px}
 .re-area-btn:hover{background:#bee3f8;border-color:#63b3ed;color:#1a365d}
 .re-area-btn.active{background:var(--navy);border-color:var(--navy);color:#fff}
 .re-area-btn.active span{color:rgba(255,255,255,.75)}
+.re-type-chip{padding:5px 12px;border:1.5px solid #c3dafe;border-radius:16px;background:#ebf4ff;color:#3730a3;font-size:.77rem;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit}
+.re-type-chip span{font-weight:400;color:#6366f1;font-size:.71rem;margin-left:3px}
+.re-type-chip:hover{background:#c3dafe;border-color:#818cf8;color:#1e1b4b}
+.re-type-chip.active{background:#3730a3;border-color:#3730a3;color:#fff}
+.re-type-chip.active span{color:rgba(255,255,255,.75)}
 
 /* ── SELLER ── */
 .seller-section{margin-bottom:12px}
@@ -3015,13 +3020,34 @@ async function sendSmartChat() {
 // ═══════════════════════════════════════════
 let _reDealType = 'trade';
 let _reAreaMin = 0, _reAreaMax = 9999;
+let _reAreaExact = null; // 정확한 면적값 필터 (타입 구분용)
 let _reDealsCache = null; // 조회된 전체 데이터 저장
 
 function setReAreaFilter(btn, min, max) {
   _reAreaMin = min; _reAreaMax = max;
+  _reAreaExact = null; // 범위 필터 누르면 정확 필터 초기화
   document.querySelectorAll('.re-area-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  if (_reDealsCache) _renderReDeals(_reDealsCache); // 재조회 없이 즉시 필터링
+  // 타입 칩도 비활성화
+  document.querySelectorAll('.re-type-chip').forEach(b => b.classList.remove('active'));
+  if (_reDealsCache) _renderReDeals(_reDealsCache);
+}
+
+function setReAreaExact(btn, area) {
+  if (_reAreaExact === area) {
+    // 다시 누르면 해제
+    _reAreaExact = null;
+    btn.classList.remove('active');
+  } else {
+    _reAreaExact = area;
+    document.querySelectorAll('.re-type-chip').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    // 범위 필터는 전체로 초기화
+    _reAreaMin = 0; _reAreaMax = 9999;
+    document.querySelectorAll('.re-area-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.re-area-btn')?.classList.add('active');
+  }
+  if (_reDealsCache) _renderReDeals(_reDealsCache);
 }
 
 function setRealEstateType(btn) {
@@ -3105,19 +3131,43 @@ async function runRealEstate() {
 }
 
 function _renderReDeals({ deals, isRent, yearMonth, region, complexFilter }) {
-  // 면적 필터 적용
+  // ── 면적 필터 적용 ──────────────────────────────
+  // 정확 면적 필터(타입 구분) 우선, 없으면 범위 필터
   const filtered = deals.filter(d => {
     const area = parseFloat(d.전용면적) || 0;
+    if (_reAreaExact !== null) return area === _reAreaExact;
     return area >= _reAreaMin && area < _reAreaMax;
   });
 
-  const areaLabel = _reAreaMax === 9999 && _reAreaMin === 0 ? ''
+  // ── 고유 면적값 추출 (타입 칩용) ──────────────────
+  const areaCountMap = {};
+  deals.forEach(d => {
+    const a = parseFloat(d.전용면적);
+    if (!isNaN(a)) areaCountMap[a] = (areaCountMap[a] || 0) + 1;
+  });
+  const uniqueAreas = Object.keys(areaCountMap).map(Number).sort((a, b) => a - b);
+
+  // 타입 칩 HTML (고유 면적값이 2개 이상일 때만 표시)
+  const typeChipsHtml = uniqueAreas.length > 1 ? `
+    <div style="margin-bottom:12px">
+      <div style="font-size:.75rem;color:#718096;font-weight:600;margin-bottom:6px">🔍 면적(타입)별 필터 — 클릭하면 해당 타입만 보기</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${uniqueAreas.map(a => `
+          <button class="re-type-chip${_reAreaExact === a ? ' active' : ''}"
+            onclick="setReAreaExact(this, ${a})">
+            ${a}㎡ <span>${areaCountMap[a]}건</span>
+          </button>`).join('')}
+      </div>
+    </div>` : '';
+
+  const areaLabel = _reAreaExact !== null ? ` · ${_reAreaExact}㎡ 타입`
+    : _reAreaMax === 9999 && _reAreaMin === 0 ? ''
     : _reAreaMin === 0 ? ` · ~${_reAreaMax}㎡`
     : _reAreaMax === 9999 ? ` · ${_reAreaMin}㎡+`
     : ` · ${_reAreaMin}~${_reAreaMax}㎡`;
 
   if (!filtered.length) {
-    showResult('re', `<div class="card"><div style="text-align:center;padding:30px;color:#718096">📭 해당 면적 조건의 데이터가 없습니다.<br><small>전체 ${deals.length}건 중 해당 없음${areaLabel}</small></div></div>`);
+    showResult('re', `<div class="card">${typeChipsHtml}<div style="text-align:center;padding:30px;color:#718096">📭 해당 면적 조건의 데이터가 없습니다.<br><small>전체 ${deals.length}건 중 해당 없음${areaLabel}</small></div></div>`);
     return;
   }
 
@@ -3170,10 +3220,11 @@ function _renderReDeals({ deals, isRent, yearMonth, region, complexFilter }) {
   showResult('re', `
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <div class="card-title" style="margin:0">📊 실거래가 ${deals.length}건 조회됨${areaLabel ? ` (${_reAreaMin===0?'~'+_reAreaMax+'㎡':_reAreaMax===9999?_reAreaMin+'㎡+':_reAreaMin+'~'+_reAreaMax+'㎡'} 필터)` : ''}${complexFilter ? ` · "${complexFilter}"` : ''}</div>
+          <div class="card-title" style="margin:0">📊 실거래가 ${deals.length}건 조회됨${areaLabel}${complexFilter ? ` · "${complexFilter}"` : ''}</div>
           <button onclick="downloadRealEstateExcel()" style="background:#16a34a;color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:.82rem;font-weight:600;display:flex;align-items:center;gap:5px">📥 엑셀 다운로드</button>
         </div>
-        <div style="color:#718096;font-size:.85rem;margin-bottom:14px">${summary} · 거래기간: ${yearMonth.length===4?yearMonth+'년 전체':yearMonth.slice(0,4)+'년 '+parseInt(yearMonth.slice(4,6))+'월'}</div>
+        <div style="color:#718096;font-size:.85rem;margin-bottom:10px">${summary}${_reAreaExact!==null?` · <b style="color:#2b6cb0">${_reAreaExact}㎡ 타입 ${filtered.length}건 표시중</b>`:''} · 거래기간: ${yearMonth.length===4?yearMonth+'년 전체':yearMonth.slice(0,4)+'년 '+parseInt(yearMonth.slice(4,6))+'월'}</div>
+        ${typeChipsHtml}
         <div style="overflow-x:auto;max-height:600px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:8px">
           <table style="width:100%;border-collapse:collapse;font-size:.82rem">
             <thead style="background:#f7fafc;position:sticky;top:0;z-index:1">
