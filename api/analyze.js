@@ -95,7 +95,7 @@ async function naverSearchVolume(keyword, apiKey, secretKey, customerId) {
   try {
     const ts  = Date.now().toString();
     const sig = crypto.createHmac('sha256', secretKey)
-                      .update(`${ts}_GET_/keywordstool`)
+                      .update(`${ts}.GET./keywordstool`)
                       .digest('base64');
     const res = await fetch(
       `${process.env.NAVER_AD_API_BASE_URL || 'https://api.naver.com'}/keywordstool?hintKeywords=${encodeURIComponent(keyword)}&showDetail=1`,
@@ -147,7 +147,7 @@ async function naverRelatedKeywords(hint, apiKey, secretKey, customerId) {
   try {
     const ts  = Date.now().toString();
     const sig = crypto.createHmac('sha256', secretKey)
-                      .update(`${ts}_GET_/keywordstool`)
+                      .update(`${ts}.GET./keywordstool`)
                       .digest('base64');
     const res = await fetch(
       `${process.env.NAVER_AD_API_BASE_URL || 'https://api.naver.com'}/keywordstool?hintKeywords=${encodeURIComponent(hint)}&showDetail=1`,
