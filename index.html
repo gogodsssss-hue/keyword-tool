@@ -278,6 +278,9 @@ textarea.form-control{resize:vertical;min-height:100px}
 .re-type-chip:hover{background:#c3dafe;border-color:#818cf8;color:#1e1b4b}
 .re-type-chip.active{background:#3730a3;border-color:#3730a3;color:#fff}
 .re-type-chip.active span{color:rgba(255,255,255,.75)}
+.re-type-edit{font-size:.7rem;opacity:.5;margin-left:2px;padding:1px 3px;border-radius:4px;transition:opacity .15s}
+.re-type-chip:hover .re-type-edit{opacity:1}
+.re-type-edit:hover{background:rgba(0,0,0,.1)}
 
 /* ── SELLER ── */
 .seller-section{margin-bottom:12px}
@@ -3022,6 +3025,49 @@ let _reDealType = 'trade';
 let _reAreaMin = 0, _reAreaMax = 9999;
 let _reAreaExact = null; // 정확한 면적값 필터 (타입 구분용)
 let _reDealsCache = null; // 조회된 전체 데이터 저장
+let _reUniqueAreas = []; // 현재 데이터의 고유 면적값 목록
+
+// ── 타입 라벨 관리 (localStorage 저장) ──
+let _reTypeLabels = {};
+(function _loadTypeLabels() {
+  try { _reTypeLabels = JSON.parse(localStorage.getItem('re_type_labels') || '{}'); } catch(e) { _reTypeLabels = {}; }
+})();
+
+function _saveTypeLabels() {
+  localStorage.setItem('re_type_labels', JSON.stringify(_reTypeLabels));
+}
+
+// 자동 타입 라벨: 같은 정수 면적 그룹 내에서 오름차순 → A,B,C...
+function _getAutoTypeLabel(area) {
+  const base = Math.floor(area);
+  const group = _reUniqueAreas.filter(a => Math.floor(a) === base).sort((a,b) => a-b);
+  if (group.length < 2) return ''; // 그룹이 1개면 표시 안 함
+  const idx = group.indexOf(area);
+  return idx >= 0 ? String.fromCharCode(65 + idx) + '타입' : '';
+}
+
+function _getTypeLabel(area) {
+  const key = String(area);
+  return (_reTypeLabels[key] !== undefined && _reTypeLabels[key] !== '')
+    ? _reTypeLabels[key]
+    : _getAutoTypeLabel(area);
+}
+
+function editTypeLabel(area) {
+  const current = _reTypeLabels[String(area)] || _getAutoTypeLabel(area);
+  const newLabel = prompt(
+    `${area}㎡ 의 타입명을 입력하세요\n예) A타입  B타입  84C  40평\n\n비워두면 자동 할당(면적 오름차순 A,B,C...)`,
+    current
+  );
+  if (newLabel === null) return; // 취소
+  if (newLabel.trim() === '') {
+    delete _reTypeLabels[String(area)];
+  } else {
+    _reTypeLabels[String(area)] = newLabel.trim();
+  }
+  _saveTypeLabels();
+  if (_reDealsCache) _renderReDeals(_reDealsCache);
+}
 
 function setReAreaFilter(btn, min, max) {
   _reAreaMin = min; _reAreaMax = max;
@@ -3139,28 +3185,33 @@ function _renderReDeals({ deals, isRent, yearMonth, region, complexFilter }) {
     return area >= _reAreaMin && area < _reAreaMax;
   });
 
-  // ── 고유 면적값 추출 (타입 칩용) ──────────────────
+  // ── 고유 면적값 추출 + 전역 변수 업데이트 (타입 라벨용) ──
   const areaCountMap = {};
   deals.forEach(d => {
     const a = parseFloat(d.전용면적);
     if (!isNaN(a)) areaCountMap[a] = (areaCountMap[a] || 0) + 1;
   });
-  const uniqueAreas = Object.keys(areaCountMap).map(Number).sort((a, b) => a - b);
+  _reUniqueAreas = Object.keys(areaCountMap).map(Number).sort((a, b) => a - b);
 
   // 타입 칩 HTML (고유 면적값이 2개 이상일 때만 표시)
-  const typeChipsHtml = uniqueAreas.length > 1 ? `
+  const typeChipsHtml = _reUniqueAreas.length > 1 ? `
     <div style="margin-bottom:12px">
-      <div style="font-size:.75rem;color:#718096;font-weight:600;margin-bottom:6px">🔍 면적(타입)별 필터 — 클릭하면 해당 타입만 보기</div>
+      <div style="font-size:.75rem;color:#718096;font-weight:600;margin-bottom:6px">🔍 면적(타입)별 필터 &nbsp;<span style="font-weight:400;color:#a0aec0">클릭→해당 타입만 보기 &nbsp;·&nbsp; ✏️클릭→타입명 수정</span></div>
       <div style="display:flex;flex-wrap:wrap;gap:6px">
-        ${uniqueAreas.map(a => `
-          <button class="re-type-chip${_reAreaExact === a ? ' active' : ''}"
+        ${_reUniqueAreas.map(a => {
+          const label = _getTypeLabel(a);
+          return `<button class="re-type-chip${_reAreaExact === a ? ' active' : ''}"
             onclick="setReAreaExact(this, ${a})">
-            ${a}㎡ <span>${areaCountMap[a]}건</span>
-          </button>`).join('')}
+            ${a}㎡${label ? ` <b style="color:${_reAreaExact===a?'rgba(255,255,255,.9)':'#3730a3'};font-size:.8rem">${label}</b>` : ''}
+            <span>${areaCountMap[a]}건</span>
+            <span class="re-type-edit" onclick="event.stopPropagation();editTypeLabel(${a})" title="타입명 수정">✏️</span>
+          </button>`;
+        }).join('')}
       </div>
     </div>` : '';
 
-  const areaLabel = _reAreaExact !== null ? ` · ${_reAreaExact}㎡ 타입`
+  const currentLabel = _reAreaExact !== null ? (_getTypeLabel(_reAreaExact) || `${_reAreaExact}㎡`) : '';
+  const areaLabel = _reAreaExact !== null ? ` · ${currentLabel}`
     : _reAreaMax === 9999 && _reAreaMin === 0 ? ''
     : _reAreaMin === 0 ? ` · ~${_reAreaMax}㎡`
     : _reAreaMax === 9999 ? ` · ${_reAreaMin}㎡+`
@@ -3185,7 +3236,11 @@ function _renderReDeals({ deals, isRent, yearMonth, region, complexFilter }) {
 
   const rows = filtered.map(d => {
     const date = `${d.계약년}.${(d.계약월||'').padStart(2,'0')}.${(d.계약일||'').padStart(2,'0')}`;
-    const area = d.전용면적 ? `${d.전용면적}㎡` : '-';
+    const areaNum = parseFloat(d.전용면적);
+    const typeLabel = !isNaN(areaNum) ? _getTypeLabel(areaNum) : '';
+    const area = d.전용면적
+      ? `${d.전용면적}㎡${typeLabel ? `<br><span style="color:#6366f1;font-size:.72rem;font-weight:600">${typeLabel}</span>` : ''}`
+      : '-';
     if (isRent) {
       return `<tr>
         <td>${date}</td>
