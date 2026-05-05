@@ -1111,16 +1111,6 @@ textarea.form-control{resize:vertical;min-height:100px}
         <button type="button" onclick="setRePreset('clear')" style="background:#f3f4f6;border:1.5px solid #9ca3af;color:#374151;padding:7px 14px;border-radius:18px;cursor:pointer;font-size:.78rem;font-weight:600">✖ 필터 비우기</button>
       </div>
     </div>
-    <div class="form-group" style="margin-top:4px">
-      <label>면적 필터 <span style="font-weight:400;color:var(--text-light)">(조회 후 즉시 필터링)</span></label>
-      <div style="display:flex;flex-wrap:wrap;gap:7px" id="re-area-filter-group">
-        <button type="button" class="re-area-btn active" onclick="setReAreaFilter(this,0,9999)">📐 전체</button>
-        <button type="button" class="re-area-btn" onclick="setReAreaFilter(this,0,60)">소형 <span>~60㎡</span></button>
-        <button type="button" class="re-area-btn" onclick="setReAreaFilter(this,60,85)">중소형 <span>60~85㎡</span></button>
-        <button type="button" class="re-area-btn" onclick="setReAreaFilter(this,85,102)">중형 <span>85~102㎡</span></button>
-        <button type="button" class="re-area-btn" onclick="setReAreaFilter(this,102,9999)">대형 <span>102㎡+</span></button>
-      </div>
-    </div>
     <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="runRealEstate()">🏠 실거래가 조회</button>
   </div>
   <div class="loading" id="re-loading"><div class="spinner"></div><div class="loading-text">국토교통부 데이터 조회 중...</div></div>
