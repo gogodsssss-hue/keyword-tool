@@ -1117,58 +1117,6 @@ textarea.form-control{resize:vertical;min-height:100px}
   <div class="result-area" id="re-result"></div>
 </div>
 
-<!-- =================== 키워드 DB =================== -->
-<div class="page" id="page-kw-db">
-  <div class="page-header">
-    <h2>📂 키워드 DB</h2>
-    <p>네이버 키워드 도구에서 엑셀을 받아 저장하면, 마법의 키워드에서 <b>실제 검색량</b>으로 분석합니다.</p>
-  </div>
-  <div class="card">
-    <div class="card-title">📋 사용 방법</div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
-      <div style="background:#ebf8ff;border-radius:10px;padding:12px;text-align:center">
-        <div style="font-size:1.3rem;margin-bottom:4px">1️⃣</div>
-        <div style="font-size:.78rem;font-weight:600;color:#2b6cb0">네이버 광고센터</div>
-        <div style="font-size:.73rem;color:#4a5568;margin-top:3px">ads.naver.com<br>도구 → 키워드 도구</div>
-      </div>
-      <div style="background:#f0fff4;border-radius:10px;padding:12px;text-align:center">
-        <div style="font-size:1.3rem;margin-bottom:4px">2️⃣</div>
-        <div style="font-size:.78rem;font-weight:600;color:#276749">키워드 검색 후 다운로드</div>
-        <div style="font-size:.73rem;color:#4a5568;margin-top:3px">주담대·전세·청약 등<br>전체 다운로드</div>
-      </div>
-      <div style="background:#fffbeb;border-radius:10px;padding:12px;text-align:center">
-        <div style="font-size:1.3rem;margin-bottom:4px">3️⃣</div>
-        <div style="font-size:.78rem;font-weight:600;color:#975a16">여기 업로드</div>
-        <div style="font-size:.73rem;color:#4a5568;margin-top:3px">한 번만 하면<br>영구 저장됨</div>
-      </div>
-    </div>
-    <div id="kw-db-drop"
-         style="border:2px dashed #90cdf4;border-radius:14px;padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s;background:#f7fbff"
-         onclick="document.getElementById('kw-db-file').click()"
-         ondragover="event.preventDefault();this.style.borderColor='#2b6cb0';this.style.background='#ebf8ff'"
-         ondragleave="this.style.borderColor='#90cdf4';this.style.background='#f7fbff'"
-         ondrop="handleKwDbDrop(event)">
-      <div style="font-size:2.5rem;margin-bottom:10px">📂</div>
-      <div style="font-weight:700;color:#2b6cb0;font-size:1rem">여기를 클릭하거나 파일을 드래그하세요</div>
-      <div style="font-size:.82rem;color:#718096;margin-top:8px">엑셀(.xls/.xlsx) 또는 CSV 파일 모두 가능</div>
-      <div style="margin-top:12px;display:inline-block;padding:8px 24px;background:#2b6cb0;color:#fff;border-radius:8px;font-size:.85rem;font-weight:600">📤 파일 선택</div>
-    </div>
-    <input type="file" id="kw-db-file" accept=".csv,.xls,.xlsx" style="display:none" onchange="handleKwDbFile(event)">
-  </div>
-  <div class="card" style="margin-top:0">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <div>
-        <div class="card-title" style="margin:0">💾 저장된 키워드</div>
-        <div id="kw-db-count" style="font-size:.83rem;color:var(--text-mid);margin-top:3px">0개 저장됨</div>
-      </div>
-      <button onclick="clearKwDb()" style="font-size:.75rem;padding:6px 14px;border:1px solid #fc8181;border-radius:8px;color:#c53030;background:#fff5f5;cursor:pointer;font-family:inherit">🗑️ 전체 삭제</button>
-    </div>
-    <input type="text" id="kw-db-search" placeholder="🔍 저장된 키워드 검색..."
-           oninput="renderKwDbTable()"
-           style="width:100%;padding:9px 14px;border:1px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;box-sizing:border-box;margin-bottom:10px">
-    <div id="kw-db-table"></div>
-  </div>
-</div>
 
 </main>
 </div>
@@ -2175,148 +2123,6 @@ async function checkMyRank() {
   } catch(e) { showError('rank', e.message); }
 }
 
-// ═══════════════════════════════════════════
-//  키워드 DB (localStorage)
-// ═══════════════════════════════════════════
-const KW_DB_KEY = 'naver_kw_db_v1';
-
-function loadKwDb() {
-  try { return JSON.parse(localStorage.getItem(KW_DB_KEY) || '[]'); } catch { return []; }
-}
-function saveKwDb(arr) {
-  localStorage.setItem(KW_DB_KEY, JSON.stringify(arr));
-  updateKwDbCount();
-}
-function updateKwDbCount() {
-  const db = loadKwDb();
-  const el = document.getElementById('kw-db-count');
-  if (el) el.textContent = `${db.length.toLocaleString()}개 저장됨`;
-}
-function clearKwDb() {
-  if (!confirm('저장된 키워드를 모두 삭제할까요?')) return;
-  localStorage.removeItem(KW_DB_KEY);
-  updateKwDbCount();
-  renderKwDbTable();
-}
-
-function parseNaverCsv(text) {
-  text = text.replace(/^﻿/, ''); // BOM 제거
-  const lines = text.split(/\r?\n/).filter(l => l.trim());
-  if (lines.length < 2) return [];
-
-  const parseRow = line => {
-    const res = []; let inQ = false, cur = '';
-    for (const ch of line) {
-      if (ch === '"') inQ = !inQ;
-      else if (ch === ',' && !inQ) { res.push(cur.trim()); cur = ''; }
-      else cur += ch;
-    }
-    res.push(cur.trim());
-    return res;
-  };
-
-  const headers = parseRow(lines[0]);
-  const findCol = (...terms) => headers.findIndex(h => terms.some(t => h.replace(/\s/g,'').includes(t)));
-  const kwCol   = findCol('연관키워드','키워드');
-  const pcCol   = findCol('월간검색수_PC','PC검색','PC');
-  const mobCol  = findCol('월간검색수_모바일','모바일검색','모바일');
-  const compCol = findCol('경쟁정도','경쟁');
-  const parseNum = s => { if (!s || s==='-') return 0; return parseInt(String(s).replace(/,/g,''))||0; };
-
-  const results = [];
-  for (let i = 1; i < lines.length; i++) {
-    const cols = parseRow(lines[i]);
-    const keyword = (cols[kwCol>=0?kwCol:0]||'').replace(/^'+|'+$/g,'').trim();
-    if (!keyword || keyword==='연관키워드' || keyword==='키워드') continue;
-    const pc     = parseNum(cols[pcCol>=0?pcCol:1]);
-    const mobile = parseNum(cols[mobCol>=0?mobCol:2]);
-    const competition = compCol>=0 ? cols[compCol] : '';
-    results.push({ keyword, pc, mobile, total: pc+mobile, competition });
-  }
-  return results;
-}
-
-function mergeKwDb(newKws) {
-  const existing = loadKwDb();
-  const map = {};
-  for (const k of existing) map[k.keyword] = k;
-  for (const k of newKws) map[k.keyword] = k;
-  return Object.values(map);
-}
-
-function applyKwDbParsed(parsed) {
-  if (!parsed.length) { alert('키워드를 찾을 수 없어요.\n네이버 키워드 도구에서 받은 파일인지 확인해주세요.'); return; }
-  const merged = mergeKwDb(parsed);
-  saveKwDb(merged);
-  renderKwDbTable();
-  const drop = document.getElementById('kw-db-drop');
-  if (drop) { drop.style.background='#f0fff4'; drop.style.borderColor='#38a169'; setTimeout(()=>{drop.style.background='#f7fbff';drop.style.borderColor='#90cdf4';},2000); }
-  alert(`✅ ${parsed.length.toLocaleString()}개 추가 완료!\n총 ${merged.length.toLocaleString()}개 키워드 저장됨\n\n이제 마법의 키워드에서 실제 검색량으로 분석됩니다!`);
-}
-
-function processKwDbFile(file) {
-  const isExcel = /\.xlsx?$/i.test(file.name);
-  if (isExcel) {
-    // 엑셀 파일 처리 (SheetJS)
-    const reader = new FileReader();
-    reader.onload = e => {
-      try {
-        const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const csvText = XLSX.utils.sheet_to_csv(ws);
-        applyKwDbParsed(parseNaverCsv(csvText));
-      } catch(err) { alert('엑셀 파일 읽기 실패: ' + err.message); }
-    };
-    reader.readAsArrayBuffer(file);
-  } else {
-    // CSV 파일 처리
-    const reader = new FileReader();
-    reader.onload = e => applyKwDbParsed(parseNaverCsv(e.target.result));
-    reader.readAsText(file, 'UTF-8');
-  }
-}
-function handleKwDbFile(e) { if (e.target.files[0]) processKwDbFile(e.target.files[0]); }
-function handleKwDbDrop(e) {
-  e.preventDefault();
-  const drop = document.getElementById('kw-db-drop');
-  if (drop) { drop.style.borderColor='#90cdf4'; drop.style.background='#f7fbff'; }
-  if (e.dataTransfer.files[0]) processKwDbFile(e.dataTransfer.files[0]);
-}
-
-function renderKwDbTable() {
-  const db = loadKwDb();
-  const q = (document.getElementById('kw-db-search')?.value||'').trim();
-  let filtered = q ? db.filter(k=>k.keyword.includes(q)) : db;
-  filtered = filtered.sort((a,b)=>b.total-a.total);
-  const el = document.getElementById('kw-db-table');
-  if (!el) return;
-  if (!filtered.length) {
-    el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-light);font-size:.85rem">${db.length?'검색 결과 없음':'CSV를 업로드하면 여기 표시됩니다'}</div>`;
-    return;
-  }
-  const compColor = c => c==='낮음'?'#22543d':c==='중간'?'#975a16':'#c53030';
-  const rows = filtered.slice(0,200).map(k=>`
-    <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:.82rem">
-      <span style="flex:1;font-weight:500">${escHtml(k.keyword)}</span>
-      <span style="color:#2b6cb0;font-weight:600;min-width:70px;text-align:right">월 ${k.total.toLocaleString()}회</span>
-      <span style="font-size:.73rem;min-width:28px;text-align:right;color:${compColor(k.competition)}">${k.competition||'-'}</span>
-      <button onclick="document.getElementById('magic-topic').value='${k.keyword.replace(/'/g,"\\'")}';switchPage('magic-keyword')"
-        style="font-size:.68rem;padding:2px 8px;border:1px solid #bee3f8;border-radius:6px;background:#ebf8ff;color:#2b6cb0;cursor:pointer;white-space:nowrap;font-family:inherit">분석</button>
-    </div>`).join('');
-  el.innerHTML = `<div style="font-size:.75rem;color:var(--text-light);margin-bottom:8px">${filtered.length.toLocaleString()}개 (최대 200개 표시) · 검색량 높은 순</div>${rows}`;
-}
-
-function searchKwDbForTopic(topic) {
-  const db = loadKwDb();
-  if (!db.length) return [];
-  return db.filter(k => k.keyword.includes(topic) || topic.includes(k.keyword) ||
-    k.keyword.split(' ').some(w=>w.length>=2&&topic.includes(w)) ||
-    topic.split(' ').some(w=>w.length>=2&&k.keyword.includes(w)))
-    .sort((a,b)=>b.total-a.total).slice(0,15);
-}
-
-// 페이지 로드시 DB 카운트 초기화
-document.addEventListener('DOMContentLoaded', () => { updateKwDbCount(); renderKwDbTable(); });
 
 async function runMagicKeyword() {
   const topic = document.getElementById('magic-topic').value.trim();
@@ -2326,42 +2132,6 @@ async function runMagicKeyword() {
   const resultEl = document.getElementById('magic-result');
   loading.classList.add('show');
   resultEl.innerHTML = '';
-
-  // DB에 데이터 있으면 DB 우선 사용
-  const dbMatches = searchKwDbForTopic(topic);
-  if (dbMatches.length >= 3) {
-    try {
-      // 블로그 경쟁 수만 API로 조회
-      const bcData = await callApi({ mode: 'kw-checker', keywords: dbMatches.map(k=>k.keyword) });
-      loading.classList.remove('show');
-      const bcMap = {};
-      for (const r of bcData.rows||[]) bcMap[r.keyword] = r.blogCount;
-
-      const goldenScore = (vol, comp) => {
-        const v=vol||0, c=comp||999999, ratio=v/(c+1);
-        if (ratio>=1&&v>=5000) return 'A+';
-        if (ratio>=0.5&&v>=2000) return 'A';
-        if (ratio>=0.2&&v>=1000) return 'B+';
-        if (ratio>=0.1) return 'B';
-        if (v>=5000) return 'B';
-        if (c<=30000) return 'B';
-        if (c<=150000) return 'C+';
-        return 'C';
-      };
-
-      const keywords = dbMatches.map(k=>({
-        keyword: k.keyword, monthlyPc: k.pc, monthlyMobile: k.mobile, monthlyTotal: k.total,
-        blogCount: bcMap[k.keyword]??null,
-        goldenScore: goldenScore(k.total, bcMap[k.keyword]??null),
-        competition: bcMap[k.keyword]!=null ? (bcMap[k.keyword]<=30000?'낮음':bcMap[k.keyword]<=150000?'중간':'높음') : '조회불가',
-        reason: `월 ${k.total.toLocaleString()}회 · 블로그 ${(bcMap[k.keyword]??0).toLocaleString()}개`,
-        fromDb: true
-      })).sort((a,b)=>{const o={'A+':0,'A':1,'B+':2,'B':3,'C+':4,'C':5};return(o[a.goldenScore]??6)-(o[b.goldenScore]??6);});
-
-      renderMagicResult(keywords, topic, true);
-      return;
-    } catch {}
-  }
 
   try {
     const data = await callApi({ mode: 'golden-keyword', topic });
@@ -2376,14 +2146,14 @@ async function runMagicKeyword() {
       return;
     }
 
-    renderMagicResult(keywords, topic, false);
+    renderMagicResult(keywords, topic);
   } catch(e) {
     loading.classList.remove('show');
     resultEl.innerHTML = `<div style="color:var(--red-text)">오류: ${escHtml(e.message)}</div>`;
   }
 }
 
-function renderMagicResult(keywords, topic, fromDb) {
+function renderMagicResult(keywords, topic) {
   const loading = document.getElementById('magic-loading');
   const resultEl = document.getElementById('magic-result');
   loading.classList.remove('show');
@@ -2391,7 +2161,7 @@ function renderMagicResult(keywords, topic, fromDb) {
   if (!keywords.length) {
     resultEl.innerHTML = `<div style="background:#fff8e1;border:1px solid #f6c90e;border-radius:10px;padding:14px 16px;font-size:.84rem;color:#7d5a00">
       ⚠️ <b>"${escHtml(topic)}"</b> 관련 키워드 데이터가 부족합니다.<br>
-      <span style="font-size:.78rem;color:#a07000;margin-top:4px;display:block">💡 좀 더 짧게 입력하거나, 📂 키워드 DB에 CSV를 먼저 업로드해보세요.</span>
+      <span style="font-size:.78rem;color:#a07000;margin-top:4px;display:block">💡 좀 더 짧게 입력해보세요. 예) "미국금리", "기준금리"</span>
     </div>`;
     return;
   }
@@ -2456,10 +2226,9 @@ function renderMagicResult(keywords, topic, fromDb) {
 
   const topGrade = keywords[0]?.goldenScore;
   resultEl.innerHTML = `
-    <div style="background:${fromDb?'#ebf8ff':'#fffbeb'};border:1px solid ${fromDb?'#90cdf4':'#d4af37'};border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:.82rem;color:${fromDb?'#2b6cb0':'#92400e'}">
-      ${fromDb?'📂 <b>내 키워드 DB</b> 실데이터':'✨ <b>네이버 광고 API</b> 실데이터'} —
+    <div style="background:#fffbeb;border:1px solid #d4af37;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:.82rem;color:#92400e">
+      ✨ <b>네이버 광고 API</b> 실데이터 —
       <b>${escHtml(topic)}</b> 관련 ${keywords.length}개 · 최고 등급: <b>${topGrade}</b>
-      ${fromDb?'':'<span style="font-size:.73rem;opacity:.7;margin-left:6px">(검색량 0이면 서버 IP 제한 — 📂 키워드 DB 사용 권장)</span>'}
     </div>
     ${cards}`;
 }
@@ -2475,38 +2244,11 @@ async function checkRankVolume() {
   resultEl.innerHTML = '';
 
   try {
-    // ① 키워드 DB에서 먼저 조회 (정확 일치 → 포함 일치)
-    const db = loadKwDb();
-    const dbMap = {};
-    keywords.forEach(kw => {
-      const kwLow = kw.toLowerCase().replace(/\s/g,'');
-      // 정확 일치 우선
-      let hit = db.find(d => d.keyword.toLowerCase().replace(/\s/g,'') === kwLow);
-      // 없으면 포함 일치
-      if (!hit) hit = db.find(d => d.keyword.toLowerCase().replace(/\s/g,'').includes(kwLow) || kwLow.includes(d.keyword.toLowerCase().replace(/\s/g,'')));
-      if (hit) dbMap[kw] = hit;
-    });
-
-    const dbHitCount = Object.keys(dbMap).length;
-
-    // ② API로 블로그 경쟁 수 조회 (검색량 0이라도 blogCount는 옴)
+    // API로 검색량 및 블로그 경쟁 수 조회
     const data = await callApi({ mode: 'kw-checker', keywords });
     loading.classList.remove('show');
 
-    // ③ API 결과에 DB 검색량 덮어쓰기
-    const rows = (data.rows || []).map(r => {
-      const dbHit = dbMap[r.keyword];
-      if (dbHit) {
-        r.pc     = dbHit.pc;
-        r.mobile = dbHit.mobile;
-        r.total  = dbHit.total;
-        // 황금도 재계산
-        const ratio = r.blogCount > 0 ? r.total / r.blogCount : 0;
-        r.score = ratio >= 3 ? 'A+' : ratio >= 1 ? 'A' : ratio >= 0.3 ? 'B+' : ratio >= 0.1 ? 'B' : 'C';
-        r._fromDb = true;
-      }
-      return r;
-    });
+    const rows = (data.rows || []);
 
     const maxVol = Math.max(...rows.map(r => r.total || 0), 1);
     const scoreColor = s => ({ 'A+':'#d4af37','A':'#38a169','B+':'#3182ce','B':'#718096','C':'#a0aec0' })[s] || '#a0aec0';
@@ -2516,17 +2258,14 @@ async function checkRankVolume() {
 
     const rowsHtml = rows.map(r => {
       // 바 너비 계산: DB/API 검색량 우선, 없으면 트렌드 점수
-      const pct = r._fromDb || (r.total != null && r.total > 0)
+      const pct = (r.total != null && r.total > 0)
         ? Math.round(((r.total || 0) / maxVol) * 100)
         : hasTrend ? Math.round(((r.trendScore || 0) / maxTrend) * 100) : 0;
 
-      const barColor = r._fromDb ? '#38a169,#68d391'
-        : hasTrend && r.trendScore != null ? '#805ad5,#b794f4'
+      const barColor = hasTrend && r.trendScore != null ? '#805ad5,#b794f4'
         : 'var(--navy-mid),var(--sky)';
 
-      const volText = r._fromDb
-        ? `<span style="font-size:.8rem;color:#276749;font-weight:700">📂 ${(r.total||0).toLocaleString()}회/월</span>`
-        : r.total != null && r.total > 0
+      const volText = r.total != null && r.total > 0
           ? `<span style="font-size:.8rem;color:var(--text-mid)">${r.total.toLocaleString()}회/월</span>`
           : r.trendScore != null
             ? `<span style="font-size:.8rem;color:#805ad5;font-weight:700">📈 트렌드 ${r.trendScore}/100</span>`
@@ -2546,21 +2285,12 @@ async function checkRankVolume() {
           </div>
           <div style="font-size:.75rem;color:var(--text-light);margin-top:3px">
             PC ${(r.pc||0).toLocaleString()} + 모바일 ${(r.mobile||0).toLocaleString()} · 블로그 경쟁 ${r.blogCount !== null ? r.blogCount.toLocaleString() + '개' : '-'}
-            ${r._fromDb ? '<span style="margin-left:6px;background:#c6f6d5;color:#22543d;font-size:.7rem;padding:1px 6px;border-radius:8px;font-weight:600">📂 DB</span>' : ''}
-            ${r.trendScore != null && !r._fromDb ? '<span style="margin-left:6px;background:#e9d8fd;color:#553c9a;font-size:.7rem;padding:1px 6px;border-radius:8px;font-weight:600">📈 DataLab</span>' : ''}
+            ${r.trendScore != null ? '<span style="margin-left:6px;background:#e9d8fd;color:#553c9a;font-size:.7rem;padding:1px 6px;border-radius:8px;font-weight:600">📈 DataLab</span>' : ''}
           </div>
         </div>`;
     }).join('');
 
-    const dbBanner = dbHitCount > 0
-      ? `<div style="margin-bottom:12px;padding:8px 12px;background:#f0fff4;border:1px solid #9ae6b4;border-radius:8px;font-size:.78rem;color:#276749">
-           📂 <b>${dbHitCount}개</b> 키워드는 내 키워드 DB에서 실제 검색량을 가져왔습니다. (초록 바 = DB 데이터)
-         </div>`
-      : `<div style="margin-bottom:12px;padding:8px 12px;background:#fffbeb;border:1px solid #f6e05e;border-radius:8px;font-size:.78rem;color:#744210">
-           💡 키워드 DB에 일치하는 키워드가 없습니다. <b>키워드 DB</b>에 네이버 엑셀을 업로드하면 정확한 검색량을 볼 수 있어요.
-         </div>`;
-
-    resultEl.innerHTML = dbBanner + (rowsHtml || '<div style="color:var(--text-light);font-size:.85rem">결과 없음</div>');
+    resultEl.innerHTML = rowsHtml || '<div style="color:var(--text-light);font-size:.85rem">결과 없음</div>';
   } catch(e) {
     loading.classList.remove('show');
     resultEl.innerHTML = `<div style="color:var(--red-text)">오류: ${escHtml(e.message)}</div>`;
@@ -3690,34 +3420,9 @@ async function runKwChecker() {
   if (!keywords.length) { alert('키워드를 입력해주세요.'); return; }
   showLoading('kwc');
   try {
-    // ① 키워드 DB에서 먼저 조회
-    const db = loadKwDb();
-    const dbMap = {};
-    keywords.forEach(kw => {
-      const kwLow = kw.toLowerCase().replace(/\s/g, '');
-      let hit = db.find(d => d.keyword.toLowerCase().replace(/\s/g, '') === kwLow);
-      if (!hit) hit = db.find(d => {
-        const dLow = d.keyword.toLowerCase().replace(/\s/g, '');
-        return dLow.includes(kwLow) || kwLow.includes(dLow);
-      });
-      if (hit) dbMap[kw] = hit;
-    });
-    const dbHitCount = Object.keys(dbMap).length;
-
-    // ② API로 블로그 경쟁 수 조회
+    // API로 검색량 및 블로그 경쟁 수 조회
     const data = await callApi({ mode: 'kw-checker', keywords });
-    const rows = (data.rows || []).map(r => {
-      const dbHit = dbMap[r.keyword];
-      if (dbHit) {
-        r.pc     = dbHit.pc;
-        r.mobile = dbHit.mobile;
-        r.total  = dbHit.total;
-        const ratio = r.blogCount > 0 ? r.total / r.blogCount : 0;
-        r.score = ratio >= 3 ? 'A+' : ratio >= 1 ? 'A' : ratio >= 0.3 ? 'B+' : ratio >= 0.1 ? 'B' : 'C';
-        r._fromDb = true;
-      }
-      return r;
-    });
+    const rows = (data.rows || []);
 
     const scoreColor = { 'A+':'#22543d','A':'#276749','B+':'#2b6cb0','B':'#4a5568','C':'#9b2c2c' };
     const scoreBg    = { 'A+':'#c6f6d5','A':'#c6f6d5','B+':'#bee3f8','B':'#e2e8f0','C':'#fed7d7' };
@@ -3726,15 +3431,13 @@ async function runKwChecker() {
       const sc = r.score || 'C';
       const volColor  = (r.total||0) >= 10000 ? '#22543d' : (r.total||0) >= 2000 ? '#744210' : '#4a5568';
       const compColor = (r.blogCount||999999) <= 5000 ? '#22543d' : (r.blogCount||999999) <= 30000 ? '#744210' : '#9b2c2c';
-      const volCell = r._fromDb
-        ? `<td style="padding:12px 8px;text-align:right;color:#22543d;font-weight:700">${(r.total||0).toLocaleString()} <span style="font-size:.65rem;background:#c6f6d5;color:#22543d;padding:1px 5px;border-radius:6px">DB</span></td>`
-        : r.total !== null && r.total > 0
+      const volCell = r.total !== null && r.total > 0
           ? `<td style="padding:12px 8px;text-align:right;color:${volColor};font-weight:700">${r.total.toLocaleString()}</td>`
           : r.trendScore != null
             ? `<td style="padding:12px 8px;text-align:right;color:#805ad5;font-weight:700">📈${r.trendScore}<span style="font-size:.65rem;background:#e9d8fd;color:#553c9a;padding:1px 5px;border-radius:6px;margin-left:3px">트렌드</span></td>`
             : `<td style="padding:12px 8px;text-align:right;color:#a0aec0">-</td>`;
       return `
-        <tr style="border-bottom:1px solid var(--border)${r._fromDb ? ';background:#f0fff4' : ''}">
+        <tr style="border-bottom:1px solid var(--border)">
           <td style="padding:12px 8px;font-weight:600">${escHtml(r.keyword)}</td>
           ${volCell}
           <td style="padding:12px 8px;text-align:right;font-size:.78rem;color:var(--text-mid)">${r.pc !== null && r.pc > 0 ? r.pc.toLocaleString() : '-'}</td>
@@ -3746,21 +3449,12 @@ async function runKwChecker() {
         </tr>`;
     }).join('');
 
-    const dbBanner = dbHitCount > 0
-      ? `<div style="padding:8px 18px;background:#f0fff4;border-bottom:1px solid #9ae6b4;font-size:.78rem;color:#276749">
-           📂 <b>${dbHitCount}개</b> 키워드는 내 키워드 DB에서 실제 검색량을 가져왔습니다 (초록 행)
-         </div>`
-      : `<div style="padding:8px 18px;background:#fffbeb;border-bottom:1px solid #f6e05e;font-size:.78rem;color:#744210">
-           💡 키워드 DB에 일치하는 항목이 없습니다. <b>키워드 DB</b> 메뉴에서 네이버 엑셀을 업로드하면 정확한 검색량을 볼 수 있어요.
-         </div>`;
-
     showResult('kwc', `
       <div class="card result-fade" style="margin-top:0;padding:0;overflow:hidden">
         <div style="padding:14px 18px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
           <div class="card-title" style="margin:0">🔬 실데이터 조회 결과</div>
           <span style="font-size:.72rem;color:var(--naver);font-weight:600">🟢 네이버 API · AI 추측 없음</span>
         </div>
-        ${dbBanner}
         <div style="overflow-x:auto">
           <table style="width:100%;border-collapse:collapse;font-size:.85rem">
             <thead>
