@@ -35,17 +35,21 @@
 body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;font-size:14px;line-height:1.6}
 
 /* ── HEADER ── */
-header{background:linear-gradient(135deg,#0d1f3c 0%,#1a365d 50%,#2b6cb0 100%);color:#fff;padding:0 24px;height:58px;display:flex;align-items:center;gap:14px;box-shadow:0 3px 12px rgba(0,0,0,0.25);position:sticky;top:0;z-index:200}
-.header-icon{width:34px;height:34px;background:linear-gradient(135deg,#63b3ed,#3182ce);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 8px rgba(99,179,237,0.4)}
-.header-title{font-size:1.1rem;font-weight:700;letter-spacing:-0.3px}
-.header-sub{font-size:.72rem;opacity:.7;margin-top:1px}
+header{background:linear-gradient(135deg,#0a1628 0%,#1a365d 35%,#2b6cb0 70%,#4299e1 100%);color:#fff;padding:0 32px;height:90px;display:flex;align-items:center;gap:18px;box-shadow:0 4px 24px rgba(0,0,0,0.3);position:sticky;top:0;z-index:200;border-bottom:2px solid rgba(99,179,237,0.3);position:relative;overflow:hidden}
+header::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at top right,rgba(99,179,237,0.15),transparent 60%),radial-gradient(ellipse at bottom left,rgba(159,122,234,0.1),transparent 60%);pointer-events:none}
+header > *{position:relative;z-index:1}
+.header-icon{width:48px;height:48px;background:linear-gradient(135deg,#63b3ed,#3182ce,#9f7aea);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 4px 16px rgba(99,179,237,0.5),inset 0 1px 0 rgba(255,255,255,0.3);position:relative}
+.header-icon::after{content:'';position:absolute;inset:-2px;border-radius:14px;background:linear-gradient(135deg,#63b3ed,#9f7aea);z-index:-1;opacity:.6;filter:blur(8px)}
+.header-title{font-size:1.55rem;font-weight:800;letter-spacing:-0.5px;background:linear-gradient(135deg,#fff 0%,#bee3f8 50%,#90cdf4 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;text-shadow:0 2px 16px rgba(99,179,237,0.4);font-family:'Pretendard','SF Pro Display',-apple-system,sans-serif}
+.header-title .brand{background:linear-gradient(135deg,#fbd38d,#f6ad55,#ed8936);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;font-weight:900;letter-spacing:1px;text-shadow:0 0 20px rgba(246,173,85,0.5);margin-right:8px;font-size:1.15em}
+.header-sub{font-size:.78rem;font-weight:500;opacity:.85;margin-top:4px;letter-spacing:1.5px;text-transform:uppercase;color:#90cdf4}
 .header-badge{margin-left:auto;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.85);font-size:.68rem;padding:3px 10px;border-radius:20px;font-weight:500}
 
 /* ── LAYOUT ── */
 .layout{display:flex;flex:1;min-height:calc(100vh - 58px)}
 
 /* ── SIDEBAR ── */
-.sidebar{width:200px;min-width:200px;background:var(--navy);padding:16px 0 40px;position:sticky;top:58px;height:calc(100vh - 58px);overflow-y:auto;flex-shrink:0}
+.sidebar{width:200px;min-width:200px;background:var(--navy);padding:16px 0 40px;position:sticky;top:90px;height:calc(100vh - 90px);overflow-y:auto;flex-shrink:0}
 .sidebar::-webkit-scrollbar{width:4px}.sidebar::-webkit-scrollbar-track{background:transparent}.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:4px}
 .sidebar-section{padding:16px 14px 6px;font-size:.65rem;font-weight:700;letter-spacing:1.2px;color:rgba(190,227,248,.5);text-transform:uppercase}
 .sidebar-item{display:flex;align-items:center;gap:9px;padding:9px 16px;cursor:pointer;color:#bee3f8;font-size:.8rem;font-weight:500;transition:all .18s;border-left:3px solid transparent;user-select:none}
@@ -358,8 +362,8 @@ textarea.form-control{resize:vertical;min-height:100px}
 <header>
   <div class="header-icon">🔍</div>
   <div>
-    <div class="header-title">블로그 SEO 분석기</div>
-    <div class="header-sub">Blog & Keyword Intelligence Tool</div>
+    <div class="header-title"><span class="brand">IRIR4R</span>블로그 SEO 분석기</div>
+    <div class="header-sub">✨ Blog & Keyword Intelligence Tool</div>
   </div>
   <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
     <button id="copy-blog-btn" onclick="copyMyUrl('https://blog.naver.com/eunb2016', this)"
