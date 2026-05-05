@@ -108,10 +108,17 @@ async function naverSearchVolume(keyword, apiKey, secretKey, customerId) {
         }
       }
     );
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      console.error(`[NaverAd] keywordstool error ${res.status}: ${errText}`);
+      return null;
+    }
     const d = await res.json();
     const list = d.keywordList || [];
-    if (!list.length) return null;
+    if (!list.length) {
+      console.warn(`[NaverAd] keywordList empty for keyword: ${keyword}`);
+      return null;
+    }
 
     const parseVol = v => { if (typeof v === 'number') return v; if (String(v).startsWith('<')) return 5; return Number(v) || 0; };
     const norm = s => (s || '').replace(/\s+/g, '').toLowerCase();
@@ -128,7 +135,10 @@ async function naverSearchVolume(keyword, apiKey, secretKey, customerId) {
     const pc  = parseVol(kw.monthlyPcQcCnt);
     const mob = parseVol(kw.monthlyMobileQcCnt);
     return { pc, mobile: mob, total: pc + mob, compIdx: kw.compIdx, matchedKeyword: kw.relKeyword };
-  } catch { return null; }
+  } catch (e) {
+    console.error(`[NaverAd] exception: ${e.message}`);
+    return null;
+  }
 }
 
 // 네이버 검색광고 API - 연관 키워드 전체 목록
