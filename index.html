@@ -267,6 +267,13 @@ textarea.form-control{resize:vertical;min-height:100px}
 .raw-val{font-size:1.3rem;font-weight:900;color:var(--navy);line-height:1}
 .raw-label{font-size:.66rem;color:var(--text-light);margin-top:4px;font-weight:600}
 
+/* ── 면적 필터 버튼 ── */
+.re-area-btn{padding:6px 14px;border:1.5px solid #bee3f8;border-radius:18px;background:#f0f7ff;color:#2b6cb0;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .18s;font-family:inherit}
+.re-area-btn span{font-weight:400;color:#718096;font-size:.72rem}
+.re-area-btn:hover{background:#bee3f8;border-color:#63b3ed;color:#1a365d}
+.re-area-btn.active{background:var(--navy);border-color:var(--navy);color:#fff}
+.re-area-btn.active span{color:rgba(255,255,255,.75)}
+
 /* ── SELLER ── */
 .seller-section{margin-bottom:12px}
 .seller-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-mid);margin-bottom:8px}
@@ -1096,7 +1103,17 @@ textarea.form-control{resize:vertical;min-height:100px}
         <button type="button" onclick="setRePreset('clear')" style="background:#f3f4f6;border:1.5px solid #9ca3af;color:#374151;padding:7px 14px;border-radius:18px;cursor:pointer;font-size:.78rem;font-weight:600">✖ 필터 비우기</button>
       </div>
     </div>
-    <button class="btn btn-primary" style="width:100%" onclick="runRealEstate()">🏠 실거래가 조회</button>
+    <div class="form-group" style="margin-top:4px">
+      <label>면적 필터 <span style="font-weight:400;color:var(--text-light)">(조회 후 즉시 필터링)</span></label>
+      <div style="display:flex;flex-wrap:wrap;gap:7px" id="re-area-filter-group">
+        <button type="button" class="re-area-btn active" onclick="setReAreaFilter(this,0,9999)">📐 전체</button>
+        <button type="button" class="re-area-btn" onclick="setReAreaFilter(this,0,60)">소형 <span>~60㎡</span></button>
+        <button type="button" class="re-area-btn" onclick="setReAreaFilter(this,60,85)">중소형 <span>60~85㎡</span></button>
+        <button type="button" class="re-area-btn" onclick="setReAreaFilter(this,85,102)">중형 <span>85~102㎡</span></button>
+        <button type="button" class="re-area-btn" onclick="setReAreaFilter(this,102,9999)">대형 <span>102㎡+</span></button>
+      </div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="runRealEstate()">🏠 실거래가 조회</button>
   </div>
   <div class="loading" id="re-loading"><div class="spinner"></div><div class="loading-text">국토교통부 데이터 조회 중...</div></div>
   <div class="result-area" id="re-result"></div>
@@ -2997,6 +3014,15 @@ async function sendSmartChat() {
 //  실거래가 조회 (국토교통부)
 // ═══════════════════════════════════════════
 let _reDealType = 'trade';
+let _reAreaMin = 0, _reAreaMax = 9999;
+let _reDealsCache = null; // 조회된 전체 데이터 저장
+
+function setReAreaFilter(btn, min, max) {
+  _reAreaMin = min; _reAreaMax = max;
+  document.querySelectorAll('.re-area-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (_reDealsCache) _renderReDeals(_reDealsCache); // 재조회 없이 즉시 필터링
+}
 
 function setRealEstateType(btn) {
   document.querySelectorAll('#re-deal-type .platform-btn').forEach(b => b.classList.remove('active'));
@@ -3070,57 +3096,81 @@ async function runRealEstate() {
     }
 
     const isRent = _reDealType === 'rent';
-    const formatMoney = v => {
-      if (!v) return '-';
-      const n = parseInt(String(v).replace(/[^0-9]/g, ''));
-      if (isNaN(n)) return v;
-      if (n >= 10000) return (n/10000).toFixed(2).replace(/\.?0+$/,'') + '억';
-      return n.toLocaleString() + '만';
-    };
 
-    const headerCols = isRent
-      ? `<th>거래일</th><th>구분</th><th>단지명</th><th>동</th><th>법정동</th><th>면적</th><th>층</th><th>보증금</th><th>월세</th>`
-      : `<th>거래일</th><th>단지명</th><th>동</th><th>법정동</th><th>면적</th><th>층</th><th>거래금액</th><th>건축</th><th>해제</th>`;
+    // 전체 데이터 캐시 (면적 필터용)
+    _reDealsCache = { deals: data.deals, isRent, yearMonth, region, complexFilter };
+    window._reLastResult = { deals: data.deals, isRent, yearMonth, region };
+    _renderReDeals(_reDealsCache);
+  } catch (e) { showError('re', e.message); }
+}
 
-    const rows = data.deals.map(d => {
-      const date = `${d.계약년}.${(d.계약월||'').padStart(2,'0')}.${(d.계약일||'').padStart(2,'0')}`;
-      const area = d.전용면적 ? `${d.전용면적}㎡` : '-';
-      if (isRent) {
-        return `<tr>
-          <td>${date}</td>
-          <td><span style="background:${d.구분==='전세'?'#e6fffa':'#fffaf0'};color:${d.구분==='전세'?'#234e52':'#7b341e'};padding:2px 8px;border-radius:10px;font-size:.75rem;font-weight:600">${d.구분}</span></td>
-          <td><b>${d.단지명||'-'}</b></td>
-          <td style="text-align:center">${(d.동||'').trim() || '-'}</td>
-          <td>${d.법정동||'-'}</td>
-          <td>${area}</td>
-          <td>${d.층||'-'}</td>
-          <td><b style="color:#2b6cb0">${formatMoney(d.보증금)}</b></td>
-          <td>${d.월세 && d.월세!=='0' ? formatMoney(d.월세)+'/월' : '-'}</td>
-        </tr>`;
-      }
-      return `<tr style="${d.해제여부?'opacity:.5;text-decoration:line-through':''}">
+function _renderReDeals({ deals, isRent, yearMonth, region, complexFilter }) {
+  // 면적 필터 적용
+  const filtered = deals.filter(d => {
+    const area = parseFloat(d.전용면적) || 0;
+    return area >= _reAreaMin && area < _reAreaMax;
+  });
+
+  const areaLabel = _reAreaMax === 9999 && _reAreaMin === 0 ? ''
+    : _reAreaMin === 0 ? ` · ~${_reAreaMax}㎡`
+    : _reAreaMax === 9999 ? ` · ${_reAreaMin}㎡+`
+    : ` · ${_reAreaMin}~${_reAreaMax}㎡`;
+
+  if (!filtered.length) {
+    showResult('re', `<div class="card"><div style="text-align:center;padding:30px;color:#718096">📭 해당 면적 조건의 데이터가 없습니다.<br><small>전체 ${deals.length}건 중 해당 없음${areaLabel}</small></div></div>`);
+    return;
+  }
+
+  const formatMoney = v => {
+    if (!v) return '-';
+    const n = parseInt(String(v).replace(/[^0-9]/g, ''));
+    if (isNaN(n)) return v;
+    if (n >= 10000) return (n/10000).toFixed(2).replace(/\.?0+$/,'') + '억';
+    return n.toLocaleString() + '만';
+  };
+
+  const headerCols = isRent
+    ? `<th>거래일</th><th>구분</th><th>단지명</th><th>동</th><th>법정동</th><th>면적</th><th>층</th><th>보증금</th><th>월세</th>`
+    : `<th>거래일</th><th>단지명</th><th>동</th><th>법정동</th><th>면적</th><th>층</th><th>거래금액</th><th>건축</th><th>해제</th>`;
+
+  const rows = filtered.map(d => {
+    const date = `${d.계약년}.${(d.계약월||'').padStart(2,'0')}.${(d.계약일||'').padStart(2,'0')}`;
+    const area = d.전용면적 ? `${d.전용면적}㎡` : '-';
+    if (isRent) {
+      return `<tr>
         <td>${date}</td>
+        <td><span style="background:${d.구분==='전세'?'#e6fffa':'#fffaf0'};color:${d.구분==='전세'?'#234e52':'#7b341e'};padding:2px 8px;border-radius:10px;font-size:.75rem;font-weight:600">${d.구분}</span></td>
         <td><b>${d.단지명||'-'}</b></td>
-        <td style="text-align:center">${(d.동||'').trim() || '-'}</td>
+        <td style="text-align:center">${(d.동||'').trim()||'-'}</td>
         <td>${d.법정동||'-'}</td>
         <td>${area}</td>
         <td>${d.층||'-'}</td>
-        <td><b style="color:#c53030;font-size:.95rem">${formatMoney(d.거래금액)}</b></td>
-        <td style="font-size:.78rem;color:#718096">${d.건축년도||'-'}</td>
-        <td style="font-size:.75rem;color:#c53030">${d.해제여부||''}</td>
+        <td><b style="color:#2b6cb0">${formatMoney(d.보증금)}</b></td>
+        <td>${d.월세&&d.월세!=='0'?formatMoney(d.월세)+'/월':'-'}</td>
       </tr>`;
-    }).join('');
+    }
+    return `<tr style="${d.해제여부?'opacity:.5;text-decoration:line-through':''}">
+      <td>${date}</td>
+      <td><b>${d.단지명||'-'}</b></td>
+      <td style="text-align:center">${(d.동||'').trim()||'-'}</td>
+      <td>${d.법정동||'-'}</td>
+      <td>${area}</td>
+      <td>${d.층||'-'}</td>
+      <td><b style="color:#c53030;font-size:.95rem">${formatMoney(d.거래금액)}</b></td>
+      <td style="font-size:.78rem;color:#718096">${d.건축년도||'-'}</td>
+      <td style="font-size:.75rem;color:#c53030">${d.해제여부||''}</td>
+    </tr>`;
+  }).join('');
 
-    const summary = isRent
-      ? `전세 ${data.deals.filter(d=>d.구분==='전세').length}건 · 월세 ${data.deals.filter(d=>d.구분==='월세').length}건`
-      : `매매 ${data.deals.filter(d=>!d.해제여부).length}건${data.deals.filter(d=>d.해제여부).length?` · 해제 ${data.deals.filter(d=>d.해제여부).length}건`:''}`;
+  const summary = isRent
+    ? `전세 ${filtered.filter(d=>d.구분==='전세').length}건 · 월세 ${filtered.filter(d=>d.구분==='월세').length}건`
+    : `매매 ${filtered.filter(d=>!d.해제여부).length}건${filtered.filter(d=>d.해제여부).length?` · 해제 ${filtered.filter(d=>d.해제여부).length}건`:''}`;
 
-    // 다운로드용 글로벌 저장
-    window._reLastResult = { deals: data.deals, isRent, yearMonth, region };
-    showResult('re', `
+  window._reLastResult = { deals: filtered, isRent, yearMonth, region };
+  showResult('re', `
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <div class="card-title" style="margin:0">📊 실거래가 ${data.total}건 조회됨 ${complexFilter ? `(필터: "${complexFilter}")` : ''}</div>
+          <div class="card-title" style="margin:0">📊 실거래가 ${deals.length}건 조회됨${areaLabel ? ` (${_reAreaMin===0?'~'+_reAreaMax+'㎡':_reAreaMax===9999?_reAreaMin+'㎡+':_reAreaMin+'~'+_reAreaMax+'㎡'} 필터)` : ''}${complexFilter ? ` · "${complexFilter}"` : ''}</div>
           <button onclick="downloadRealEstateExcel()" style="background:#16a34a;color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:.82rem;font-weight:600;display:flex;align-items:center;gap:5px">📥 엑셀 다운로드</button>
         </div>
         <div style="color:#718096;font-size:.85rem;margin-bottom:14px">${summary} · 거래기간: ${yearMonth.length===4?yearMonth+'년 전체':yearMonth.slice(0,4)+'년 '+parseInt(yearMonth.slice(4,6))+'월'}</div>
@@ -3135,9 +3185,6 @@ async function runRealEstate() {
         <div style="margin-top:12px;font-size:.7rem;color:#a0aec0;text-align:right">출처: 국토교통부 실거래가 공개시스템</div>
       </div>
     `);
-  } catch (e) {
-    showError('re', e.message);
-  }
 }
 
 // 거래월 기본값 자동 설정 (이번 달 또는 지난달)
