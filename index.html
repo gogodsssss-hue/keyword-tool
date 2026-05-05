@@ -400,7 +400,7 @@ textarea.form-control{resize:vertical;min-height:100px}
   <div class="sidebar-section">부동산</div>
   <div class="sidebar-item" data-page="realestate"><span class="si-icon">🏠</span>실거래가 조회</div>
   <div class="sidebar-item" data-page="re-news"><span class="si-icon">📰</span>부동산 뉴스</div>
-  <div class="sidebar-item" data-page="listings"><span class="si-icon">📒</span>이실장 매물 노트</div>
+  <div class="sidebar-item" data-page="listings"><span class="si-icon">🏠</span><span style="color:#03c75a;font-weight:800;font-style:italic">N</span>aver <b>매물노트</b></div>
 </nav>
 
 <!-- ── MAIN ── -->
@@ -848,11 +848,11 @@ textarea.form-control{resize:vertical;min-height:100px}
   </div>
 </div>
 
-<!-- =================== 이실장 매물 노트 =================== -->
+<!-- =================== Naver부동산 한큐노트 =================== -->
 <div class="page" id="page-listings">
   <div class="page-header">
-    <h2>📒 이실장 매물 노트</h2>
-    <p>이실장이 알려준 매물을 클라우드에 저장. 어디서든 (집/사무실/폰) 접근 가능.</p>
+    <h2>🏠 <span style="color:#03c75a;font-weight:900;font-style:italic;font-size:1.1em">N</span><span style="font-style:italic;color:#03c75a;font-weight:700">aver</span> <span style="background:linear-gradient(135deg,#1a365d,#2b6cb0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:900;letter-spacing:-0.5px;text-shadow:none;filter:drop-shadow(1px 2px 2px rgba(0,0,0,.18))">매물노트</span></h2>
+    <p>네이버 부동산 매물을 클라우드에 저장. 어디서든 (집/사무실/폰) 접근 가능.</p>
   </div>
   <div class="card">
     <div class="card-title">⚡ 빠른 입력 (카톡 메시지 그대로 붙여넣기)</div>
@@ -3339,7 +3339,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ═══════════════════════════════════════════
-//  이실장 매물 노트 (Vercel KV)
+//  Naver부동산 한큐노트 (Vercel KV)
 // ═══════════════════════════════════════════
 let _allListings = [];
 
@@ -3431,27 +3431,28 @@ async function quickAddListing() {
 
   try {
     const data = await callApi({ mode: 'listing-parse', text });
-    const listing = data.listing;
-    if (!listing.단지명) {
+    const listings = data.listings || (data.listing ? [data.listing] : []);
+    if (!listings.length || !listings[0].단지명) {
       alert('단지명을 찾을 수 없어요. 메시지를 다시 확인하세요.');
       return;
     }
     // 미리보기 확인
-    const preview = `📋 분석 결과:\n\n` +
-      `단지: ${listing.단지명}\n` +
-      `동/호수: ${listing.동||'-'}동 ${listing.호수||'-'}호\n` +
-      `거래: ${listing.거래유형||'-'}\n` +
-      `평형: ${listing.평형||'-'} / ${listing.층||'-'}층\n` +
-      `가격: ${listing.가격||'-'}만원\n` +
-      (listing.월세 ? `월세: ${listing.월세}만원\n` : '') +
-      `메모: ${listing.메모||'-'}\n\n` +
-      `저장하시겠습니까?`;
+    const preview = `📋 분석 결과 (${listings.length}건):\n\n` +
+      listings.map((l, i) =>
+        `[${i+1}] ${l.단지명} ${l.동||'-'}동 ${l.호수||'-'}호\n` +
+        `    ${l.거래유형||'-'} / ${l.평형||'-'} / ${l.층||'-'}층 / ${l.가격||'-'}만원` +
+        (l.월세 ? ` / 월세 ${l.월세}만` : '') +
+        (l.메모 ? `\n    메모: ${l.메모}` : '')
+      ).join('\n\n') +
+      `\n\n저장하시겠습니까?`;
     if (!confirm(preview)) return;
 
-    await callApi({ mode: 'listing-add', listing });
+    for (const listing of listings) {
+      await callApi({ mode: 'listing-add', listing });
+    }
     document.getElementById('lst-quick').value = '';
     await loadListings();
-    alert('✅ 저장 완료!');
+    alert(`✅ ${listings.length}건 저장 완료!`);
   } catch (e) {
     alert('오류: ' + e.message);
   } finally {

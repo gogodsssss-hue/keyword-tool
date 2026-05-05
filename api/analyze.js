@@ -1359,9 +1359,10 @@ ${postTitles}` }]
     else if (mode === 'listing-parse') {
       const text = req.body.text || '';
       if (!text.trim()) return res.status(400).json({ error: '메시지를 입력해주세요.' });
-      const parsed = await claude(CLAUDE_KEY,
-        `한국 부동산 매물 메시지에서 정보를 추출하는 전문가. 순수 JSON만 반환.
-{"단지명":"","동":"","호수":"","거래유형":"매매|전세|월세","평형":"","층":"","가격":"","월세":"","메모":""}
+      const rawParsed = await claude(CLAUDE_KEY,
+        `한국 부동산 매물 메시지에서 정보를 추출하는 전문가. 마크다운 없이 순수 JSON 배열만 반환.
+반드시 배열 형식: [{"단지명":"","동":"","호수":"","거래유형":"매매|전세|월세","평형":"","층":"","가격":"","월세":"","메모":""}]
+여러 매물이면 배열에 여러 개 넣기.
 규칙:
 - 단지명: 정확히 추출 (롯데캐슬골드타운, e편한세상수지 등)
 - 동/호수: 숫자만 (105동→"105", 2503호→"2503")
@@ -1372,9 +1373,18 @@ ${postTitles}` }]
 - 월세: 만원 단위 숫자만
 - 메모: 특이사항/조건/연락처 등 나머지 정보`,
         text,
-        500
+        800
       );
-      result = { listing: parsed };
+      // 마크다운 코드블록 제거 후 JSON 파싱
+      let listingJson;
+      try {
+        const clean = rawParsed.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+        listingJson = JSON.parse(clean);
+        if (!Array.isArray(listingJson)) listingJson = [listingJson];
+      } catch(e) {
+        return res.status(500).json({ error: 'JSON 파싱 실패: ' + rawParsed });
+      }
+      result = { listings: listingJson };
     }
 
     else if (mode === 'listing-list' || mode === 'listing-add' || mode === 'listing-delete' || mode === 'listing-update') {
