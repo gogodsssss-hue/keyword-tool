@@ -1,0 +1,3641 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>블로그 SEO 분석기</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&display=swap');
+
+:root {
+  --navy-deep: #0d1f3c;
+  --navy: #1a365d;
+  --navy-mid: #2b6cb0;
+  --navy-light: #3182ce;
+  --sky: #63b3ed;
+  --sky-pale: #bee3f8;
+  --bg: #eef2f7;
+  --bg-card: #ffffff;
+  --text: #1a202c;
+  --text-mid: #4a5568;
+  --text-light: #718096;
+  --border: #e2e8f0;
+  --red-bg: #fed7d7; --red-text: #742a2a;
+  --yellow-bg: #fefcbf; --yellow-text: #744210;
+  --green-bg: #c6f6d5; --green-text: #22543d;
+  --gold-bg: #fef3c7; --gold-text: #92400e;
+  --naver: #03c75a; --naver-dark: #028a3d;
+  --tistory: #ff6900; --tistory-dark: #cc5500;
+  --radius: 14px;
+  --shadow: 0 2px 10px rgba(0,0,0,0.07);
+  --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans KR',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;font-size:14px;line-height:1.6}
+
+/* ── HEADER ── */
+header{background:linear-gradient(135deg,#0a1628 0%,#1a365d 35%,#2b6cb0 70%,#4299e1 100%);color:#fff;padding:0 32px;height:90px;display:flex;align-items:center;gap:18px;box-shadow:0 4px 24px rgba(0,0,0,0.3);position:sticky;top:0;z-index:200;border-bottom:2px solid rgba(99,179,237,0.3);position:relative;overflow:hidden}
+header::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at top right,rgba(99,179,237,0.15),transparent 60%),radial-gradient(ellipse at bottom left,rgba(159,122,234,0.1),transparent 60%);pointer-events:none}
+header > *{position:relative;z-index:1}
+.header-icon{width:48px;height:48px;background:linear-gradient(135deg,#63b3ed,#3182ce,#9f7aea);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 4px 16px rgba(99,179,237,0.5),inset 0 1px 0 rgba(255,255,255,0.3);position:relative}
+.header-icon::after{content:'';position:absolute;inset:-2px;border-radius:14px;background:linear-gradient(135deg,#63b3ed,#9f7aea);z-index:-1;opacity:.6;filter:blur(8px)}
+.header-title{font-size:1.55rem;font-weight:800;letter-spacing:-0.5px;background:linear-gradient(135deg,#fff 0%,#bee3f8 50%,#90cdf4 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;text-shadow:0 2px 16px rgba(99,179,237,0.4);font-family:'Pretendard','SF Pro Display',-apple-system,sans-serif}
+.header-title .brand{background:linear-gradient(135deg,#fbd38d,#f6ad55,#ed8936);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;font-weight:900;letter-spacing:1px;text-shadow:0 0 20px rgba(246,173,85,0.5);margin-right:8px;font-size:1.15em}
+.header-sub{font-size:.78rem;font-weight:500;opacity:.85;margin-top:4px;letter-spacing:1.5px;text-transform:uppercase;color:#90cdf4}
+.header-badge{margin-left:auto;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.85);font-size:.68rem;padding:3px 10px;border-radius:20px;font-weight:500}
+
+/* ── LAYOUT ── */
+.layout{display:flex;flex:1;min-height:calc(100vh - 58px)}
+
+/* ── SIDEBAR ── */
+.sidebar{width:200px;min-width:200px;background:var(--navy);padding:16px 0 40px;position:sticky;top:90px;height:calc(100vh - 90px);overflow-y:auto;flex-shrink:0}
+.sidebar::-webkit-scrollbar{width:4px}.sidebar::-webkit-scrollbar-track{background:transparent}.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:4px}
+.sidebar-section{padding:16px 14px 6px;font-size:.65rem;font-weight:700;letter-spacing:1.2px;color:rgba(190,227,248,.5);text-transform:uppercase}
+.sidebar-item{display:flex;align-items:center;gap:9px;padding:9px 16px;cursor:pointer;color:#bee3f8;font-size:.8rem;font-weight:500;transition:all .18s;border-left:3px solid transparent;user-select:none}
+.sidebar-item:hover{background:rgba(255,255,255,.07);color:#fff}
+.sidebar-item.active{background:rgba(255,255,255,.1);color:#fff;border-left-color:#63b3ed;font-weight:600}
+.sidebar-item .si-icon{width:20px;text-align:center;font-size:14px;flex-shrink:0}
+
+/* ── MAIN ── */
+main{flex:1;padding:28px;overflow-y:auto;max-width:900px}
+.page{display:none}.page.active{display:block}
+
+/* ── PAGE HEADER ── */
+.page-header{margin-bottom:22px}
+.page-header h2{font-size:1.35rem;font-weight:700;color:var(--navy);letter-spacing:-0.4px}
+.page-header p{color:var(--text-mid);font-size:.82rem;margin-top:4px}
+
+/* ── CARD ── */
+.card{background:var(--bg-card);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;margin-bottom:18px;border:1px solid rgba(0,0,0,.04)}
+.card-title{font-size:.8rem;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card-title::before{content:'';width:3px;height:14px;background:var(--navy-mid);border-radius:2px;display:block}
+
+/* ── FORM ── */
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:.8rem;font-weight:600;color:var(--navy);margin-bottom:6px}
+.form-control{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:.87rem;font-family:inherit;color:var(--text);background:#fff;transition:border .2s,box-shadow .2s;outline:none}
+.form-control:focus{border-color:var(--navy-light);box-shadow:0 0 0 3px rgba(49,130,206,.12)}
+textarea.form-control{resize:vertical;min-height:100px}
+
+/* ── PLATFORM BUTTONS ── */
+.platform-group{display:flex;gap:8px;flex-wrap:wrap}
+.platform-btn{padding:7px 16px;border:1.5px solid var(--border);border-radius:20px;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .18s;background:#fff;color:var(--text-mid);font-family:inherit}
+.platform-btn:hover{border-color:var(--navy-mid);color:var(--navy-mid)}
+.platform-btn.active{background:var(--navy);border-color:var(--navy);color:#fff}
+.platform-btn.naver.active{background:var(--naver);border-color:var(--naver);color:#fff}
+.platform-btn.tistory.active{background:var(--tistory);border-color:var(--tistory);color:#fff}
+
+/* ── BUTTON ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:11px 24px;border-radius:9px;border:none;font-family:inherit;font-size:.87rem;font-weight:700;cursor:pointer;transition:all .2s;outline:none;user-select:none}
+.btn-primary{background:linear-gradient(135deg,var(--navy),var(--navy-mid));color:#fff;box-shadow:0 3px 12px rgba(26,54,93,.3)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 5px 16px rgba(26,54,93,.4)}
+.btn-primary:active{transform:translateY(0)}
+.btn-primary:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.btn-sm{padding:6px 14px;font-size:.75rem;border-radius:6px}
+.btn-outline{background:#fff;border:1.5px solid var(--border);color:var(--text-mid)}
+.btn-outline:hover{border-color:var(--navy-mid);color:var(--navy-mid)}
+.btn-copy{background:var(--bg);border:1px solid var(--border);color:var(--text-mid);padding:5px 12px;font-size:.73rem;border-radius:6px;cursor:pointer;font-family:inherit;font-weight:600;transition:all .15s}
+.btn-copy:hover{background:var(--navy);color:#fff;border-color:var(--navy)}
+.btn-copy.copied{background:var(--green-bg);color:var(--green-text);border-color:var(--green-text)}
+
+/* ── LOADING ── */
+.loading{display:none;flex-direction:column;align-items:center;justify-content:center;padding:48px;gap:14px}
+.loading.show{display:flex}
+.spinner{width:42px;height:42px;border:3px solid var(--border);border-top-color:var(--navy-mid);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{color:var(--text-mid);font-size:.83rem;font-weight:500}
+
+/* ── ERROR ── */
+.error-box{background:#fff5f5;border:1.5px solid #fc8181;border-radius:10px;padding:16px 18px;color:#c53030;font-size:.83rem;display:flex;align-items:flex-start;gap:10px;margin-bottom:16px}
+.error-box::before{content:'⚠️';font-size:16px;flex-shrink:0;margin-top:1px}
+
+/* ── RESULT AREA ── */
+.result-area{display:none}.result-area.show{display:block}
+.result-fade{animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:700}
+.badge-high{background:var(--red-bg);color:var(--red-text)}
+.badge-mid{background:var(--yellow-bg);color:var(--yellow-text)}
+.badge-low{background:var(--green-bg);color:var(--green-text)}
+.badge-gold{background:var(--gold-bg);color:var(--gold-text)}
+.badge-naver{background:#e8fff3;color:var(--naver-dark);border:1px solid #b7efd2}
+.badge-tistory{background:#fff3eb;color:var(--tistory-dark);border:1px solid #ffd0a8}
+.badge-blue{background:#ebf8ff;color:#2c5282;border:1px solid #bee3f8}
+.badge-purple{background:#faf5ff;color:#553c9a;border:1px solid #e9d8fd}
+
+/* ── LEVEL VISUALIZATION ── */
+.level-display{text-align:center;padding:24px 0 16px}
+.level-badge-big{width:80px;height:80px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:2.2rem;font-weight:900;color:#fff;box-shadow:0 6px 24px rgba(0,0,0,.2);margin-bottom:12px;position:relative}
+.level-badge-big::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:3px solid currentColor;opacity:.3}
+.level-label{font-size:1rem;font-weight:700;color:var(--navy);margin-bottom:4px}
+.level-reason{font-size:.8rem;color:var(--text-mid);max-width:340px;margin:0 auto}
+.level-scale{display:flex;gap:5px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+.level-dot{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:rgba(255,255,255,.7);cursor:default;transition:transform .15s;position:relative}
+.level-dot.current{transform:scale(1.3);color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.level-dot.current::after{content:'▼';position:absolute;top:-14px;font-size:.6rem;color:var(--navy)}
+
+/* ── SCORES GRID ── */
+.scores-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.score-card{background:linear-gradient(135deg,#f7faff,#fff);border:1px solid #e2ecf9;border-radius:11px;padding:14px;text-align:center;transition:transform .15s}
+.score-card:hover{transform:translateY(-2px)}
+.score-val{font-size:1.5rem;font-weight:900;color:var(--navy);line-height:1}
+.score-label{font-size:.7rem;color:var(--text-mid);margin-top:4px;font-weight:600}
+.score-sub{font-size:.68rem;color:var(--text-light);margin-top:3px}
+
+/* ── TIPS LIST ── */
+.tips-list{list-style:none;display:flex;flex-direction:column;gap:8px}
+.tips-list li{display:flex;align-items:flex-start;gap:10px;font-size:.83rem;color:var(--text-mid);line-height:1.55}
+.tips-list li::before{content:'✦';color:var(--navy-mid);flex-shrink:0;margin-top:2px;font-size:.7rem}
+
+/* ── KEYWORD CARDS ── */
+.keyword-card{background:linear-gradient(135deg,#f0f7ff,#fff8e1);border:1px solid #d4e8ff;border-radius:11px;padding:14px 16px;transition:all .2s;cursor:default}
+.keyword-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.09)}
+.kc-word{font-size:1rem;font-weight:700;color:var(--navy);margin-bottom:6px}
+.kc-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.kc-score{font-size:.72rem;background:var(--gold-bg);color:var(--gold-text);padding:2px 8px;border-radius:10px;font-weight:700}
+.kc-reason{font-size:.73rem;color:var(--text-mid);margin-top:6px;line-height:1.45}
+
+/* ── TAG CLOUD ── */
+.tag-cloud{display:flex;flex-wrap:wrap;gap:7px}
+.tag{padding:5px 12px;background:var(--bg);border:1px solid var(--border);border-radius:16px;font-size:.77rem;font-weight:600;color:var(--text-mid);cursor:pointer;transition:all .18s;user-select:none}
+.tag:hover{background:var(--navy);color:#fff;border-color:var(--navy);transform:translateY(-1px)}
+.tag.longtail:hover{background:var(--navy-mid);border-color:var(--navy-mid);color:#fff}
+
+/* ── TABLE ── */
+.data-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.data-table th{background:linear-gradient(135deg,#1a365d,#2b6cb0);color:#fff;padding:10px 13px;text-align:left;font-weight:600;font-size:.75rem;letter-spacing:.4px}
+.data-table th:first-child{border-radius:8px 0 0 0}.data-table th:last-child{border-radius:0 8px 0 0}
+.data-table td{padding:10px 13px;border-bottom:1px solid var(--border);vertical-align:middle}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:#f7faff}
+.rank-num{width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700}
+.rank-num.top3{background:linear-gradient(135deg,#d4af37,#f0c040)}
+.trend-badge{padding:3px 9px;border-radius:10px;font-size:.68rem;font-weight:700}
+.trend-up{background:#e8fff3;color:#22543d}.trend-new{background:#ebf8ff;color:#2c5282}.trend-keep{background:#f7faff;color:#2d3748}
+
+/* ── MORPHEME BAR ── */
+.morpheme-bars{display:flex;flex-direction:column;gap:8px}
+.morpheme-row{display:flex;align-items:center;gap:10px;font-size:.8rem}
+.morpheme-word{width:80px;font-weight:600;color:var(--navy);text-align:right;flex-shrink:0}
+.morpheme-bar-wrap{flex:1;background:var(--bg);border-radius:4px;overflow:hidden;height:20px;position:relative}
+.morpheme-bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--navy),var(--navy-mid));transition:width .6s ease;display:flex;align-items:center;padding:0 8px}
+.morpheme-bar-val{font-size:.67rem;color:rgba(255,255,255,.9);font-weight:700}
+.morpheme-pos{flex-shrink:0;font-size:.68rem;padding:2px 7px;border-radius:8px}
+.pos-noun{background:#e8f4fd;color:#1a5276}.pos-verb{background:#e8f8e8;color:#1a5a1a}.pos-adj{background:#fdf2e8;color:#7d4608}
+
+/* ── SENTIMENT ── */
+.sentiment-card{display:flex;align-items:center;gap:16px;padding:16px;background:linear-gradient(135deg,#f0f7ff,#f7f0ff);border-radius:11px;border:1px solid #d4e8ff}
+.sentiment-emoji{font-size:2.4rem}
+.sentiment-info .s-label{font-size:.72rem;color:var(--text-mid);font-weight:600}
+.sentiment-info .s-val{font-size:1.1rem;font-weight:800;color:var(--navy);margin-top:2px}
+.sentiment-info .s-detail{font-size:.77rem;color:var(--text-mid);margin-top:3px}
+
+/* ── COMBINER OUTPUT ── */
+.combiner-block{background:var(--bg);border-radius:9px;padding:14px;font-size:.82rem;color:var(--text);font-family:monospace;word-break:break-all;line-height:1.7;border:1px solid var(--border);position:relative;min-height:48px}
+.combiner-label{font-size:.7rem;font-weight:700;color:var(--text-mid);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+
+/* ── CHAT ── */
+.chat-wrap{border-radius:var(--radius);border:1.5px solid var(--border);overflow:hidden;background:#fff;box-shadow:var(--shadow)}
+.chat-header{background:linear-gradient(135deg,var(--navy),var(--navy-mid));padding:12px 18px;color:#fff;font-size:.83rem;font-weight:600;display:flex;align-items:center;gap:8px}
+.chat-header::before{content:'🤖';font-size:16px}
+.chat-messages{height:320px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;background:#f8fbff}
+.chat-messages::-webkit-scrollbar{width:4px}.chat-messages::-webkit-scrollbar-track{background:transparent}.chat-messages::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.chat-bubble{max-width:82%;padding:10px 14px;border-radius:14px;font-size:.82rem;line-height:1.55;animation:fadeIn .2s ease}
+.chat-bubble.ai{background:#fff;border:1px solid var(--border);color:var(--text);align-self:flex-start;border-bottom-left-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.chat-bubble.user{background:linear-gradient(135deg,var(--navy),var(--navy-mid));color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.chat-quick{padding:10px 16px;background:#f0f6ff;display:flex;flex-wrap:wrap;gap:6px;border-top:1px solid var(--border)}
+.chat-quick-btn{padding:5px 12px;background:#fff;border:1px solid var(--sky);color:var(--navy-mid);border-radius:12px;font-size:.73rem;cursor:pointer;font-family:inherit;font-weight:600;transition:all .15s}
+.chat-quick-btn:hover{background:var(--navy-mid);color:#fff;border-color:var(--navy-mid)}
+.chat-input-row{display:flex;gap:0;border-top:1.5px solid var(--border)}
+.chat-input{flex:1;padding:11px 16px;border:none;font-family:inherit;font-size:.83rem;color:var(--text);outline:none;background:#fff;resize:none;min-height:44px;max-height:120px;line-height:1.5;overflow-y:auto}
+.chat-send-btn{padding:0 18px;background:linear-gradient(135deg,var(--navy),var(--navy-mid));color:#fff;border:none;font-family:inherit;font-size:.8rem;font-weight:700;cursor:pointer;transition:all .15s}
+.chat-send-btn:hover{background:var(--navy-deep)}
+.chat-attach-label{padding:0 12px;cursor:pointer;font-size:1.1rem;color:#718096;display:flex;align-items:center;background:#fff;border-right:1px solid var(--border);transition:color .15s}
+.chat-attach-label:hover{color:var(--navy-mid)}
+.chat-img-preview{display:none;align-items:center;gap:10px;padding:8px 14px;background:#ebf4ff;border-top:1px solid #bee3f8}
+.chat-img-preview img{height:48px;border-radius:6px;object-fit:cover}
+.chat-img-preview span{font-size:.78rem;color:var(--navy-mid);flex:1}
+.chat-img-clear{background:none;border:none;color:#a0aec0;font-size:1rem;cursor:pointer;padding:2px 6px;line-height:1}
+.chat-img-clear:hover{color:#e53e3e}
+.chat-paste-hint{font-size:.72rem;color:#a0aec0;text-align:center;padding:4px 0 6px;background:#fff}
+
+/* ── PRICE RANGE ── */
+.price-bar-wrap{background:linear-gradient(90deg,var(--green-bg),var(--yellow-bg),var(--red-bg));border-radius:8px;height:22px;position:relative;margin:10px 0}
+.price-avg-marker{position:absolute;top:-6px;bottom:-6px;width:3px;background:var(--navy);border-radius:2px;transform:translateX(-50%)}
+.price-avg-marker::after{content:attr(data-label);position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:.62rem;color:var(--navy);font-weight:700;white-space:nowrap}
+.price-labels{display:flex;justify-content:space-between;font-size:.68rem;color:var(--text-light);margin-top:4px}
+
+/* ── INFINITE KEYWORD TABS ── */
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:16px}
+.tab-btn{padding:8px 18px;border:none;background:none;font-family:inherit;font-size:.82rem;font-weight:600;color:var(--text-mid);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .18s}
+.tab-btn.active{color:var(--navy);border-bottom-color:var(--navy-mid)}
+.tab-btn:hover:not(.active){color:var(--navy-light)}
+.tab-panel{display:none}.tab-panel.active{display:block}
+.kw-table{display:flex;flex-direction:column;gap:8px}
+.kw-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f7fbff;border-radius:8px;border:1px solid #e2ecf9;font-size:.82rem;gap:10px;transition:all .15s}
+.kw-row:hover{background:#fff;transform:translateX(3px);box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.kw-row .kw-name{font-weight:600;color:var(--navy);flex:1}
+.kw-row .kw-meta{display:flex;gap:6px;align-items:center;flex-shrink:0}
+
+/* ── MATRIX ── */
+.matrix-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.matrix-item{background:linear-gradient(135deg,#f7fbff,#fff);border:1px solid #d4e8ff;border-radius:10px;padding:13px 15px}
+.matrix-item-title{font-size:.72rem;font-weight:700;color:var(--text-mid);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.matrix-item-val{font-size:.9rem;font-weight:700;color:var(--navy)}
+.matrix-item-sub{font-size:.75rem;color:var(--text-mid);margin-top:3px;line-height:1.45}
+.competitor-row{padding:12px 14px;border-radius:9px;border:1px solid var(--border);background:#fff;margin-bottom:8px}
+.comp-name{font-weight:700;color:var(--navy);font-size:.85rem;margin-bottom:5px}
+.comp-meta{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.comp-strength{font-size:.75rem;color:var(--green-text);background:var(--green-bg);padding:4px 9px;border-radius:6px}
+.comp-weakness{font-size:.75rem;color:var(--red-text);background:var(--red-bg);padding:4px 9px;border-radius:6px}
+.comp-label{font-size:.64rem;font-weight:700;margin-bottom:2px;opacity:.7}
+
+/* ── DIRECT LINKS ── */
+.link-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:9px;font-size:.82rem;font-weight:700;text-decoration:none;transition:all .2s;cursor:pointer;border:none;font-family:inherit}
+.link-naver{background:var(--naver);color:#fff}.link-naver:hover{background:var(--naver-dark)}
+.link-google{background:#4285f4;color:#fff}.link-google:hover{background:#2563eb}
+
+/* ── YOUTUBE ── */
+.yt-section{margin-bottom:14px}
+.yt-section-title{font-size:.75rem;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.yt-section-title::before{content:'';width:12px;height:3px;background:var(--navy-mid);border-radius:2px;display:block}
+.title-chip{background:linear-gradient(135deg,#fff8e1,#fff);border:1px solid #fcd34d;border-radius:8px;padding:9px 13px;font-size:.82rem;color:var(--text);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.tag-chip{background:#e8f4fd;color:#1a5276;border:1px solid #bee3f8;border-radius:12px;padding:4px 11px;font-size:.75rem;font-weight:600;display:inline-flex;align-items:center;gap:4px}
+
+/* ── RAW DATA CARDS ── */
+.raw-data-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
+.raw-card{background:linear-gradient(135deg,#ebf8ff,#fff);border:1px solid #bee3f8;border-radius:10px;padding:12px;text-align:center}
+.raw-val{font-size:1.3rem;font-weight:900;color:var(--navy);line-height:1}
+.raw-label{font-size:.66rem;color:var(--text-light);margin-top:4px;font-weight:600}
+
+/* ── 면적 필터 버튼 ── */
+.re-area-btn{padding:6px 14px;border:1.5px solid #bee3f8;border-radius:18px;background:#f0f7ff;color:#2b6cb0;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .18s;font-family:inherit}
+.re-area-btn span{font-weight:400;color:#718096;font-size:.72rem}
+.re-area-btn:hover{background:#bee3f8;border-color:#63b3ed;color:#1a365d}
+.re-area-btn.active{background:var(--navy);border-color:var(--navy);color:#fff}
+.re-area-btn.active span{color:rgba(255,255,255,.75)}
+.re-type-chip{padding:5px 12px;border:1.5px solid #c3dafe;border-radius:16px;background:#ebf4ff;color:#3730a3;font-size:.77rem;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit}
+.re-type-chip span{font-weight:400;color:#6366f1;font-size:.71rem;margin-left:3px}
+.re-type-chip:hover{background:#c3dafe;border-color:#818cf8;color:#1e1b4b}
+.re-type-chip.active{background:#3730a3;border-color:#3730a3;color:#fff}
+.re-type-chip.active span{color:rgba(255,255,255,.75)}
+.re-type-edit{font-size:.7rem;opacity:.5;margin-left:2px;padding:1px 3px;border-radius:4px;transition:opacity .15s}
+.re-type-chip:hover .re-type-edit{opacity:1}
+.re-type-edit:hover{background:rgba(0,0,0,.1)}
+
+/* ── SELLER ── */
+.seller-section{margin-bottom:12px}
+.seller-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-mid);margin-bottom:8px}
+.product-tag{display:inline-flex;align-items:center;padding:5px 12px;background:linear-gradient(135deg,#fff8e1,#fff);border:1px solid #fcd34d;border-radius:14px;font-size:.77rem;font-weight:600;color:#7d4608;margin:3px}
+
+/* ── STAT INPUT GRID ── */
+.stat-input-section{background:linear-gradient(135deg,#f0f7ff,#f7fbff);border:1.5px solid #bee3f8;border-radius:11px;padding:15px 16px;margin-top:12px}
+.stat-input-header{font-size:.75rem;font-weight:700;color:var(--navy-mid);margin-bottom:12px;display:flex;align-items:center;gap:6px;letter-spacing:.4px}
+.stat-input-header::before{content:'📊';font-size:13px}
+.stat-input-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat-input-item label{display:block;font-size:.7rem;font-weight:700;color:var(--text-mid);margin-bottom:5px}
+.stat-input-item input{width:100%;padding:8px 10px;border:1.5px solid #cde;border-radius:8px;font-size:.85rem;font-family:inherit;color:var(--text);background:#fff;outline:none;text-align:center;font-weight:600;transition:border .2s}
+.stat-input-item input:focus{border-color:var(--navy-light);box-shadow:0 0 0 2px rgba(49,130,206,.1)}
+.stat-hint{font-size:.68rem;color:var(--text-light);margin-top:8px;text-align:center}
+
+/* ── BLOG STAT SUMMARY CARD ── */
+.blog-stat-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:4px}
+.bstat-item{background:linear-gradient(135deg,#ebf8ff,#fff);border:1px solid #bee3f8;border-radius:10px;padding:12px 10px;text-align:center}
+.bstat-val{font-size:1.25rem;font-weight:900;color:var(--navy);line-height:1}
+.bstat-label{font-size:.65rem;color:var(--text-light);margin-top:4px;font-weight:600}
+.influencer-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;background:linear-gradient(135deg,#fef3c7,#fff8e1);border:1px solid #fcd34d;border-radius:12px;font-size:.73rem;font-weight:700;color:#92400e}
+
+/* ── DIVIDER ── */
+.divider{height:1px;background:var(--border);margin:20px 0;border:none}
+
+/* ── SUMMARY BOX ── */
+.summary-box{background:linear-gradient(135deg,#f0f7ff,#f7f0ff);border:1px solid #d4e0ff;border-radius:10px;padding:15px 17px;font-size:.83rem;color:var(--text);line-height:1.65;margin-bottom:14px}
+.summary-box strong{color:var(--navy)}
+
+/* ── SCROLL AREA ── */
+.scroll-x{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+/* ── UTIL ── */
+.flex{display:flex}.flex-col{flex-direction:column}.items-center{align-items:center}.justify-between{justify-content:space-between}.gap-2{gap:8px}.gap-3{gap:12px}.gap-4{gap:16px}.mt-2{margin-top:8px}.mt-3{margin-top:12px}.mt-4{margin-top:16px}.mb-2{margin-bottom:8px}.mb-3{margin-bottom:12px}.w-full{width:100%}.font-bold{font-weight:700}.text-sm{font-size:.8rem}.text-xs{font-size:.72rem}.text-navy{color:var(--navy)}.text-mid{color:var(--text-mid)}.text-light{color:var(--text-light)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .sidebar{width:0;overflow:hidden;min-width:0;position:fixed;height:100%;top:58px;z-index:100;transition:width .25s}
+  .sidebar.open{width:200px}
+  main{padding:16px}
+  .matrix-grid{grid-template-columns:1fr}
+}
+
+/* ── 대본 도우미 ── */
+.sc-bubble{padding:12px 16px;border-radius:14px;font-size:.87rem;line-height:1.7;max-width:85%;word-break:break-word;white-space:pre-wrap}
+.sc-user{background:var(--navy);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.sc-ai{background:var(--bg);color:var(--text);align-self:flex-start;border-bottom-left-radius:4px}
+.sc-thinking{background:var(--bg);color:var(--text-light);align-self:flex-start;border-bottom-left-radius:4px;font-style:italic;font-size:.82rem}
+.ns-tab{background:#fff;border:2px solid var(--border);border-radius:12px;padding:14px 8px;cursor:pointer;text-align:center;transition:all .18s;font-family:inherit;color:var(--text)}
+.ns-tab:hover{border-color:var(--navy-mid);color:var(--navy-mid)}
+.ns-tab.active{border-color:var(--navy-mid);background:var(--navy);color:#fff}
+.ns-tab.active div{color:#fff !important}
+.draft-tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px}
+.draft-tab{padding:10px 22px;font-size:.85rem;font-weight:600;color:var(--text-light);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit}
+.draft-tab.active{color:var(--navy-mid);border-bottom-color:var(--navy-mid)}
+.draft-tab:hover{color:var(--navy-mid)}
+.draft-panel{display:none}.draft-panel.active{display:block}
+.draft-textarea{width:100%;min-height:180px;padding:14px 16px;border:2px solid var(--border);border-radius:var(--radius);font-family:inherit;font-size:.88rem;line-height:1.7;color:var(--text);resize:vertical;outline:none;transition:border-color .2s}
+.draft-textarea:focus{border-color:var(--navy-mid)}
+.char-count{font-size:.73rem;color:var(--text-light);text-align:right;margin-top:4px}
+.draft-result-kw{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:4px}
+.draft-kw-card{border:1.5px solid var(--border);border-radius:12px;padding:14px;background:#fff}
+.draft-kw-name{font-size:1rem;font-weight:700;color:var(--navy);margin-bottom:8px}
+.draft-kw-why{font-size:.8rem;color:var(--text-mid);line-height:1.5}
+.draft-script{background:#f7fafc;border:1.5px solid var(--border);border-radius:var(--radius);padding:18px 20px;font-size:.88rem;line-height:1.85;white-space:pre-wrap;color:var(--text)}
+.draft-script h3{color:var(--navy);font-size:.95rem;margin:14px 0 6px}
+.draft-copy-row{display:flex;justify-content:flex-end;margin-top:10px}
+</style>
+<!-- 엑셀 파일 파싱 라이브러리 -->
+<script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<header>
+  <div class="header-icon">🔍</div>
+  <div>
+    <div class="header-title"><span class="brand">IRIR4R</span>블로그 SEO 분석기</div>
+    <div class="header-sub">✨ Blog & Keyword Intelligence Tool</div>
+  </div>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+    <button id="copy-blog-btn" onclick="copyMyUrl('https://blog.naver.com/eunb2016', this)"
+      style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.9);font-size:.72rem;padding:5px 12px;border-radius:20px;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap">
+      📋 https://blog.naver.com/eunb2016
+    </button>
+    <button id="copy-site-btn" onclick="copyMyUrl('https://irir4r.com', this)"
+      style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.9);font-size:.72rem;padding:5px 12px;border-radius:20px;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap">
+      📋 https://irir4r.com
+    </button>
+  </div>
+</header>
+
+<div class="layout">
+<!-- ── SIDEBAR ── -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-section">분석</div>
+  <div class="sidebar-item" data-page="smart-chat"><span class="si-icon">🤖</span>AI 데이터 채팅</div>
+  <div class="sidebar-item" data-page="kw-checker"><span class="si-icon">🔬</span>키워드 실데이터 조회</div>
+  <div class="sidebar-item" data-page="blog-missing"><span class="si-icon">🔎</span>블로그 누락 검사</div>
+  <div class="sidebar-item active" data-page="blog-index"><span class="si-icon">📊</span>블로그 지수</div>
+
+  <div class="sidebar-section">트렌드</div>
+  <div class="sidebar-item" data-page="km-realtime"><span class="si-icon">📡</span>실시간 검색어</div>
+  <div class="sidebar-item" data-page="youtube-analyze"><span class="si-icon">📺</span>유튜브 분석기</div>
+
+  <div class="sidebar-section">블로그 관리</div>
+  <div class="sidebar-item" data-page="rank-checker"><span class="si-icon">🏆</span>순위 체커</div>
+  <div class="sidebar-item" data-page="post-tracker"><span class="si-icon">📌</span>포스트 추적기</div>
+
+  <div class="sidebar-section">콘텐츠 제작</div>
+  <div class="sidebar-item" data-page="draft-helper"><span class="si-icon">✍️</span>대본 도우미</div>
+
+  <div class="sidebar-section">벤치마킹</div>
+  <div class="sidebar-item" data-page="top-bloggers"><span class="si-icon">🏅</span>상위 블로거 목록</div>
+  <div class="sidebar-item" data-page="blog-compare"><span class="si-icon">⚔️</span>블로그 비교 분석</div>
+
+  <div class="sidebar-section">부동산</div>
+  <div class="sidebar-item" data-page="realestate"><span class="si-icon">🏠</span>실거래가 조회</div>
+  <div class="sidebar-item" data-page="re-news"><span class="si-icon">📰</span>부동산 뉴스</div>
+  <div class="sidebar-item" data-page="listings"><span class="si-icon">🏠</span><span style="color:#03c75a;font-weight:800;font-style:italic">N</span>aver <b>매물노트</b></div>
+</nav>
+
+<!-- ── MAIN ── -->
+<main id="main-content">
+
+<!-- =================== 1. BLOG MISSING =================== -->
+<!-- =================== 키워드 실데이터 조회 =================== -->
+<!-- =================== AI 데이터 채팅 =================== -->
+<div class="page" id="page-smart-chat">
+  <div class="page-header">
+    <h2>🤖 AI 데이터 채팅</h2>
+    <p>키워드를 물어보면 Claude가 네이버 API를 직접 조회해 실데이터로 답합니다. 추측 없음.</p>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column;height:520px">
+    <div id="sc-messages" style="flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:12px">
+      <div class="sc-bubble sc-ai">
+        안녕하세요! 키워드 검색량이나 황금 키워드가 궁금하면 물어보세요.<br>
+        네이버 API를 직접 조회해서 실제 숫자로 답해드려요.<br><br>
+        예시:<br>
+        · "아파트 리모델링 검색량 얼마야?"<br>
+        · "부동산 투자 관련 황금 키워드 찾아줘"<br>
+        · "전세 사기 vs 월세 전환 어느 쪽이 더 검색 많아?"
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding:12px;display:flex;gap:8px;align-items:flex-end">
+      <textarea id="sc-input" class="form-control" rows="2"
+        style="flex:1;resize:none;font-size:.88rem;min-height:42px;max-height:120px"
+        placeholder="키워드나 질문을 입력하세요..."
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendSmartChat()}"
+        oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+      <button class="btn btn-primary" style="height:42px;white-space:nowrap" onclick="sendSmartChat()">전송</button>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-kw-checker">
+  <div class="page-header">
+    <h2>🔬 키워드 실데이터 조회</h2>
+    <p>AI 추측 없음. 네이버 API가 직접 답합니다 — 월간 검색량, 경쟁 포스트 수.</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>키워드 입력 <span style="font-weight:400;color:var(--text-light)">(여러 개는 줄바꿈으로 구분, 최대 10개)</span></label>
+      <textarea class="form-control" id="kwc-input" rows="4" placeholder="아파트 리모델링&#10;전세 사기&#10;금리 인상 영향&#10;부동산 투자" style="resize:vertical"></textarea>
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="runKwChecker()">🔬 실데이터 조회</button>
+  </div>
+  <div class="loading" id="kwc-loading"><div class="spinner"></div><div class="loading-text">네이버 API 조회 중...</div></div>
+  <div class="result-area" id="kwc-result"></div>
+</div>
+
+<div class="page" id="page-blog-missing">
+  <div class="page-header">
+    <h2>🔎 블로그 누락 검사</h2>
+    <p>블로그 포스팅이 검색에서 누락된 원인을 분석하고 해결책을 제시합니다.</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>블로그 URL</label>
+      <input type="url" class="form-control" id="missing-url" placeholder="https://blog.naver.com/yourname" />
+    </div>
+    <div class="form-group">
+      <label>검색 키워드 <span style="color:var(--text-light);font-weight:400">(선택)</span></label>
+      <input type="text" class="form-control" id="missing-keyword" placeholder="누락된 키워드를 입력하세요" />
+    </div>
+    <button class="btn btn-primary" onclick="analyzeMissing()">🔍 누락 검사 시작</button>
+  </div>
+  <div class="loading" id="missing-loading"><div class="spinner"></div><div class="loading-text">누락 원인을 분석 중입니다...</div></div>
+  <div class="result-area" id="missing-result"></div>
+</div>
+
+<!-- =================== 2. BLOG INDEX =================== -->
+<div class="page active" id="page-blog-index">
+  <div class="page-header">
+    <h2>📊 블로그 지수</h2>
+    <p>블로그 레벨을 분석하고, 내 수준에 맞는 황금 키워드와 대본을 만들어 드립니다.</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>블로그 URL</label>
+      <input type="url" class="form-control" id="bindex-url" placeholder="https://blog.naver.com/yourname" />
+    </div>
+    <div class="form-group">
+      <label>블로그 주제</label>
+      <input type="text" class="form-control" id="bindex-topic" placeholder="예) 부동산, 육아, 맛집, 여행, 운동 — 어떤 주제든" />
+    </div>
+    <!-- 통계 스크린샷 첨부 -->
+    <div class="form-group" style="margin-top:4px">
+      <label style="display:flex;align-items:center;justify-content:space-between">
+        <span>내 블로그 통계 스크린샷 <span style="font-weight:400;color:var(--text-light)">(선택 — 붙이면 100% 실데이터 분석)</span></span>
+        <span id="bindex-img-clear" style="display:none;font-size:.75rem;color:var(--red-text);cursor:pointer" onclick="bindexClearImg()">✕ 제거</span>
+      </label>
+      <div id="bindex-img-drop"
+        style="border:2px dashed var(--border);border-radius:10px;padding:18px;text-align:center;cursor:pointer;transition:border-color .2s;font-size:.83rem;color:var(--text-light)"
+        onclick="document.getElementById('bindex-img-file').click()"
+        onpaste="bindexHandlePaste(event)"
+        ondragover="event.preventDefault();this.style.borderColor='var(--navy-mid)'"
+        ondragleave="this.style.borderColor='var(--border)'"
+        ondrop="event.preventDefault();bindexHandleFile(event.dataTransfer.files[0])">
+        📸 Ctrl+V 붙여넣기 또는 클릭해서 업로드<br>
+        <span style="font-size:.75rem">네이버 블로그 관리 → 통계 페이지 캡처</span>
+      </div>
+      <input type="file" id="bindex-img-file" accept="image/*" style="display:none" onchange="bindexHandleFile(this.files[0])">
+      <div id="bindex-img-preview" style="margin-top:8px;display:none">
+        <img id="bindex-img-thumb" style="max-width:100%;max-height:160px;border-radius:8px;border:1px solid var(--border)">
+      </div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:14px;width:100%" onclick="analyzeAll()">📊 블로그 지수 분석</button>
+  </div>
+  <div class="loading" id="bindex-loading"><div class="spinner"></div><div class="loading-text">블로그 레벨 분석 중...</div></div>
+  <div class="result-area" id="bindex-result"></div>
+  <div class="result-area" id="bindex-kw-result"></div>
+  <div class="result-area" id="bindex-draft-result"></div>
+
+  <!-- 채팅창 — 항상 표시 -->
+  <div id="bindex-chat-wrap">
+    <div class="chat-wrap" style="margin-top:18px">
+      <div class="chat-header">💬 AI 블로그 코치 — 분석 전후 언제든 질문하세요!</div>
+      <div class="chat-messages" id="bindex-chat-messages">
+        <div class="chat-bubble ai">안녕하세요! 블로그 SEO 전문 코치입니다 😊<br>위에서 분석을 먼저 실행하거나, 궁금한 점을 바로 물어보세요!</div>
+      </div>
+      <div class="chat-quick">
+        <button class="chat-quick-btn" onclick="sendQuick('레벨 올리는 핵심은?')">레벨 올리는 핵심은?</button>
+        <button class="chat-quick-btn" onclick="sendQuick('하루 포스팅 몇 개?')">하루 포스팅 몇 개?</button>
+        <button class="chat-quick-btn" onclick="sendQuick('노출 잘 되는 키워드?')">노출 잘 되는 키워드?</button>
+        <button class="chat-quick-btn" onclick="sendQuick('지금 당장 고칠 것?')">지금 당장 고칠 것?</button>
+        <button class="chat-quick-btn" onclick="sendQuick('부동산 블로그 전략은?')">부동산 블로그 전략은?</button>
+        <button class="chat-quick-btn" onclick="sendQuick('이웃 늘리는 방법?')">이웃 늘리는 방법?</button>
+      </div>
+      <div class="chat-img-preview" id="chat-img-preview">
+        <img id="chat-preview-thumb" src="" alt="">
+        <span>이미지 첨부됨 — 전송 버튼을 눌러 분석하세요</span>
+        <button class="chat-img-clear" onclick="chatClearImg()">✕</button>
+      </div>
+      <div class="chat-input-row">
+        <label class="chat-attach-label" for="chat-img-input" title="이미지 첨부 (Ctrl+V 붙여넣기도 가능)">📎</label>
+        <input type="file" id="chat-img-input" accept="image/*" style="display:none" onchange="chatHandleFile(event)">
+        <textarea class="chat-input" id="bindex-chat-input" placeholder="질문을 입력하세요... (Enter 전송 / Shift+Enter 줄바꿈)" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+        <button class="chat-send-btn" onclick="sendChat()">전송 →</button>
+      </div>
+      <div class="chat-paste-hint">💡 블로그 스크린샷을 Ctrl+V로 붙여넣으면 AI가 분석해 드립니다</div>
+    </div>
+  </div>
+</div>
+
+<!-- =================== 실시간 검색어 =================== -->
+<div class="page" id="page-km-realtime">
+  <div class="page-header">
+    <h2>📡 실시간 검색어</h2>
+    <p>부동산·금융·경제 분야 실시간 인기 검색어와 트렌드를 확인합니다.</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>카테고리</label>
+      <select class="form-control" id="realtime-category">
+        <option value="부동산">부동산</option>
+        <option value="금융/경제">금융/경제</option>
+        <option value="재테크/투자">재테크/투자</option>
+        <option value="뉴스/이슈">뉴스/이슈</option>
+        <option value="전체">전체</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" onclick="analyzeRealtime()">📡 실시간 검색어 조회</button>
+  </div>
+  <div class="loading" id="realtime-loading"><div class="spinner"></div><div class="loading-text">실시간 검색어를 분석 중...</div></div>
+  <div class="result-area" id="realtime-result"></div>
+</div>
+
+<!-- =================== 유튜브 분석기 =================== -->
+<div class="page" id="page-youtube-analyze">
+  <div class="page-header">
+    <h2>📺 유튜브 분석기</h2>
+    <p>유튜브 채널·키워드 전략을 분석하고 블로그와 연계할 콘텐츠 전략을 제시합니다.</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>채널명 / 영상 키워드</label>
+      <input type="text" class="form-control" id="yt-keyword" placeholder="예) 부동산 재테크 유튜버" />
+    </div>
+    <div class="form-group">
+      <label>주제 분야</label>
+      <input type="text" class="form-control" id="yt-topic" placeholder="예) 부동산, 금리, 재테크" />
+    </div>
+    <button class="btn btn-primary" onclick="analyzeYoutube()">📺 유튜브 분석</button>
+  </div>
+  <div class="loading" id="yt-loading"><div class="spinner"></div><div class="loading-text">유튜브 전략을 분석 중...</div></div>
+  <div class="result-area" id="yt-result"></div>
+</div>
+
+<!-- =================== 순위 체커 =================== -->
+<div class="page" id="page-rank-checker">
+  <div class="page-header">
+    <h2>🏆 순위 체커</h2>
+    <p>키워드 검색 시 내 블로그가 네이버에서 몇 위에 노출되는지 실시간 확인합니다.</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>확인할 키워드</label>
+      <input type="text" class="form-control" id="rank-keyword" placeholder="예) 전세자금대출 조건, 아파트 매매 절차"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopImmediatePropagation();checkMyRank()}" />
+    </div>
+    <div class="form-group">
+      <label>내 블로그 URL 또는 ID</label>
+      <input type="text" class="form-control" id="rank-blogurl" placeholder="예) https://blog.naver.com/myid 또는 myid"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopImmediatePropagation();checkMyRank()}" />
+    </div>
+    <div style="background:#f0f7ff;border:1px solid #bee3f8;border-radius:8px;padding:10px 14px;font-size:.8rem;color:#2c5282;margin-bottom:14px">
+      💡 상위 30개 결과 내 순위를 확인합니다. 30위 밖이면 "미노출"로 표시됩니다.
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="checkMyRank()">🏆 순위 확인</button>
+  </div>
+  <div class="loading" id="rank-loading"><div class="spinner"></div><div class="loading-text">네이버에서 순위 확인 중...</div></div>
+  <div class="result-area" id="rank-result"></div>
+
+  <!-- 검색량 비교 -->
+  <div class="card" style="margin-top:8px">
+    <div class="card-title">📊 키워드 검색량 비교</div>
+    <div style="font-size:.8rem;color:var(--text-light);margin-bottom:12px">어떤 키워드가 더 많이 검색되는지 한번에 비교합니다. 한 줄에 하나씩 입력.</div>
+    <div class="form-group">
+      <textarea class="form-control" id="rank-vol-input" rows="5" placeholder="2026년 4월30일 미국 기준금리&#10;2026년 4월 미국 기준금리&#10;미국 기준금리 동결&#10;미국 기준금리"></textarea>
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="checkRankVolume()">📊 검색량 확인</button>
+    <div class="loading" id="rank-vol-loading" style="padding:24px"><div class="spinner"></div><div class="loading-text">네이버 검색량 조회 중...</div></div>
+    <div id="rank-vol-result" style="margin-top:12px"></div>
+  </div>
+
+  <!-- 마법의 키워드 -->
+  <div class="card" style="margin-top:8px;border:2px solid #d4af37">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+      <span style="font-size:1.5rem">✨</span>
+      <div>
+        <div style="font-weight:800;font-size:1rem;color:#92400e">마법의 키워드</div>
+        <div style="font-size:.78rem;color:var(--text-light)">주제 하나만 입력하면 — 경쟁 낮고 순위 잡기 쉬운 키워드 조합을 네이버 실데이터로 자동 추출</div>
+      </div>
+    </div>
+    <div class="form-group" style="margin-top:12px">
+      <label>글 쓸 주제</label>
+      <input type="text" class="form-control" id="magic-topic" placeholder="예) 미국 기준금리, 전세자금대출, 아파트 청약"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopImmediatePropagation();runMagicKeyword()}" />
+    </div>
+    <button class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,#b7791f,#d4af37);box-shadow:0 3px 12px rgba(180,120,20,.3)" onclick="runMagicKeyword()">✨ 마법의 키워드 추출</button>
+    <div class="loading" id="magic-loading" style="padding:24px"><div class="spinner"></div><div class="loading-text">네이버에서 황금 조합 찾는 중...</div></div>
+    <div id="magic-result" style="margin-top:14px"></div>
+  </div>
+</div>
+
+<!-- =================== 포스트 추적기 =================== -->
+<div class="page" id="page-post-tracker">
+  <div class="page-header">
+    <h2>📌 포스트 추적기</h2>
+    <p>내 블로그 최근 포스트를 불러와 각 글의 키워드·검색량을 한눈에 확인합니다.</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>블로그 URL <span style="font-weight:400;color:var(--text-light);font-size:.78rem">— 글 제목 말고 블로그 주소를 입력하세요</span></label>
+      <input type="text" class="form-control" id="tracker-url" placeholder="예) https://blog.naver.com/eunb2016  또는  eunb2016" />
+    </div>
+    <button class="btn btn-primary" onclick="analyzePostTracker()">📌 포스트 분석 시작</button>
+  </div>
+  <div class="loading" id="tracker-loading"><div class="spinner"></div><div class="loading-text">RSS 불러오는 중...</div></div>
+  <div class="result-area" id="tracker-result"></div>
+</div>
+
+<!-- =================== 블로그 비교 분석 =================== -->
+<div class="page" id="page-blog-compare">
+  <div class="page-header">
+    <h2>⚔️ 블로그 비교 분석</h2>
+    <p>내 블로그와 벤치마킹할 블로그를 비교합니다. 상대방의 키워드 전략과 나의 갭을 분석해드립니다.</p>
+  </div>
+  <div class="card">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label class="form-label">📌 내 블로그 URL</label>
+        <input class="form-input" id="cmp-my-url" placeholder="https://blog.naver.com/내아이디">
+      </div>
+      <div>
+        <label class="form-label">🎯 비교할 블로그 URL</label>
+        <input class="form-input" id="cmp-comp-url" placeholder="https://blog.naver.com/상대블로그">
+      </div>
+    </div>
+    <div style="margin-bottom:12px">
+      <label class="form-label">🔍 비교 주제 (선택) — 비워두면 전체 비교</label>
+      <input class="form-input" id="cmp-topic" placeholder="예: 부동산, 금리, 다이어트 등">
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="runBlogCompare()">⚔️ 비교 분석 시작</button>
+  </div>
+  <div class="loading" id="cmp-loading"><div class="spinner"></div><div class="loading-text">두 블로그 포스트 수집 및 분석 중...</div></div>
+  <div class="result-area" id="cmp-result"></div>
+
+  <!-- 블로그 분석 채팅 -->
+  <div style="margin-top:20px;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.10);background:#fff">
+
+    <!-- 헤더 -->
+    <div style="background:linear-gradient(135deg,#0d1f3c,#2b6cb0);padding:14px 18px;display:flex;align-items:center;gap:10px">
+      <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0">🤖</div>
+      <div style="flex:1">
+        <div style="font-weight:700;color:#fff;font-size:.92rem;letter-spacing:-.2px">블로그 전략 AI</div>
+        <div style="font-size:.7rem;color:rgba(255,255,255,.55);display:flex;align-items:center;gap:4px">
+          <span style="width:6px;height:6px;border-radius:50%;background:#68d391;display:inline-block"></span> 온라인
+        </div>
+      </div>
+      <!-- 모델 선택 -->
+      <div style="display:flex;gap:5px" id="cmp-model-btns">
+        <button onclick="setCmpModel('haiku', this)" data-model="haiku"
+          style="font-size:.68rem;padding:4px 9px;border-radius:20px;border:1.5px solid rgba(255,255,255,.5);background:rgba(255,255,255,.2);color:#fff;cursor:pointer;font-family:inherit;font-weight:600;transition:all .2s">
+          ⚡ 빠름
+        </button>
+        <button onclick="setCmpModel('sonnet', this)" data-model="sonnet"
+          style="font-size:.68rem;padding:4px 9px;border-radius:20px;border:1.5px solid transparent;background:transparent;color:rgba(255,255,255,.5);cursor:pointer;font-family:inherit;font-weight:600;transition:all .2s">
+          🧠 깊이
+        </button>
+      </div>
+    </div>
+
+    <!-- 메시지 영역 -->
+    <div id="cmp-qa-history" style="height:320px;overflow-y:auto;padding:18px 16px;display:flex;flex-direction:column;gap:14px;background:#f7f9fc;scroll-behavior:smooth">
+      <!-- AI 첫 메시지 -->
+      <div style="display:flex;align-items:flex-end;gap:8px">
+        <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#2b6cb0,#63b3ed);display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0">AI</div>
+        <div style="background:#fff;border:1px solid #e2e8f0;padding:10px 14px;border-radius:18px 18px 18px 4px;font-size:.84rem;color:#2d3748;max-width:80%;line-height:1.65;box-shadow:0 1px 3px rgba(0,0,0,.06)">
+          안녕하세요! 비교 분석 후 궁금한 점이나 블로그 전략에 대해 자유롭게 이야기해 주세요. 😊<br>
+          <span style="color:#718096;font-size:.78rem">비교 전에도 질문 가능합니다.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 입력창 -->
+    <div style="background:#fff;border-top:1px solid #e2e8f0;padding:12px 14px;display:flex;align-items:flex-end;gap:10px">
+      <textarea id="cmp-qa-input" rows="1"
+        placeholder="메시지를 입력하세요... (Enter 전송 / Shift+Enter 줄바꿈)"
+        style="flex:1;resize:none;border:1.5px solid #e2e8f0;border-radius:22px;padding:10px 16px;font-size:.85rem;font-family:inherit;outline:none;line-height:1.5;max-height:120px;transition:border .2s;background:#f7f9fc"
+        onfocus="this.style.borderColor='#63b3ed';this.style.background='#fff'"
+        onblur="this.style.borderColor='#e2e8f0';this.style.background='#f7f9fc'"
+        oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();askCmpQuestion()}"></textarea>
+      <button onclick="askCmpQuestion()"
+        style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#2b6cb0,#63b3ed);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(43,108,176,.35);transition:transform .15s"
+        onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- =================== 상위 블로거 목록 =================== -->
+<div class="page" id="page-top-bloggers">
+  <div class="page-header">
+    <h2>🏅 상위 블로거 목록</h2>
+    <p>내 분야 네이버 상위 노출 블로거들을 수집합니다. 직접 방문해서 글쓰기 방식을 벤치마킹하세요.</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>분야 / 키워드</label>
+      <input type="text" class="form-control" id="tb-topic" placeholder="예) 부동산, 전세자금대출, 미국 기준금리, 아파트 청약" />
+    </div>
+    <div style="background:#f0f7ff;border:1px solid #bee3f8;border-radius:8px;padding:10px 14px;font-size:.8rem;color:#2c5282;margin-bottom:14px">
+      💡 입력한 키워드로 네이버 상위 블로그 결과를 분석해 자주 등장하는 블로거를 순위별로 보여줍니다.
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="loadTopBloggers()">🏅 상위 블로거 수집</button>
+  </div>
+  <div class="loading" id="tb-loading"><div class="spinner"></div><div class="loading-text">네이버 상위 블로그 분석 중...</div></div>
+  <div class="result-area" id="tb-result"></div>
+</div>
+
+<!-- =================== DRAFT HELPER =================== -->
+<div class="page" id="page-draft-helper">
+  <div class="page-header">
+    <h2>✍️ 대본 도우미</h2>
+    <p>대본에서 황금 키워드를 뽑거나, 키워드로 대본 초안을 만들어 드립니다.</p>
+  </div>
+
+  <div class="draft-tabs">
+    <button class="draft-tab active" onclick="switchDraftTab('to-keyword')">📄 대본 → 키워드 추출</button>
+    <button class="draft-tab" onclick="switchDraftTab('to-draft')">🥇 키워드 → 대본 생성</button>
+    <button class="draft-tab" onclick="switchDraftTab('golden')">💡 키워드 추천</button>
+  </div>
+
+  <!-- 탭 1: 대본 → 키워드 -->
+  <div class="draft-panel active" id="draft-panel-to-keyword">
+    <div class="card">
+      <div class="form-group">
+        <label>작성할 블로그 대본 (초안)</label>
+        <textarea class="draft-textarea" id="draft-text-input" placeholder="여기에 블로그 글 초안을 붙여넣으세요.&#10;&#10;예) 오늘은 2026년 미국 기준금리 동결 이후 전세자금대출 금리 변화에 대해 이야기해볼게요..." oninput="updateCharCount()"></textarea>
+        <div class="char-count"><span id="draft-char-count">0</span>자</div>
+      </div>
+      <div class="form-group">
+        <label>플랫폼</label>
+        <div class="platform-group" id="pg-draft-kw">
+          <button class="platform-btn active" data-val="둘 다">둘 다</button>
+          <button class="platform-btn" data-val="네이버 블로그">네이버</button>
+          <button class="platform-btn" data-val="티스토리">티스토리</button>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="runDraftToKeyword()">🔍 이 글에서 황금 키워드 추출</button>
+    </div>
+    <div class="loading" id="draft-kw-loading"><div class="spinner"></div><div class="loading-text">대본을 분석해 키워드를 추출 중...</div></div>
+    <div class="result-area" id="draft-kw-result"></div>
+  </div>
+
+  <!-- 탭 3: 황금 키워드 추천 -->
+  <div class="draft-panel" id="draft-panel-golden">
+    <div class="card">
+      <div class="form-group">
+        <label>블로그 주제</label>
+        <input type="text" class="form-control" id="golden-topic-input" placeholder="예) 부동산, 금리, 재테크, 아파트 투자" />
+      </div>
+      <div class="form-group">
+        <label>플랫폼</label>
+        <div class="platform-group" id="pg-golden">
+          <button class="platform-btn active" data-val="둘 다">둘 다</button>
+          <button class="platform-btn" data-val="네이버 블로그">네이버</button>
+          <button class="platform-btn" data-val="티스토리">티스토리</button>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="runGoldenKeyword()">💡 황금 키워드 추천받기</button>
+    </div>
+    <div class="loading" id="golden-kw-loading"><div class="spinner"></div><div class="loading-text">황금 키워드를 분석 중...</div></div>
+    <div class="result-area" id="golden-kw-result"></div>
+  </div>
+
+  <!-- 탭 2: 키워드 → 대본 -->
+  <div class="draft-panel" id="draft-panel-to-draft">
+    <div class="card">
+      <div class="form-group">
+        <label>키워드 또는 주제</label>
+        <input type="text" class="form-control" id="kw-to-draft-input" placeholder="예) 전세자금대출 조건, 미국 기준금리 동결, 아파트 청약 방법" />
+      </div>
+      <div class="form-group">
+        <label>블로그 분야 (선택)</label>
+        <input type="text" class="form-control" id="kw-to-draft-topic" placeholder="예) 부동산, 재테크, 경제 이슈" />
+      </div>
+      <div class="form-group">
+        <label>글 길이</label>
+        <div class="platform-group" id="pg-draft-len">
+          <button class="platform-btn active" data-val="중간 (800~1200자)">중간</button>
+          <button class="platform-btn" data-val="짧게 (500자 내외)">짧게</button>
+          <button class="platform-btn" data-val="길게 (1500자 이상)">길게</button>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="runKeywordToDraft()">✍️ 대본 초안 생성</button>
+    </div>
+    <div class="loading" id="kw-draft-loading"><div class="spinner"></div><div class="loading-text">대본 초안을 작성 중...</div></div>
+    <div class="result-area" id="kw-draft-result"></div>
+  </div>
+</div>
+
+<!-- =================== Naver부동산 한큐노트 =================== -->
+<div class="page" id="page-listings">
+  <div class="page-header">
+    <h2>🏠 <span style="color:#03c75a;font-weight:900;font-style:italic;font-size:1.1em">N</span><span style="font-style:italic;color:#03c75a;font-weight:700">aver</span> <span style="background:linear-gradient(135deg,#1a365d,#2b6cb0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:900;letter-spacing:-0.5px;text-shadow:none;filter:drop-shadow(1px 2px 2px rgba(0,0,0,.18))">매물노트</span></h2>
+    <p>네이버 부동산 매물을 클라우드에 저장. 어디서든 (집/사무실/폰) 접근 가능.</p>
+  </div>
+  <div class="card">
+    <div class="card-title">⚡ 빠른 입력 (카톡 메시지 그대로 붙여넣기)</div>
+    <div class="form-group">
+      <textarea class="form-control" id="lst-quick" rows="5" placeholder="이실장 메시지를 그대로 붙여넣으세요!&#10;&#10;예시:&#10;성복역롯데캐슬골드타운 105동 2503호 25층 84㎡&#10;매매 23억&#10;즉시입주 풀옵션 남향&#10;매도자 010-1234-5678" style="resize:vertical;font-family:inherit"></textarea>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="quickAddListing()">🤖 AI가 분석해서 저장</button>
+      <button onclick="document.getElementById('lst-detail-form').style.display=document.getElementById('lst-detail-form').style.display==='none'?'block':'none'" style="background:#e2e8f0;border:none;padding:10px 16px;border-radius:6px;cursor:pointer;font-size:.85rem;font-weight:600">✏️ 수동 입력</button>
+    </div>
+  </div>
+
+  <div class="card" id="lst-detail-form" style="display:none">
+    <div class="card-title">➕ 수동 매물 입력</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+      <div class="form-group">
+        <label>단지명 *</label>
+        <input class="form-control" id="lst-apt" type="text" placeholder="예: 성복역롯데캐슬골드타운">
+      </div>
+      <div class="form-group">
+        <label>동</label>
+        <input class="form-control" id="lst-dong" type="text" placeholder="예: 105">
+      </div>
+      <div class="form-group">
+        <label>호수</label>
+        <input class="form-control" id="lst-ho" type="text" placeholder="예: 2503">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+      <div class="form-group">
+        <label>거래유형</label>
+        <select class="form-control" id="lst-type">
+          <option value="매매">매매</option>
+          <option value="전세">전세</option>
+          <option value="월세">월세</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>평형</label>
+        <input class="form-control" id="lst-area" type="text" placeholder="예: 84㎡">
+      </div>
+      <div class="form-group">
+        <label>층</label>
+        <input class="form-control" id="lst-floor" type="text" placeholder="예: 25">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="form-group">
+        <label>가격 (만원)</label>
+        <input class="form-control" id="lst-price" type="text" placeholder="예: 230000">
+      </div>
+      <div class="form-group">
+        <label>월세 (만원)</label>
+        <input class="form-control" id="lst-rent" type="text" placeholder="예: 150">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>메모</label>
+      <textarea class="form-control" id="lst-memo" rows="2" placeholder="조건/특이사항" style="resize:vertical"></textarea>
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="addListing()">💾 매물 저장</button>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="card-title" style="margin:0">📋 저장된 매물</div>
+      <div style="display:flex;gap:6px">
+        <input class="form-control" id="lst-search" type="text" placeholder="단지/동/호수/메모 검색" style="width:200px;padding:6px 10px;font-size:.82rem" oninput="renderListings()">
+        <button onclick="loadListings()" style="background:#6366f1;color:#fff;border:none;padding:7px 12px;border-radius:6px;cursor:pointer;font-size:.78rem;font-weight:600">🔄 새로고침</button>
+        <button onclick="downloadListingsExcel()" style="background:#16a34a;color:#fff;border:none;padding:7px 12px;border-radius:6px;cursor:pointer;font-size:.78rem;font-weight:600">📥 엑셀</button>
+      </div>
+    </div>
+    <div id="lst-list-container" style="min-height:100px"></div>
+  </div>
+</div>
+
+<!-- =================== 부동산 뉴스 =================== -->
+<div class="page" id="page-re-news">
+  <div class="page-header">
+    <h2>📰 부동산 뉴스</h2>
+    <p>관심 단지 · 성복역 · 수지 · 정책 · 시세 뉴스를 한 화면에서 확인</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>관심 단지/지역 검색어 <span style="font-weight:400;color:var(--text-light)">(여러 개는 , 로 구분)</span></label>
+      <input class="form-control" id="ren-complexes" type="text" placeholder="예: 롯데캐슬골드타운,태영데시앙,이편한세상수지" value="롯데캐슬골드타운,태영데시앙,이편한세상수지">
+    </div>
+    <div class="form-group">
+      <label>지역 검색어</label>
+      <input class="form-control" id="ren-region" type="text" placeholder="예: 성복역 수지" value="성복역 수지">
+    </div>
+    <div class="form-group">
+      <label>빠른 선택</label>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <button type="button" onclick="setRenPreset('main')" style="background:#fef3c7;border:1.5px solid #f59e0b;color:#92400e;padding:7px 14px;border-radius:18px;cursor:pointer;font-size:.78rem;font-weight:600">⭐ 핵심 3단지</button>
+        <button type="button" onclick="setRenPreset('seongbok')" style="background:#dbeafe;border:1.5px solid #3b82f6;color:#1e40af;padding:7px 14px;border-radius:18px;cursor:pointer;font-size:.78rem;font-weight:600">🚇 성복역 라인</button>
+        <button type="button" onclick="setRenPreset('all')" style="background:#dcfce7;border:1.5px solid #16a34a;color:#166534;padding:7px 14px;border-radius:18px;cursor:pointer;font-size:.78rem;font-weight:600">🌟 전체</button>
+      </div>
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="runRealEstateNews()">📰 뉴스 가져오기</button>
+  </div>
+  <div class="loading" id="ren-loading"><div class="spinner"></div><div class="loading-text">네이버 뉴스 검색 중... (약 30초)</div></div>
+  <div class="result-area" id="ren-result"></div>
+</div>
+
+<!-- =================== 실거래가 조회 =================== -->
+<div class="page" id="page-realestate">
+  <div class="page-header">
+    <h2>🏠 실거래가 조회</h2>
+    <p>국토교통부 공식 데이터 — 아파트 매매·전세·월세 실거래가를 지역·단지명으로 조회합니다.</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>거래 유형</label>
+      <div class="platform-group" id="re-deal-type" style="display:flex;gap:8px">
+        <button class="platform-btn active" data-val="trade" onclick="setRealEstateType(this)">💰 매매</button>
+        <button class="platform-btn" data-val="rent" onclick="setRealEstateType(this)">🏘️ 전세/월세</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group">
+        <label>지역 선택</label>
+        <select class="form-control" id="re-region">
+          <optgroup label="서울특별시">
+            <option value="11110">종로구</option>
+            <option value="11140">중구</option>
+            <option value="11170">용산구</option>
+            <option value="11200">성동구</option>
+            <option value="11215">광진구</option>
+            <option value="11230">동대문구</option>
+            <option value="11260">중랑구</option>
+            <option value="11290">성북구</option>
+            <option value="11305">강북구</option>
+            <option value="11320">도봉구</option>
+            <option value="11350">노원구</option>
+            <option value="11380">은평구</option>
+            <option value="11410">서대문구</option>
+            <option value="11440">마포구</option>
+            <option value="11470">양천구</option>
+            <option value="11500">강서구</option>
+            <option value="11530">구로구</option>
+            <option value="11545">금천구</option>
+            <option value="11560">영등포구</option>
+            <option value="11590">동작구</option>
+            <option value="11620">관악구</option>
+            <option value="11650">서초구</option>
+            <option value="11680">강남구</option>
+            <option value="11710">송파구</option>
+            <option value="11740">강동구</option>
+          </optgroup>
+          <optgroup label="경기도">
+            <option value="41131">수원시 장안구</option>
+            <option value="41133">수원시 권선구</option>
+            <option value="41135">수원시 팔달구</option>
+            <option value="41117">수원시 영통구</option>
+            <option value="41281">고양시 덕양구</option>
+            <option value="41285">고양시 일산동구</option>
+            <option value="41287">고양시 일산서구</option>
+            <option value="41131">성남시 수정구</option>
+            <option value="41133">성남시 중원구</option>
+            <option value="41135">성남시 분당구</option>
+            <option value="41461">용인시 처인구</option>
+            <option value="41463">용인시 기흥구</option>
+            <option value="41465" selected>용인시 수지구</option>
+            <option value="41115">안양시 만안구</option>
+            <option value="41117">안양시 동안구</option>
+            <option value="41210">광명시</option>
+            <option value="41310">평택시</option>
+            <option value="41410">과천시</option>
+            <option value="41430">의왕시</option>
+            <option value="41450">하남시</option>
+            <option value="41610">파주시</option>
+            <option value="41630">이천시</option>
+            <option value="41650">안성시</option>
+            <option value="41670">김포시</option>
+            <option value="41730">화성시</option>
+            <option value="41390">시흥시</option>
+            <option value="41370">군포시</option>
+            <option value="41360">의정부시</option>
+            <option value="41360">남양주시</option>
+          </optgroup>
+          <optgroup label="인천광역시">
+            <option value="28110">중구</option>
+            <option value="28140">동구</option>
+            <option value="28177">미추홀구</option>
+            <option value="28185">연수구</option>
+            <option value="28200">남동구</option>
+            <option value="28237">부평구</option>
+            <option value="28245">계양구</option>
+            <option value="28260">서구</option>
+          </optgroup>
+          <optgroup label="부산광역시">
+            <option value="26110">중구</option>
+            <option value="26140">서구</option>
+            <option value="26170">동구</option>
+            <option value="26200">영도구</option>
+            <option value="26230">부산진구</option>
+            <option value="26260">동래구</option>
+            <option value="26290">남구</option>
+            <option value="26320">북구</option>
+            <option value="26350">해운대구</option>
+            <option value="26380">사하구</option>
+            <option value="26410">금정구</option>
+            <option value="26440">강서구</option>
+            <option value="26470">연제구</option>
+            <option value="26500">수영구</option>
+            <option value="26530">사상구</option>
+          </optgroup>
+          <optgroup label="기타 광역시">
+            <option value="27110">대구 중구</option>
+            <option value="27140">대구 동구</option>
+            <option value="27170">대구 서구</option>
+            <option value="27200">대구 남구</option>
+            <option value="27230">대구 북구</option>
+            <option value="27260">대구 수성구</option>
+            <option value="27290">대구 달서구</option>
+            <option value="29110">광주 동구</option>
+            <option value="29140">광주 서구</option>
+            <option value="29155">광주 남구</option>
+            <option value="29170">광주 북구</option>
+            <option value="29200">광주 광산구</option>
+            <option value="30110">대전 동구</option>
+            <option value="30140">대전 중구</option>
+            <option value="30170">대전 서구</option>
+            <option value="30200">대전 유성구</option>
+            <option value="30230">대전 대덕구</option>
+            <option value="31110">울산 중구</option>
+            <option value="31140">울산 남구</option>
+            <option value="31170">울산 동구</option>
+            <option value="31200">울산 북구</option>
+            <option value="36110">세종특별자치시</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>거래기간 <span style="font-weight:400;color:var(--text-light)">(YYYY=연도전체, YYYYMM=특정월)</span></label>
+        <input class="form-control" id="re-yearmonth" type="text" placeholder="예: 2026 또는 202602" maxlength="6">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group">
+        <label>법정동 필터 <span style="font-weight:400;color:var(--text-light)">(선택)</span></label>
+        <input class="form-control" id="re-umd" type="text" placeholder="예: 풍덕천동, 죽전동 (부분 일치)">
+      </div>
+      <div class="form-group">
+        <label>단지명 필터 <span style="font-weight:400;color:var(--text-light)">(여러 개는 | 로 구분)</span></label>
+        <input class="form-control" id="re-complex" type="text" placeholder="예: 롯데캐슬,태영데시앙,이편한세상" value="이편한세상수지">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>빠른 선택 <span style="font-weight:400;color:var(--text-light)">(클릭하면 자동 입력)</span></label>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <button type="button" onclick="setRePreset('main')" style="background:#fef3c7;border:1.5px solid #f59e0b;color:#92400e;padding:7px 14px;border-radius:18px;cursor:pointer;font-size:.78rem;font-weight:600">⭐ 핵심 3단지 (롯데캐슬골드타운+태영데시앙+이편한세상)</button>
+        <button type="button" onclick="setRePreset('seongbok')" style="background:#dbeafe;border:1.5px solid #3b82f6;color:#1e40af;padding:7px 14px;border-radius:18px;cursor:pointer;font-size:.78rem;font-weight:600">🚇 성복역 라인 (롯데캐슬+KCC+서희+아이파크+금호+리버파크)</button>
+        <button type="button" onclick="setRePreset('all')" style="background:#dcfce7;border:1.5px solid #16a34a;color:#166534;padding:7px 14px;border-radius:18px;cursor:pointer;font-size:.78rem;font-weight:600">🌟 전체 (10개 단지 모두)</button>
+        <button type="button" onclick="setRePreset('clear')" style="background:#f3f4f6;border:1.5px solid #9ca3af;color:#374151;padding:7px 14px;border-radius:18px;cursor:pointer;font-size:.78rem;font-weight:600">✖ 필터 비우기</button>
+      </div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="runRealEstate()">🏠 실거래가 조회</button>
+  </div>
+  <div class="loading" id="re-loading"><div class="spinner"></div><div class="loading-text">국토교통부 데이터 조회 중...</div></div>
+  <div class="result-area" id="re-result"></div>
+</div>
+
+
+</main>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════
+const state = {
+  blogIndexData: null,
+  chatMessages: [],
+  blogContext: {}
+};
+
+// ═══════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════
+document.querySelectorAll('.sidebar-item').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    item.classList.add('active');
+    document.getElementById('page-' + item.dataset.page).classList.add('active');
+  });
+});
+
+// Enter key for text inputs (not textarea)
+document.querySelectorAll('input.form-control').forEach(input => {
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const page = input.closest('.page');
+      const btn = page && page.querySelector('.btn-primary');
+      if (btn) btn.click();
+    }
+  });
+});
+
+// ═══════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════
+function setPlatform(prefix, btn) {
+  btn.closest('.platform-group').querySelectorAll('.platform-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function getPlatform(prefix) {
+  const active = document.querySelector(`#${prefix}-platform .platform-btn.active`);
+  return active ? active.dataset.val : 'both';
+}
+function showLoading(id) {
+  document.getElementById(id + '-loading').classList.add('show');
+  document.getElementById(id + '-result').classList.remove('show');
+  document.getElementById(id + '-result').innerHTML = '';
+}
+function hideLoading(id) {
+  document.getElementById(id + '-loading').classList.remove('show');
+}
+function showResult(id, html) {
+  hideLoading(id);
+  const el = document.getElementById(id + '-result');
+  el.innerHTML = html;
+  el.classList.add('show', 'result-fade');
+}
+function showError(id, msg) {
+  hideLoading(id);
+  showResult(id, `<div class="error-box">${msg}</div>`);
+}
+async function callApi(body) {
+  const res = await fetch('/api/analyze', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    let msg = `서버 오류: ${res.status}`;
+    try { const d = await res.json(); if (d.error) msg = d.error; } catch {}
+    throw new Error(msg);
+  }
+  return res.json();
+}
+function openUrl(url) {
+  const a = document.createElement('a');
+  a.href = url;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+function switchPage(pageId) {
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const targetItem = document.querySelector(`.sidebar-item[data-page="${pageId}"]`);
+  if (targetItem) targetItem.classList.add('active');
+  const targetPage = document.getElementById('page-' + pageId);
+  if (targetPage) targetPage.classList.add('active');
+}
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.classList.add('copied');
+    const orig = btn.textContent;
+    btn.textContent = '✓ 복사됨';
+    setTimeout(() => { btn.classList.remove('copied'); btn.textContent = orig; }, 2000);
+  });
+}
+function copyMyUrl(url, btn) {
+  navigator.clipboard.writeText(url).then(() => {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '✅ 복사됨!';
+    btn.style.background = 'rgba(99,230,139,.25)';
+    btn.style.borderColor = '#68d391';
+    setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; btn.style.borderColor = ''; }, 1800);
+  });
+}
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ═══════════════════════════════════════════
+//  LEVEL COLORS & VISUALIZATION
+// ═══════════════════════════════════════════
+const LEVEL_COLORS = ['#9e9e9e','#66bb6a','#43a047','#00897b','#1565c0','#1976d2','#5e35b1','#7b1fa2','#ad1457','#c62828','#b71c1c'];
+const LEVEL_NAMES = ['초보','입문','기초','성장','활성','안정','전문','고수','달인','마스터','레전드'];
+
+function renderLevelViz(level, reason) {
+  const color = LEVEL_COLORS[level] || '#9e9e9e';
+  const name = LEVEL_NAMES[level] || '';
+  const dots = Array.from({length:11}, (_,i) => {
+    const c = LEVEL_COLORS[i];
+    const isCurrent = i === level;
+    return `<div class="level-dot${isCurrent?' current':''}" style="background:${c};opacity:${isCurrent?1:0.45}" title="Lv.${i} ${LEVEL_NAMES[i]}">Lv${i}</div>`;
+  }).join('');
+  return `
+    <div class="level-display">
+      <div class="level-badge-big" style="background:${color};color:#fff">${level}</div>
+      <div class="level-label">Level ${level} · ${name}</div>
+      ${reason ? `<div class="level-reason">${escHtml(reason)}</div>` : ''}
+      <div class="level-scale">${dots}</div>
+    </div>`;
+}
+
+function getBadgeClass(val) {
+  if (!val) return 'badge-mid';
+  const v = String(val);
+  if (v==='높음'||v==='high') return 'badge-high';
+  if (v==='낮음'||v==='low') return 'badge-low';
+  return 'badge-mid';
+}
+function renderBadge(label, val) {
+  return `<span class="badge ${getBadgeClass(val)}">${escHtml(label||val)}</span>`;
+}
+
+function renderGoldenCard(k, topic) {
+  const scoreColor = {'A+':'#22543d','A':'#276749','B+':'#2b6cb0','B':'#4a5568','C':'#742a2a'};
+  const scoreBg    = {'A+':'#c6f6d5','A':'#c6f6d5','B+':'#bee3f8','B':'#e2e8f0','C':'#fed7d7'};
+  const sc = k.goldenScore || 'C';
+  const hasRealData = k.monthlyTotal !== null && k.monthlyTotal !== undefined;
+  const volColor  = k.monthlyTotal >= 10000 ? '#22543d' : k.monthlyTotal >= 2000 ? '#744210' : '#4a5568';
+  const volBg     = k.monthlyTotal >= 10000 ? '#c6f6d5'  : k.monthlyTotal >= 2000 ? '#fefcbf'  : '#e2e8f0';
+  const compColor = k.blogCount <= 5000  ? '#22543d' : k.blogCount <= 30000 ? '#744210' : '#742a2a';
+  const compBg    = k.blogCount <= 5000  ? '#c6f6d5'  : k.blogCount <= 30000 ? '#fefcbf'  : '#fed7d7';
+  const t = (topic||'').replace(/'/g,"\\'");
+  return `
+    <div class="keyword-card">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px">
+        <div class="kc-word" style="margin:0">🥇 ${escHtml(k.keyword)}</div>
+        <span style="background:${scoreBg[sc]||'#e2e8f0'};color:${scoreColor[sc]||'#4a5568'};font-weight:700;font-size:.85rem;padding:2px 10px;border-radius:20px">${sc}</span>
+      </div>
+      ${hasRealData ? `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+        <div style="background:${volBg};border-radius:8px;padding:6px 10px;text-align:center">
+          <div style="font-size:.65rem;color:${volColor};font-weight:600;margin-bottom:2px">월간 검색량</div>
+          <div style="font-size:.9rem;font-weight:700;color:${volColor}">${(k.monthlyTotal||0).toLocaleString()}</div>
+          <div style="font-size:.62rem;color:${volColor};opacity:.8">PC ${(k.monthlyPc||0).toLocaleString()} + 모바일 ${(k.monthlyMobile||0).toLocaleString()}</div>
+        </div>
+        <div style="background:${compBg};border-radius:8px;padding:6px 10px;text-align:center">
+          <div style="font-size:.65rem;color:${compColor};font-weight:600;margin-bottom:2px">블로그 경쟁</div>
+          <div style="font-size:.9rem;font-weight:700;color:${compColor}">${(k.blogCount||0).toLocaleString()}</div>
+          <div style="font-size:.62rem;color:${compColor};opacity:.8">개 포스트</div>
+        </div>
+      </div>` : `
+      <div class="kc-meta">
+        ${renderBadge('검색량 '+(k.searchVolume||''), k.searchVolume)}
+        ${renderBadge('경쟁도 '+(k.competition||''), k.competition)}
+      </div>`}
+      ${k.reason ? `<div class="kc-reason">${escHtml(k.reason)}</div>` : ''}
+      <button class="btn" style="margin-top:10px;padding:6px 14px;font-size:.78rem;background:var(--navy-mid);color:#fff;border:none;border-radius:8px;cursor:pointer;width:100%"
+        onclick="switchDraftTab('to-draft');document.getElementById('kw-to-draft-input').value='${escHtml(k.keyword).replace(/'/g,"\\'")}';document.getElementById('kw-to-draft-topic').value='${t}';document.querySelector('[data-page=draft-helper]')?.click()">
+        ✍️ 이 키워드로 대본 생성
+      </button>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════
+//  1. BLOG MISSING
+// ═══════════════════════════════════════════
+async function analyzeMissing() {
+  const url = document.getElementById('missing-url').value.trim();
+  const keyword = document.getElementById('missing-keyword').value.trim();
+  if (!url) { alert('블로그 URL을 입력해주세요.'); return; }
+  showLoading('missing');
+  try {
+    const data = await callApi({mode:'blog-missing', blogUrl:url, keyword});
+    const causes = (data.causes||[]).map(c=>`<li>${escHtml(c)}</li>`).join('');
+    const solutions = (data.solutions||[]).map(s=>`<li>${escHtml(s)}</li>`).join('');
+    const encodedKw = encodeURIComponent(keyword || url);
+    showResult('missing', `
+      <div class="card result-fade">
+        <div class="card-title">🔗 직접 확인 링크</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+          <a class="link-btn link-naver" href="https://search.naver.com/search.naver?query=${encodedKw}" target="_blank">🟢 네이버에서 확인</a>
+          <a class="link-btn link-google" href="https://www.google.com/search?q=${encodedKw}" target="_blank">🔵 구글에서 확인</a>
+        </div>
+      </div>
+      ${causes ? `<div class="card result-fade">
+        <div class="card-title">❗ 누락 원인</div>
+        <ul class="tips-list">${causes}</ul>
+      </div>` : ''}
+      ${solutions ? `<div class="card result-fade">
+        <div class="card-title">💡 해결 방법</div>
+        <ul class="tips-list">${solutions}</ul>
+      </div>` : ''}
+    `);
+  } catch(e) { showError('missing', e.message); }
+}
+
+// ═══════════════════════════════════════════
+//  2. BLOG INDEX
+// ═══════════════════════════════════════════
+async function analyzeBlogIndex() {
+  const url = document.getElementById('bindex-url').value.trim();
+  const topic = document.getElementById('bindex-topic').value.trim();
+  if (!url) { alert('블로그 URL을 입력해주세요.'); return; }
+
+  showLoading('bindex');
+  try {
+    const data = await callApi({ mode:'blog-index', blogUrl:url, topic });
+    state.blogIndexData = data;
+    state.blogContext = {
+      blogUrl: url, topic,
+      estimatedLevel: data.estimatedLevel,
+      levelReason: data.levelReason || '',
+      nextLevelTips: data.nextLevelTips || [],
+      summary: data.summary || ''
+    };
+    state.chatMessages = [];
+
+    const level = data.estimatedLevel || 0;
+    const scores = (data.scores||[]).map(s => `
+      <div class="score-card">
+        <div class="score-val">${escHtml(s.value)}</div>
+        <div class="score-label">${escHtml(s.label)}</div>
+        ${s.sub ? `<div class="score-sub">${escHtml(s.sub)}</div>` : ''}
+      </div>`).join('');
+    const tips = (data.tips||[]).map(t=>`<li>${escHtml(t)}</li>`).join('');
+    const nextTips = (data.nextLevelTips||[]).map(t=>`<li>${escHtml(t)}</li>`).join('');
+
+    showResult('bindex', `
+      <div class="card result-fade">
+        ${renderLevelViz(level, data.levelReason)}
+      </div>
+      ${scores ? `<div class="card result-fade">
+        <div class="card-title">📋 세부 점수</div>
+        <div class="scores-grid">${scores}</div>
+      </div>` : ''}
+      ${data.summary ? `<div class="summary-box result-fade">${escHtml(data.summary)}</div>` : ''}
+      ${tips ? `<div class="card result-fade">
+        <div class="card-title">💡 분석 팁</div>
+        <ul class="tips-list">${tips}</ul>
+      </div>` : ''}
+      ${nextTips ? `<div class="card result-fade">
+        <div class="card-title">🚀 다음 레벨 전략</div>
+        <ul class="tips-list">${nextTips}</ul>
+      </div>` : ''}
+    `);
+
+    // 분석 완료 후 채팅 메시지 업데이트
+    const msgs = document.getElementById('bindex-chat-messages');
+    msgs.innerHTML = '';
+    appendChatBubble('ai', `분석 완료! 현재 **Level ${level} (${LEVEL_NAMES[level]})** 수준이에요. 궁금한 점을 바로 물어보세요 😊`);
+    document.getElementById('bindex-chat-wrap').scrollIntoView({behavior:'smooth', block:'nearest'});
+  } catch(e) { showError('bindex', e.message); }
+}
+
+function appendChatBubble(role, text) {
+  const msgs = document.getElementById('bindex-chat-messages');
+  const div = document.createElement('div');
+  div.className = `chat-bubble ${role}`;
+  div.textContent = text.replace(/\*\*(.*?)\*\*/g, '$1');
+  div.innerHTML = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g,'<br>');
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+async function sendQuick(question) {
+  document.getElementById('bindex-chat-input').value = question;
+  await sendChat();
+}
+
+// ── 채팅 이미지 첨부 ──
+let _chatImg   = null; // 채팅 이미지
+let _bindexImg = null; // 블로그 지수 통계 스크린샷
+
+document.addEventListener('paste', e => {
+  // 블로그 지수 드롭존이 포커스됐을 때
+  if (document.activeElement?.closest('#bindex-img-drop') ||
+      document.getElementById('page-blog-index')?.classList.contains('active')) {
+    for (const item of (e.clipboardData?.items || [])) {
+      if (item.type.startsWith('image/')) { bindexHandleFile(item.getAsFile()); e.preventDefault(); return; }
+    }
+  }
+  // 채팅 영역
+  const chatWrap = document.getElementById('bindex-chat-wrap');
+  if (!chatWrap || chatWrap.style.display === 'none') return;
+  for (const item of (e.clipboardData?.items || [])) {
+    if (item.type.startsWith('image/')) { chatLoadFile(item.getAsFile()); break; }
+  }
+});
+
+function bindexHandlePaste(e) {
+  for (const item of (e.clipboardData?.items || [])) {
+    if (item.type.startsWith('image/')) { bindexHandleFile(item.getAsFile()); e.preventDefault(); break; }
+  }
+}
+
+function bindexHandleFile(file) {
+  if (!file) return;
+  const img = new Image();
+  const url = URL.createObjectURL(file);
+  img.onload = () => {
+    let w = img.width, h = img.height;
+    // 최대 900px로 줄여서 body 크기 절감 (통계 숫자 읽기엔 충분)
+    if (w > 900) { h = Math.round(h * 900 / w); w = 900; }
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    URL.revokeObjectURL(url);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.75); // 품질 0.75로 줄임
+    _bindexImg = { data: dataUrl.split(',')[1], type: 'image/jpeg', src: dataUrl };
+    document.getElementById('bindex-img-thumb').src = dataUrl;
+    document.getElementById('bindex-img-preview').style.display = 'block';
+    document.getElementById('bindex-img-clear').style.display = 'inline';
+    document.getElementById('bindex-img-drop').style.borderColor = 'var(--naver)';
+    document.getElementById('bindex-img-drop').innerHTML = '✅ 스크린샷 첨부됨 — 분석 시 실제 수치를 읽어드려요';
+  };
+  img.src = url;
+}
+
+function bindexClearImg() {
+  _bindexImg = null;
+  document.getElementById('bindex-img-preview').style.display = 'none';
+  document.getElementById('bindex-img-clear').style.display = 'none';
+  document.getElementById('bindex-img-drop').style.borderColor = 'var(--border)';
+  document.getElementById('bindex-img-drop').innerHTML = '📸 Ctrl+V 붙여넣기 또는 클릭해서 업로드<br><span style="font-size:.75rem">네이버 블로그 관리 → 통계 페이지 캡처</span>';
+  document.getElementById('bindex-img-file').value = '';
+}
+
+function chatHandleFile(e) {
+  if (e.target.files[0]) chatLoadFile(e.target.files[0]);
+  e.target.value = '';
+}
+
+function chatLoadFile(file) {
+  const img = new Image();
+  const url = URL.createObjectURL(file);
+  img.onload = () => {
+    let w = img.width, h = img.height;
+    if (w > 1200) { h = Math.round(h * 1200 / w); w = 1200; }
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    URL.revokeObjectURL(url);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+    _chatImg = { data: dataUrl.split(',')[1], type: 'image/jpeg', src: dataUrl };
+    document.getElementById('chat-preview-thumb').src = dataUrl;
+    document.getElementById('chat-img-preview').style.display = 'flex';
+  };
+  img.src = url;
+}
+
+function chatClearImg() {
+  _chatImg = null;
+  document.getElementById('chat-preview-thumb').src = '';
+  document.getElementById('chat-img-preview').style.display = 'none';
+}
+
+async function sendChat() {
+  const input = document.getElementById('bindex-chat-input');
+  const text = input.value.trim();
+  if (!text && !_chatImg) return;
+  input.value = '';
+  input.style.height = 'auto';
+
+  const displayText = text || '이 이미지를 SEO 관점에서 분석해주세요.';
+
+  // 사용자 버블 (이미지 있으면 썸네일 포함)
+  const userHtml = (_chatImg ? `<img src="${_chatImg.src}" style="max-width:180px;border-radius:8px;display:block;margin-bottom:6px">` : '') + escHtml(displayText);
+  appendChatBubble('user', userHtml, true);
+
+  // 이미지가 있으면 content를 배열로, 없으면 문자열로
+  const msgContent = _chatImg
+    ? [{ type:'image', source:{ type:'base64', media_type:_chatImg.type, data:_chatImg.data } },
+       { type:'text', text: displayText }]
+    : displayText;
+
+  state.chatMessages.push({ role:'user', content: msgContent });
+  chatClearImg();
+
+  const loadingDiv = document.createElement('div');
+  loadingDiv.className = 'chat-bubble ai';
+  loadingDiv.innerHTML = '<span style="opacity:.5">입력 중...</span>';
+  document.getElementById('bindex-chat-messages').appendChild(loadingDiv);
+  document.getElementById('bindex-chat-messages').scrollTop = 99999;
+  try {
+    const data = await callApi({
+      mode: 'chat',
+      messages: state.chatMessages,
+      blogContext: state.blogContext
+    });
+    loadingDiv.remove();
+    const reply = data.reply || data.message || (typeof data === 'string' ? data : '응답을 받았습니다.');
+    appendChatBubble('ai', reply);
+    // 히스토리에는 텍스트만 저장 (이미지 제외해 용량 절감)
+    state.chatMessages[state.chatMessages.length - 1].content = displayText;
+    state.chatMessages.push({ role:'assistant', content: reply });
+  } catch(e) {
+    loadingDiv.textContent = '오류: ' + e.message;
+  }
+}
+
+// ═══════════════════════════════════════════
+//  통합 분석 (레벨 + 황금키워드 + 대본)
+// ═══════════════════════════════════════════
+async function analyzeAll() {
+  const url   = document.getElementById('bindex-url').value.trim();
+  const topic = document.getElementById('bindex-topic').value.trim();
+  if (!url) { alert('블로그 URL을 입력해주세요.'); return; }
+
+  showLoading('bindex');
+  document.getElementById('bindex-kw-result').innerHTML = '';
+  document.getElementById('bindex-draft-result').innerHTML = '';
+
+  try {
+    // 블로그 레벨 분석
+    if (_bindexImg) {
+      document.getElementById('bindex-loading').querySelector('.loading-text').textContent = '통계 스크린샷 읽는 중...';
+    }
+    const indexData = await callApi({
+      mode: 'blog-index', blogUrl: url, topic,
+      ..._bindexImg ? { imageData: _bindexImg.data, imageType: _bindexImg.type } : {}
+    });
+
+    state.blogContext = { blogUrl: url, topic, estimatedLevel: indexData.estimatedLevel, levelReason: indexData.levelReason || '', nextLevelTips: indexData.nextLevelTips || [], summary: indexData.summary || '' };
+    state.chatMessages = [];
+    const level = indexData.estimatedLevel || 0;
+    const scores = (indexData.scores||[]).map(s=>`<div class="score-card"><div class="score-val">${escHtml(s.value)}</div><div class="score-label">${escHtml(s.label)}</div>${s.sub?`<div class="score-sub">${escHtml(s.sub)}</div>`:''}</div>`).join('');
+    const tips = (indexData.tips||[]).map(t=>`<li>${escHtml(t)}</li>`).join('');
+    const nextTips = (indexData.nextLevelTips||[]).map(t=>`<li>${escHtml(t)}</li>`).join('');
+
+    const blockers = (indexData.growthBlockers||[]).map(b => `
+      <div style="border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="background:#fed7d7;color:#742a2a;font-weight:700;font-size:.75rem;padding:2px 10px;border-radius:20px">원인 ${b.rank}</span>
+          <span style="font-weight:700;font-size:.9rem">${escHtml(b.title)}</span>
+        </div>
+        <div style="font-size:.83rem;color:var(--text-mid);margin-bottom:8px;line-height:1.6">${escHtml(b.diagnosis)}</div>
+        <div style="background:#c6f6d5;border-radius:8px;padding:8px 12px;font-size:.82rem;color:#22543d">
+          <b>👉 지금 당장:</b> ${escHtml(b.action)}
+        </div>
+      </div>`).join('');
+
+    const refs = (indexData.references||[]).map(r => `
+      <a href="${escHtml(r.url)}" target="_blank" rel="noopener"
+        style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text);transition:border-color .15s"
+        onmouseover="this.style.borderColor='var(--navy-mid)'" onmouseout="this.style.borderColor='var(--border)'">
+        <span style="font-size:1.2rem">🔗</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:.85rem">${escHtml(r.title)}</div>
+          <div style="font-size:.75rem;color:var(--text-light);margin-top:2px">${escHtml(r.desc)}</div>
+        </div>
+        <span style="font-size:.72rem;color:var(--navy-mid);white-space:nowrap">바로가기 →</span>
+      </a>`).join('');
+
+    showResult('bindex', `
+      ${indexData._fromImage ? `<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:#ebf8f0;border:1.5px solid #38a169;border-radius:10px;margin-bottom:12px;font-size:.82rem;font-weight:700;color:#22543d">📸 스크린샷 실데이터 분석 — 입력 수치 100% 정확</div>` : ''}
+      <div class="card result-fade">${renderLevelViz(level, indexData.levelReason)}</div>
+      ${scores ? `<div class="card result-fade"><div class="card-title">📋 세부 점수</div><div class="scores-grid">${scores}</div></div>` : ''}
+      ${indexData.summary ? `<div class="summary-box result-fade">${escHtml(indexData.summary)}</div>` : ''}
+      ${blockers ? `<div class="card result-fade"><div class="card-title">🚧 성장을 막는 원인 진단</div><div style="font-size:.78rem;color:var(--text-light);margin-bottom:12px">충분히 클 수 있는데 못 크는 이유</div>${blockers}</div>` : ''}
+      ${nextTips ? `<div class="card result-fade"><div class="card-title">🚀 다음 레벨 달성 조건</div><ul class="tips-list">${nextTips}</ul></div>` : ''}
+      ${tips ? `<div class="card result-fade"><div class="card-title">💡 지수 향상 전략</div><ul class="tips-list">${tips}</ul></div>` : ''}
+      ${refs ? `<div class="card result-fade"><div class="card-title">📚 벤치마킹 & 학습 자료</div><div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">${refs}</div></div>` : ''}
+    `);
+
+    renderNextStepPanel(topic);
+
+    // 채팅 초기화
+    const msgs = document.getElementById('bindex-chat-messages');
+    msgs.innerHTML = '';
+    appendChatBubble('ai', `분석 완료! 현재 **Level ${level} (${LEVEL_NAMES[level]})** 수준이에요.\n아래에서 다음 단계를 골라보세요 😊`);
+    document.getElementById('bindex-chat-wrap').scrollIntoView({behavior:'smooth', block:'nearest'});
+
+  } catch(e) { showError('bindex', e.message); }
+}
+
+async function generateDraft(keyword, topic) {
+  document.getElementById('bindex-draft-result').innerHTML = `
+    <div class="card result-fade" style="margin-top:0">
+      <div class="card-title">✍️ 대본 + 황금 키워드 분석 중...</div>
+      <div style="color:var(--text-light);font-size:.85rem">「${escHtml(keyword)}」 키워드로 대본 작성 & 네이버 황금 키워드 조회 중...</div>
+    </div>`;
+  document.getElementById('bindex-draft-result').scrollIntoView({behavior:'smooth', block:'nearest'});
+  try {
+    const [data, goldenData] = await Promise.all([
+      callApi({ mode: 'keyword-to-draft', keyword, topic, length: '중간 (800~1200자)' }),
+      callApi({ mode: 'golden-keyword', topic: keyword })
+    ]);
+    const draft = data.draft || '';
+    const goldenCards = (goldenData.goldenKeywords || []).slice(0, 6).map(k => renderGoldenCard(k, keyword)).join('');
+    document.getElementById('bindex-draft-result').innerHTML = `
+      <div class="card result-fade" style="margin-top:0">
+        <div class="card-title">✍️ 대본 초안 — <span style="font-weight:400;color:var(--text-mid)">${escHtml(keyword)}</span></div>
+        ${(data.usedKeywords||[]).length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">${data.usedKeywords.map(k=>`<span class="badge" style="background:var(--gold-bg);color:var(--gold-text)">🥇 ${escHtml(k)}</span>`).join('')}</div>` : ''}
+        <div class="draft-script">${escHtml(draft)}</div>
+        <div class="draft-copy-row">
+          <button class="copy-btn" style="padding:8px 18px;font-size:.82rem" onclick="navigator.clipboard.writeText(document.querySelector('#bindex-draft-result .draft-script').textContent).then(()=>{this.textContent='✓ 복사됨';setTimeout(()=>this.textContent='📋 대본 복사',1800)})">📋 대본 복사</button>
+        </div>
+      </div>
+      ${goldenCards ? `<div class="card result-fade" style="margin-top:0"><div class="card-title">🥇 관련 황금 키워드 (네이버 실데이터)</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:4px">${goldenCards}</div></div>` : ''}
+      ${(data.seoTips||[]).length ? `<div class="card result-fade" style="margin-top:0"><div class="card-title">💡 포스팅 전 체크리스트</div><ul class="tips-list">${data.seoTips.map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul></div>` : ''}`;
+  } catch(e) {
+    document.getElementById('bindex-draft-result').innerHTML = `<div class="card" style="color:var(--red-text)">대본 생성 오류: ${escHtml(e.message)}</div>`;
+  }
+}
+
+// ═══════════════════════════════════════════
+//  다음 단계 패널 (진단 후 3가지 선택)
+// ═══════════════════════════════════════════
+
+function renderNextStepPanel(topic) {
+  const t = (topic || '부동산 금융 재테크').replace(/'/g, "\\'");
+  const kwEl = document.getElementById('bindex-kw-result');
+  kwEl.classList.add('show');
+  kwEl.innerHTML = `
+    <div class="card result-fade" style="margin-top:0" id="next-step-card">
+      <div class="card-title" style="margin-bottom:14px">📌 다음 단계 — 무엇을 도와드릴까요?</div>
+      <div style="display:flex;gap:10px;margin-bottom:18px">
+        <button id="nstab-1" class="ns-tab active" style="flex:1" onclick="switchNsTab(1,'${t}')">
+          <div style="font-size:1.3rem;margin-bottom:4px">📝</div>
+          <div style="font-weight:600;font-size:.82rem">대본 → 키워드</div>
+          <div style="font-size:.72rem;margin-top:3px">쓴 글에서 키워드 추출</div>
+        </button>
+        <button id="nstab-2" class="ns-tab" style="flex:1" onclick="switchNsTab(2,'${t}')">
+          <div style="font-size:1.3rem;margin-bottom:4px">🔑</div>
+          <div style="font-weight:600;font-size:.82rem">키워드 → 대본</div>
+          <div style="font-size:.72rem;margin-top:3px">키워드로 대본 초안 생성</div>
+        </button>
+        <button id="nstab-3" class="ns-tab" style="flex:1" onclick="switchNsTab(3,'${t}')">
+          <div style="font-size:1.3rem;margin-bottom:4px">🥇</div>
+          <div style="font-weight:600;font-size:.82rem">키워드 추천</div>
+          <div style="font-size:.72rem;margin-top:3px">황금 키워드 찾아주기</div>
+        </button>
+      </div>
+      <div id="nspanel-1">
+        <div class="form-group" style="margin-bottom:10px">
+          <label style="font-size:.82rem">작성한 대본 붙여넣기</label>
+          <textarea id="ns-draft-input" class="form-control" rows="5" placeholder="블로그에 쓸 대본이나 초안을 붙여넣어 주세요..." style="resize:vertical;min-height:100px"></textarea>
+        </div>
+        <button class="btn btn-primary" style="width:100%" onclick="runNsDraftToKeyword()">📝 키워드 추출</button>
+      </div>
+      <div id="nspanel-2" style="display:none">
+        <div class="form-group" style="margin-bottom:10px">
+          <label style="font-size:.82rem">키워드 입력</label>
+          <input type="text" id="ns-kw-input" class="form-control" placeholder="예) 강남 아파트 투자, 금리 인하 영향" />
+        </div>
+        <button class="btn btn-primary" style="width:100%" onclick="runNsKeywordToDraft('${t}')">🔑 대본 생성</button>
+      </div>
+      <div id="nspanel-3" style="display:none">
+        <div style="font-size:.83rem;color:var(--text-mid);margin-bottom:12px">주제 <b>${topic || '부동산 금융 재테크'}</b>에 맞는 황금 키워드를 찾아드립니다.</div>
+        <button class="btn btn-primary" style="width:100%" onclick="loadGoldenKeywords('${t}')">🥇 황금 키워드 추천받기</button>
+      </div>
+    </div>`;
+  document.getElementById('bindex-kw-result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function switchNsTab(n, topic) {
+  [1,2,3].forEach(i => {
+    document.getElementById(`nstab-${i}`).classList.toggle('active', i === n);
+    document.getElementById(`nspanel-${i}`).style.display = i === n ? '' : 'none';
+  });
+}
+
+async function runNsDraftToKeyword() {
+  const draft = document.getElementById('ns-draft-input').value.trim();
+  if (!draft) { alert('대본을 입력해주세요.'); return; }
+  if (draft.length < 50) { alert('50자 이상 입력해주세요.'); return; }
+  const platform = document.querySelector('#pg-draft-kw .platform-btn.active')?.dataset.val || '둘 다';
+  const resultEl = document.getElementById('bindex-draft-result');
+  resultEl.innerHTML = `<div class="card result-fade" style="margin-top:0"><div class="card-title">📝 키워드 추출 중...</div></div>`;
+  resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  try {
+    const data = await callApi({ mode: 'draft-to-keyword', draft, platform });
+    const kwCards = (data.keywords||[]).map(k => renderGoldenCard(k, '')).join('');
+    resultEl.innerHTML = kwCards ? `
+      <div class="card result-fade" style="margin-top:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div class="card-title" style="margin:0">📝 이 글에서 추출한 황금 키워드</div>
+          <span style="font-size:.72rem;color:var(--naver);font-weight:600">🟢 네이버 실데이터</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">${kwCards}</div>
+      </div>
+      ${(data.missingKeywords||[]).length ? `<div class="card result-fade" style="margin-top:0"><div class="card-title">➕ 추가하면 좋을 키워드</div><div style="display:flex;flex-wrap:wrap;gap:8px">${data.missingKeywords.map(k=>`<span class="badge">${escHtml(k)}</span>`).join('')}</div></div>` : ''}
+      ${(data.seoTips||[]).length ? `<div class="card result-fade" style="margin-top:0"><div class="card-title">💡 SEO 개선 포인트</div><ul class="tips-list">${data.seoTips.map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul></div>` : ''}` : '';
+  } catch(e) {
+    resultEl.innerHTML = `<div class="card" style="color:var(--red-text)">오류: ${escHtml(e.message)}</div>`;
+  }
+}
+
+async function runNsKeywordToDraft(topic) {
+  const keyword = document.getElementById('ns-kw-input').value.trim();
+  if (!keyword) { alert('키워드를 입력해주세요.'); return; }
+  await generateDraft(keyword, topic);
+}
+
+// ═══════════════════════════════════════════
+//  황금 키워드 (통합분석에서 버튼으로 호출)
+// ═══════════════════════════════════════════
+
+async function loadGoldenKeywords(topic) {
+  const kwResult = document.getElementById('bindex-kw-result');
+  kwResult.innerHTML = `<div class="card" style="text-align:center;padding:24px"><div class="spinner" style="margin:0 auto 10px"></div><div style="font-size:.85rem;color:var(--text-mid)">황금 키워드 분석 중...</div></div>`;
+  kwResult.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  try {
+    const kwData = await callApi({ mode: 'golden-keyword', topic: topic || '부동산 금융 재테크', platform: '둘 다' });
+    const kwCards = (kwData.goldenKeywords||[]).map(k => renderGoldenCard(k, topic)).join('');
+    kwResult.innerHTML = kwCards ? `
+      <div class="card result-fade" style="margin-top:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div class="card-title" style="margin:0">🥇 황금 키워드</div>
+          <span style="font-size:.72rem;color:var(--naver);font-weight:600">🟢 네이버 실데이터</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">${kwCards}</div>
+      </div>` : '';
+  } catch(e) {
+    kwResult.innerHTML = `<div class="card" style="color:var(--red-text)">황금 키워드 오류: ${escHtml(e.message)}</div>`;
+  }
+}
+
+// ═══════════════════════════════════════════
+//  블로그 비교 분석
+// ═══════════════════════════════════════════
+
+let _cmpData = null; // 마지막 비교 결과 저장
+let _cmpModel = 'haiku'; // 선택된 AI 모델
+
+function setCmpModel(model, btn) {
+  _cmpModel = model;
+  document.querySelectorAll('#cmp-model-btns button').forEach(b => {
+    b.style.background = 'transparent';
+    b.style.borderColor = 'transparent';
+    b.style.color = 'rgba(255,255,255,.5)';
+  });
+  btn.style.background = 'rgba(255,255,255,.2)';
+  btn.style.borderColor = 'rgba(255,255,255,.5)';
+  btn.style.color = '#fff';
+}
+
+async function runBlogCompare() {
+  const myUrl   = document.getElementById('cmp-my-url').value.trim();
+  const compUrl = document.getElementById('cmp-comp-url').value.trim();
+  const topic   = document.getElementById('cmp-topic').value.trim();
+  if (!myUrl)   { alert('내 블로그 URL을 입력해주세요.'); return; }
+  if (!compUrl) { alert('비교할 블로그 URL을 입력해주세요.'); return; }
+
+  showLoading('cmp'); hideResult('cmp');
+  try {
+    const data = await callApi({ mode: 'blog-compare', myBlogUrl: myUrl, compBlogUrl: compUrl, topic });
+
+    const { myId, compId, myCount, compCount, myKws, compKws, gapKws, myDates, compDates, myRecent, compRecent, aiAnalysis } = data;
+
+    // 키워드 태그 렌더
+    const kwTags = (kws, color) => kws.map(k =>
+      `<span style="display:inline-block;padding:3px 8px;margin:2px;border-radius:12px;font-size:.74rem;background:${color};white-space:nowrap">${escHtml(k.kw)} <b>${k.cnt}</b></span>`
+    ).join('');
+
+    // 갭 키워드
+    const gapHtml = gapKws.length ? gapKws.map(k =>
+      `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+        <span style="font-weight:600;color:var(--navy-mid)">${escHtml(k.kw)}</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span style="font-size:.74rem;color:var(--text-light)">경쟁블로그 ${k.cnt}회</span>
+          <button onclick="document.getElementById('kw-input').value=${JSON.stringify(k.kw)};switchPage('keyword-analysis')"
+            style="font-size:.7rem;padding:2px 8px;border:1px solid var(--sky);border-radius:10px;cursor:pointer;background:#ebf8ff;color:#2c5282;font-family:inherit">
+            분석 →
+          </button>
+        </div>
+      </div>`
+    ).join('') : '<div style="color:var(--text-light);font-size:.82rem">갭 키워드를 찾지 못했습니다.</div>';
+
+    // 최근 포스트
+    const recentHtml = (posts, id) => posts.length
+      ? posts.map(p => `<div style="padding:5px 0;border-bottom:1px solid var(--border);font-size:.8rem">
+          <a href="${escHtml(p.link)}" target="_blank" style="color:var(--navy-mid);text-decoration:none">${escHtml(p.title)}</a>
+          <span style="color:var(--text-light);margin-left:6px">${p.date}</span>
+        </div>`).join('')
+      : `<div style="color:var(--text-light);font-size:.8rem">"${escHtml(id)}" 포스트를 찾지 못했습니다.</div>`;
+
+    // 포스팅 빈도 바
+    const freqBar = (dates) => dates.map(d =>
+      `<div style="text-align:center;flex:1">
+        <div style="height:${Math.min(60, d.cnt * 10)}px;background:linear-gradient(180deg,var(--sky),var(--navy-mid));border-radius:3px 3px 0 0;margin-bottom:2px"></div>
+        <div style="font-size:.65rem;color:var(--text-light)">${d.ym.slice(4)}월</div>
+        <div style="font-size:.68rem;font-weight:700">${d.cnt}</div>
+      </div>`
+    ).join('');
+
+    _cmpData = data;
+    document.getElementById('cmp-qa-history').innerHTML = `
+      <div style="align-self:flex-start;background:#f0f4f8;padding:10px 14px;border-radius:14px 14px 14px 4px;font-size:.84rem;color:var(--text-mid);max-width:85%;line-height:1.6">
+        분석 완료! 📊 <b>${escHtml(data.myId)}</b> vs <b>${escHtml(data.compId)}</b> 비교 결과가 위에 나왔어요.<br>
+        궁금한 점이나 생각하는 것 편하게 말씀해주세요!
+      </div>`;
+
+    showResult('cmp', `
+      <div class="result-fade" style="display:flex;flex-direction:column;gap:14px">
+
+        <!-- 요약 카드 -->
+        <div class="card">
+          <div class="card-title">📊 수집 요약</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div style="background:#f0f7ff;border-radius:8px;padding:12px;text-align:center">
+              <div style="font-size:.78rem;color:var(--text-light);margin-bottom:4px">📌 내 블로그 (${escHtml(myId)})</div>
+              <div style="font-size:1.8rem;font-weight:800;color:var(--navy-mid)">${myCount}</div>
+              <div style="font-size:.74rem;color:var(--text-light)">포스트 수집</div>
+            </div>
+            <div style="background:#fff5f5;border-radius:8px;padding:12px;text-align:center">
+              <div style="font-size:.78rem;color:var(--text-light);margin-bottom:4px">🎯 경쟁 블로그 (${escHtml(compId)})</div>
+              <div style="font-size:1.8rem;font-weight:800;color:#c53030">${compCount}</div>
+              <div style="font-size:.74rem;color:var(--text-light)">포스트 수집</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 포스팅 빈도 비교 -->
+        ${(myDates.length || compDates.length) ? `
+        <div class="card">
+          <div class="card-title">📅 최근 포스팅 빈도</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div>
+              <div style="font-size:.78rem;color:var(--text-light);margin-bottom:8px">내 블로그</div>
+              <div style="display:flex;align-items:flex-end;gap:4px;height:70px">${freqBar(myDates)}</div>
+            </div>
+            <div>
+              <div style="font-size:.78rem;color:var(--text-light);margin-bottom:8px">경쟁 블로그</div>
+              <div style="display:flex;align-items:flex-end;gap:4px;height:70px">${freqBar(compDates)}</div>
+            </div>
+          </div>
+        </div>` : ''}
+
+        <!-- 키워드 비교 -->
+        <div class="card">
+          <div class="card-title">🔑 키워드 전략 비교</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div>
+              <div style="font-size:.8rem;font-weight:700;margin-bottom:8px;color:var(--navy-mid)">📌 내 블로그 키워드</div>
+              <div>${kwTags(myKws, '#ebf8ff')}</div>
+            </div>
+            <div>
+              <div style="font-size:.8rem;font-weight:700;margin-bottom:8px;color:#c53030">🎯 경쟁 블로그 키워드</div>
+              <div>${kwTags(compKws, '#fff5f5')}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 갭 키워드 -->
+        <div class="card">
+          <div class="card-title">🚨 갭 키워드 — 상대방은 쓰는데 내가 안 쓴 키워드</div>
+          <div style="font-size:.76rem;color:var(--text-light);margin-bottom:10px">지금 당장 써야 할 키워드들입니다. 클릭하면 키워드 분석으로 이동합니다.</div>
+          ${gapHtml}
+        </div>
+
+        <!-- AI 전략 분석 -->
+        ${aiAnalysis ? `
+        <div class="card">
+          <div class="card-title">🤖 AI 전략 분석</div>
+          <div style="font-size:.85rem;line-height:1.7;white-space:pre-wrap;color:var(--text-mid)">${escHtml(aiAnalysis)}</div>
+        </div>` : ''}
+
+        <!-- 최근 포스트 비교 -->
+        <div class="card">
+          <div class="card-title">📝 최근 포스트 비교</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div>
+              <div style="font-size:.78rem;font-weight:700;margin-bottom:8px">내 블로그</div>
+              ${recentHtml(myRecent, myId)}
+            </div>
+            <div>
+              <div style="font-size:.78rem;font-weight:700;margin-bottom:8px">경쟁 블로그</div>
+              ${recentHtml(compRecent, compId)}
+            </div>
+          </div>
+        </div>
+
+      </div>
+    `);
+  } catch(e) { showError('cmp', e.message); }
+}
+
+async function askCmpQuestion() {
+  const input = document.getElementById('cmp-qa-input');
+  const q = input.value.trim();
+  if (!q) return;
+
+  const history = document.getElementById('cmp-qa-history');
+
+  // 내 말풍선
+  history.insertAdjacentHTML('beforeend', `
+    <div style="align-self:flex-end;background:var(--navy-mid);color:#fff;padding:10px 14px;border-radius:14px 14px 4px 14px;font-size:.84rem;max-width:82%;line-height:1.6;white-space:pre-wrap">${escHtml(q)}</div>
+  `);
+  input.value = '';
+  history.scrollTop = history.scrollHeight;
+
+  // 로딩
+  const loadId = 'cmp-qa-load-' + Date.now();
+  history.insertAdjacentHTML('beforeend', `
+    <div id="${loadId}" style="align-self:flex-start;background:#f0f4f8;padding:10px 14px;border-radius:14px 14px 14px 4px;font-size:.84rem;color:var(--text-light);max-width:85%">생각 중...</div>
+  `);
+  history.scrollTop = history.scrollHeight;
+
+  try {
+    const context = _cmpData ? `
+[블로그 비교 데이터]
+내 블로그(${_cmpData.myId}): ${_cmpData.myCount}개 포스트
+경쟁 블로그(${_cmpData.compId}): ${_cmpData.compCount}개 포스트
+내 블로그 주요 키워드: ${(_cmpData.myKws||[]).slice(0,10).map(k=>k.kw).join(', ')}
+경쟁 블로그 주요 키워드: ${(_cmpData.compKws||[]).slice(0,10).map(k=>k.kw).join(', ')}
+갭 키워드(상대방만 씀): ${(_cmpData.gapKws||[]).slice(0,8).map(k=>k.kw).join(', ')}
+AI 분석: ${_cmpData.aiAnalysis || '없음'}
+    `.trim() : '(비교 분석 데이터 없음 — 일반 블로그 전략 관점으로 답변)';
+
+    const data = await callApi({
+      mode: 'cmp-chat',
+      message: q,
+      context: context,
+      model: _cmpModel
+    });
+
+    const answer = data.reply || data.message || '답변을 받지 못했습니다.';
+    document.getElementById(loadId).innerHTML = answer.replace(/\n/g,'<br>');
+    document.getElementById(loadId).style.color = 'var(--text-mid)';
+  } catch(e) {
+    document.getElementById(loadId).textContent = '오류: ' + e.message;
+  }
+  history.scrollTop = history.scrollHeight;
+}
+
+// ═══════════════════════════════════════════
+//  순위 체커
+// ═══════════════════════════════════════════
+
+async function loadTopBloggers() {
+  const topic = document.getElementById('tb-topic').value.trim();
+  if (!topic) { alert('분야/키워드를 입력해주세요.'); return; }
+
+  showLoading('tb');
+  hideResult('tb');
+  try {
+    const data = await callApi({ mode: 'top-bloggers', topic });
+    const bloggers = data.bloggers || [];
+
+    if (!bloggers.length) {
+      showResult('tb', '<div class="card">결과를 찾을 수 없습니다. 다른 키워드로 시도해보세요.</div>');
+      return;
+    }
+
+    window._tbLinks = bloggers.map(b => b.link);
+
+    const rows = bloggers.map((b, i) => {
+      const rank = i + 1;
+      const badgeStyle = rank <= 3
+        ? 'background:linear-gradient(135deg,#d4af37,#f0c040);color:#5a3e0a'
+        : rank <= 10
+          ? 'background:#c6f6d5;color:#22543d'
+          : rank <= 30
+            ? 'background:#bee3f8;color:#2c5282'
+            : 'background:#e2e8f0;color:#4a5568';
+
+      const strengthBar = Math.min(100, b.count * 20);
+
+      return `
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">
+          <span style="min-width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;flex-shrink:0;${badgeStyle}">${rank}</span>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <button onclick="openUrl(window._tbLinks[${i}])"
+                style="font-weight:700;font-size:.92rem;color:var(--navy-mid);background:none;border:none;cursor:pointer;padding:0;font-family:inherit;text-align:left">
+                ${escHtml(b.name) || '이름 없음'}
+              </button>
+              <span style="font-size:.72rem;color:var(--text-light)">${b.count}회 상위 노출</span>
+            </div>
+            <div style="height:4px;background:#e2e8f0;border-radius:2px;margin-bottom:6px;max-width:200px">
+              <div style="height:100%;width:${strengthBar}%;background:linear-gradient(90deg,var(--navy-mid),var(--sky));border-radius:2px"></div>
+            </div>
+            ${b.titles.length ? `<div style="font-size:.74rem;color:var(--text-light)">${b.titles.map(t => `"${escHtml(t)}"`).join(' · ')}</div>` : ''}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;align-items:flex-end">
+            <button onclick="navigator.clipboard.writeText(window._tbLinks[${i}]).then(()=>{this.textContent='✅ 복사됨';setTimeout(()=>this.textContent='📋 URL 복사',1500)})"
+              style="font-size:.72rem;padding:4px 10px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:#fff;font-family:inherit;color:var(--text-mid);text-align:center;white-space:nowrap">
+              📋 URL 복사
+            </button>
+            <div style="font-size:.65rem;color:var(--text-light);word-break:break-all;max-width:160px;text-align:right">${escHtml(b.link)}</div>
+            <button onclick="document.getElementById('rank-blogurl').value=window._tbLinks[${i}];switchPage('rank-checker')"
+              style="font-size:.68rem;padding:3px 8px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:#fff;font-family:inherit;color:var(--text-mid)">
+              순위비교
+            </button>
+          </div>
+        </div>`;
+    }).join('');
+
+    showResult('tb', `
+      <div class="card result-fade">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div class="card-title" style="margin:0">🏅 「${escHtml(data.topic)}」 상위 노출 블로거 ${bloggers.length}명</div>
+        </div>
+        <div style="font-size:.78rem;color:var(--text-light);margin-bottom:14px">
+          네이버 블로그 검색 상위 결과 기준 · 숫자 = 상위 결과에 등장한 횟수 · 클릭해서 벤치마킹하세요
+        </div>
+        ${rows}
+      </div>
+    `);
+  } catch(e) { showError('tb', e.message); }
+}
+
+function goRankCheck(kw) {
+  document.getElementById('rank-keyword').value = kw;
+  switchPage('rank-checker');
+  setTimeout(() => document.getElementById('rank-keyword').scrollIntoView({behavior:'smooth'}), 100);
+}
+function goDraftGen(kw) {
+  switchPage('draft-helper');
+  setTimeout(() => {
+    const el = document.getElementById('kw-to-draft-input');
+    if (el) el.value = kw;
+    switchDraftTab('to-draft');
+  }, 300);
+}
+
+async function checkMyRank() {
+  const keyword = document.getElementById('rank-keyword').value.trim();
+  const blogUrl = document.getElementById('rank-blogurl').value.trim();
+  if (!keyword) { alert('키워드를 입력해주세요.'); return; }
+  if (!blogUrl) { alert('블로그 URL 또는 ID를 입력해주세요.'); return; }
+
+  showLoading('rank');
+  hideResult('rank');
+  try {
+    const data = await callApi({ mode: 'rank-checker', keyword, blogUrl });
+
+    // 순위 배지 색상
+    const rankBadgeStyle = (rank) => {
+      if (!rank) return 'background:#fed7d7;color:#742a2a';
+      if (rank <= 3)  return 'background:linear-gradient(135deg,#d4af37,#f0c040);color:#5a3e0a';
+      if (rank <= 10) return 'background:#c6f6d5;color:#22543d';
+      return 'background:#e2e8f0;color:#4a5568';
+    };
+    const rankLabel = (rank) => {
+      if (!rank) return '미노출';
+      if (rank === 1) return '🥇 1위';
+      if (rank === 2) return '🥈 2위';
+      if (rank === 3) return '🥉 3위';
+      return `${rank}위`;
+    };
+
+    const topList = (data.items || []).map(item => `
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);${item.isMe ? 'background:#fffbeb;margin:0 -8px;padding:10px 8px;border-radius:8px;border-color:transparent' : ''}">
+        <span style="min-width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;flex-shrink:0;${item.rank<=3?'background:linear-gradient(135deg,#d4af37,#f0c040);color:#5a3e0a':'background:var(--navy);color:#fff'}">${item.rank}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:${item.isMe?'700':'500'};font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+            ${item.isMe ? '⭐ ' : ''}${escHtml(item.title) || '(제목 없음)'}
+          </div>
+          <div style="font-size:.75rem;color:var(--text-light);margin-top:2px">
+            ${escHtml(item.bloggerName)} ${item.postDate ? '· ' + item.postDate.slice(0,4) + '.' + item.postDate.slice(4,6) + '.' + item.postDate.slice(6) : ''}
+            ${item.isMe ? '<span style="background:#fef3c7;color:#92400e;font-weight:700;padding:1px 7px;border-radius:10px;margin-left:6px">내 블로그</span>' : ''}
+          </div>
+        </div>
+        <a href="${escHtml(item.link)}" target="_blank" rel="noopener" style="font-size:.72rem;color:var(--navy-mid);white-space:nowrap;text-decoration:none;flex-shrink:0">보기 →</a>
+      </div>`).join('');
+
+    showResult('rank', `
+      <div class="card result-fade">
+        <div style="text-align:center;padding:20px 0 14px">
+          <div style="font-size:.85rem;color:var(--text-light);margin-bottom:8px">「${escHtml(data.keyword)}」 검색 시 내 블로그 순위</div>
+          <div style="display:inline-block;padding:14px 32px;border-radius:16px;font-size:2rem;font-weight:900;${rankBadgeStyle(data.myRank)}">
+            ${rankLabel(data.myRank)}
+          </div>
+          <div style="margin-top:10px;font-size:.82rem;color:var(--text-mid)">${escHtml(data.message)}</div>
+          <div style="font-size:.75rem;color:var(--text-light);margin-top:4px">전체 블로그 포스트 ${(data.totalResults||0).toLocaleString()}개 중 상위 ${data.checkedCount}개 확인</div>
+        </div>
+      </div>
+      ${topList ? `
+      <div class="card result-fade">
+        <div class="card-title">📋 상위 ${data.items?.length || 0}개 결과</div>
+        <div style="font-size:.78rem;color:var(--text-light);margin-bottom:10px">⭐ 표시가 내 블로그입니다</div>
+        ${topList}
+      </div>` : ''}
+      ${!data.myRank ? `
+      <div class="card result-fade" style="border-left:3px solid #e53e3e">
+        <div class="card-title" style="color:#c53030">📌 미노출 원인 & 개선 방법</div>
+        <ul class="tips-list">
+          <li>이 키워드로 작성한 포스트가 있는지 확인하세요</li>
+          <li>포스트 제목에 키워드가 정확히 포함되어 있는지 확인하세요</li>
+          <li>글 발행 후 24~48시간 내 색인이 안 됐을 수 있습니다</li>
+          <li>경쟁 포스트가 너무 많으면 30위 밖으로 밀릴 수 있습니다 — 롱테일 키워드로 변경을 검토하세요</li>
+          <li>블로그 지수 → 블로그 지수 분석으로 C-Rank 수준을 간접 확인하세요</li>
+        </ul>
+      </div>` : ''}
+    `);
+  } catch(e) { showError('rank', e.message); }
+}
+
+
+async function runMagicKeyword() {
+  const topic = document.getElementById('magic-topic').value.trim();
+  if (!topic) { alert('주제를 입력해주세요.'); return; }
+
+  const loading = document.getElementById('magic-loading');
+  const resultEl = document.getElementById('magic-result');
+  loading.classList.add('show');
+  resultEl.innerHTML = '';
+
+  try {
+    const data = await callApi({ mode: 'golden-keyword', topic });
+    loading.classList.remove('show');
+
+    const keywords = data.goldenKeywords || [];
+    if (!keywords.length) {
+      resultEl.innerHTML = `<div style="background:#fff8e1;border:1px solid #f6c90e;border-radius:10px;padding:14px 16px;font-size:.84rem;color:#7d5a00">
+        ⚠️ <b>"${escHtml(document.getElementById('magic-topic').value.trim())}"</b> 관련 키워드 데이터가 부족합니다.<br>
+        <span style="font-size:.78rem;color:#a07000;margin-top:4px;display:block">💡 좀 더 짧게 입력해보세요. 예) "미국금리", "기준금리", "금리동결"</span>
+      </div>`;
+      return;
+    }
+
+    renderMagicResult(keywords, topic);
+  } catch(e) {
+    loading.classList.remove('show');
+    resultEl.innerHTML = `<div style="color:var(--red-text)">오류: ${escHtml(e.message)}</div>`;
+  }
+}
+
+function renderMagicResult(keywords, topic) {
+  const loading = document.getElementById('magic-loading');
+  const resultEl = document.getElementById('magic-result');
+  loading.classList.remove('show');
+
+  if (!keywords.length) {
+    resultEl.innerHTML = `<div style="background:#fff8e1;border:1px solid #f6c90e;border-radius:10px;padding:14px 16px;font-size:.84rem;color:#7d5a00">
+      ⚠️ <b>"${escHtml(topic)}"</b> 관련 키워드 데이터가 부족합니다.<br>
+      <span style="font-size:.78rem;color:#a07000;margin-top:4px;display:block">💡 좀 더 짧게 입력해보세요. 예) "미국금리", "기준금리"</span>
+    </div>`;
+    return;
+  }
+
+  const gradeStyle = g => ({
+    'A+': 'background:linear-gradient(135deg,#d4af37,#f0c040);color:#5a3e0a;font-size:1rem',
+    'A':  'background:#c6f6d5;color:#22543d;font-size:.9rem',
+    'B+': 'background:#bee3f8;color:#2c5282;font-size:.85rem',
+    'B':  'background:#e2e8f0;color:#4a5568;font-size:.82rem',
+    'C+': 'background:#fefcbf;color:#975a16;font-size:.78rem',
+    'C':  'background:#fed7d7;color:#742a2a;font-size:.78rem'
+  })[g] || 'background:#e2e8f0;color:#4a5568';
+
+  const gradeDesc = g => ({
+    'A+': '🔥 지금 바로 써라 — 검색 많고 경쟁 적음',
+    'A':  '✅ 상위 노출 가능 — 도전 가치 있음',
+    'B+': '👍 도전할 만함 — 꾸준히 써야 함',
+    'B':  '📝 경쟁 있지만 써볼 수 있음',
+    'C+': '🟡 경쟁 있음 — 롱테일로 변형 추천',
+    'C':  '⚠️ 경쟁 많음 — 상위 노출 어려움'
+  })[g] || '';
+
+    const cards = keywords.map((k, i) => {
+      const hasRealVol = k.monthlyTotal > 0;
+      const hasTrend   = (k.trendScore || 0) > 0;
+      const volDisplay = hasRealVol
+        ? `월 <b style="color:var(--navy)">${k.monthlyTotal.toLocaleString()}회</b>`
+        : hasTrend
+          ? `인기도 <b style="color:#2b6cb0">${k.trendScore}/100</b> <span style="color:#a0aec0;font-size:.7rem">(상대값)</span>`
+          : `<b style="color:#a0aec0">데이터 없음</b>`;
+      const compColor = (k.blogCount||0) < 30000 ? '#22543d' : (k.blogCount||0) < 200000 ? '#975a16' : '#c53030';
+      const isBest = i === 0;
+      return `
+      <div style="border:1.5px solid ${k.goldenScore==='A+'?'#d4af37':k.goldenScore==='A'?'#38a169':k.goldenScore==='B+'?'#3182ce':'var(--border)'};border-radius:12px;padding:14px 16px;margin-bottom:10px;${k.goldenScore==='A+'?'background:#fffbeb':k.goldenScore==='A'?'background:#f0fff4':k.goldenScore==='B+'?'background:#ebf8ff':''}">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span style="font-weight:800;font-size:.95rem">${isBest?'👑 ':''} ${escHtml(k.keyword)}</span>
+          <span style="padding:4px 12px;border-radius:20px;font-weight:800;${gradeStyle(k.goldenScore)}">${k.goldenScore}</span>
+        </div>
+        <div style="font-size:.78rem;color:var(--text-mid);margin-bottom:8px">${gradeDesc(k.goldenScore)}</div>
+        <div style="display:flex;gap:14px;font-size:.78rem;margin-bottom:8px">
+          <span style="color:var(--text-light)">검색량 ${volDisplay}</span>
+          <span style="color:var(--text-light)">블로그경쟁 <b style="color:${compColor}">${k.blogCount?.toLocaleString() ?? '-'}개</b></span>
+        </div>
+        ${!hasRealVol ? `
+        <div style="margin-top:6px;background:#f7f8fa;border-radius:8px;padding:8px 10px;font-size:.75rem;color:#4a5568;line-height:1.7;border:1px solid #e2e8f0">
+          ℹ️ 검색량은 서버 위치 제한으로 직접 확인 어렵습니다.<br>
+          👉 <a href="https://ads.naver.com" target="_blank" style="color:#2b6cb0;font-weight:600">ads.naver.com → 도구 → 키워드 도구</a> 에서 직접 확인 가능<br>
+          📊 블로그경쟁 수가 <b style="color:#22543d">적을수록</b> 상위 노출 가능성 ↑ — 이 목록에서 경쟁 적은 것부터 써보세요
+        </div>` : ''}
+        ${(k.goldenScore === 'C' || k.goldenScore === 'C+') ? `
+        <div style="margin-top:6px;background:#fff5f5;border-radius:8px;padding:8px 10px;font-size:.75rem;color:#742a2a;line-height:1.7">
+          💡 더 좁혀서 써보세요: <b>"${escHtml(k.keyword)} 2026"</b>, <b>"${escHtml(k.keyword)} 후기"</b>, <b>"${escHtml(k.keyword)} 실제"</b>
+        </div>` : ''}
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+          <button data-kw="${escHtml(k.keyword)}" onclick="goRankCheck(this.dataset.kw)"
+            style="font-size:.72rem;padding:4px 10px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:#fff;font-family:inherit">🏆 순위 확인</button>
+          <button data-kw="${escHtml(k.keyword)}" onclick="goDraftGen(this.dataset.kw)"
+            style="font-size:.72rem;padding:4px 10px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:#fff;font-family:inherit">✍️ 대본 생성</button>
+        </div>
+      </div>`;
+    }).join('');
+
+  const topGrade = keywords[0]?.goldenScore;
+  resultEl.innerHTML = `
+    <div style="background:#fffbeb;border:1px solid #d4af37;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:.82rem;color:#92400e">
+      ✨ <b>네이버 광고 API</b> 실데이터 —
+      <b>${escHtml(topic)}</b> 관련 ${keywords.length}개 · 최고 등급: <b>${topGrade}</b>
+    </div>
+    ${cards}`;
+}
+
+async function checkRankVolume() {
+  const raw = document.getElementById('rank-vol-input').value.trim();
+  if (!raw) { alert('키워드를 입력해주세요.'); return; }
+  const keywords = raw.split('\n').map(k => k.trim()).filter(Boolean).slice(0, 10);
+
+  const loading = document.getElementById('rank-vol-loading');
+  const resultEl = document.getElementById('rank-vol-result');
+  loading.classList.add('show');
+  resultEl.innerHTML = '';
+
+  try {
+    // API로 검색량 및 블로그 경쟁 수 조회
+    const data = await callApi({ mode: 'kw-checker', keywords });
+    loading.classList.remove('show');
+
+    const rows = (data.rows || []);
+
+    const maxVol = Math.max(...rows.map(r => r.total || 0), 1);
+    const scoreColor = s => ({ 'A+':'#d4af37','A':'#38a169','B+':'#3182ce','B':'#718096','C':'#a0aec0' })[s] || '#a0aec0';
+
+    const hasTrend = rows.some(r => r.trendScore != null);
+    const maxTrend = hasTrend ? Math.max(...rows.map(r => r.trendScore || 0), 1) : 1;
+
+    const rowsHtml = rows.map(r => {
+      // 바 너비 계산: DB/API 검색량 우선, 없으면 트렌드 점수
+      const pct = (r.total != null && r.total > 0)
+        ? Math.round(((r.total || 0) / maxVol) * 100)
+        : hasTrend ? Math.round(((r.trendScore || 0) / maxTrend) * 100) : 0;
+
+      const barColor = hasTrend && r.trendScore != null ? '#805ad5,#b794f4'
+        : 'var(--navy-mid),var(--sky)';
+
+      const volText = r.total != null && r.total > 0
+          ? `<span style="font-size:.8rem;color:var(--text-mid)">${r.total.toLocaleString()}회/월</span>`
+          : r.trendScore != null
+            ? `<span style="font-size:.8rem;color:#805ad5;font-weight:700">📈 트렌드 ${r.trendScore}/100</span>`
+            : `<span style="font-size:.8rem;color:#a0aec0">조회불가</span>`;
+
+      return `
+        <div style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <span style="font-weight:600;font-size:.9rem">${escHtml(r.keyword)}</span>
+            <div style="display:flex;align-items:center;gap:8px">
+              ${volText}
+              ${r.score ? `<span style="font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:10px;background:${scoreColor(r.score)}20;color:${scoreColor(r.score)}">황금도 ${r.score}</span>` : ''}
+            </div>
+          </div>
+          <div style="height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,${barColor});border-radius:4px;transition:width .4s"></div>
+          </div>
+          <div style="font-size:.75rem;color:var(--text-light);margin-top:3px">
+            PC ${(r.pc||0).toLocaleString()} + 모바일 ${(r.mobile||0).toLocaleString()} · 블로그 경쟁 ${r.blogCount !== null ? r.blogCount.toLocaleString() + '개' : '-'}
+            ${r.trendScore != null ? '<span style="margin-left:6px;background:#e9d8fd;color:#553c9a;font-size:.7rem;padding:1px 6px;border-radius:8px;font-weight:600">📈 DataLab</span>' : ''}
+          </div>
+        </div>`;
+    }).join('');
+
+    resultEl.innerHTML = rowsHtml || '<div style="color:var(--text-light);font-size:.85rem">결과 없음</div>';
+  } catch(e) {
+    loading.classList.remove('show');
+    resultEl.innerHTML = `<div style="color:var(--red-text)">오류: ${escHtml(e.message)}</div>`;
+  }
+}
+
+// ═══════════════════════════════════════════
+//  포스트 추적기
+// ═══════════════════════════════════════════
+
+async function analyzePostTracker() {
+  const blogUrl = document.getElementById('tracker-url').value.trim();
+  if (!blogUrl) { alert('블로그 URL을 입력해주세요.'); return; }
+  showLoading('tracker');
+  try {
+    const data = await callApi({ mode: 'post-tracker', blogUrl });
+    const posts = data.posts || [];
+    const best = data.bestKeywords || [];
+
+    const volBadge = v => {
+      if (!v || v.total === null) return `<span style="font-size:.68rem;color:#cbd5e0">-</span>`;
+      const t = v.total || 0;
+      if (t === 0) return `<span style="font-size:.68rem;color:#a0aec0">0회</span>`;
+      const color = t >= 10000 ? '#22543d' : t >= 3000 ? '#744210' : '#4a5568';
+      const bg    = t >= 10000 ? '#c6f6d5'  : t >= 3000 ? '#fefcbf'  : 'var(--bg)';
+      return `<span style="font-size:.72rem;background:${bg};color:${color};padding:2px 7px;border-radius:10px;font-weight:600">${t >= 10000 ? '🔥' : t >= 3000 ? '⭐' : ''}${t.toLocaleString()}회</span>`;
+    };
+
+    const compLabel = c => ({ low:'낮음', middle:'중간', high:'높음' }[c] || c || '-');
+
+    const suggestions = data.aiSuggestions || [];
+    const getSug = idx => suggestions.find(s => s.idx === idx);
+
+    const typeStyle = type => {
+      if (type === '상록성') return { bg:'#f0fff4', color:'#276749', label:'🌿 상록성' };
+      if (type === '혼합')   return { bg:'#fffbeb', color:'#975a16', label:'🔶 혼합형' };
+      return { bg:'#fff5f5', color:'#c53030', label:'📰 뉴스성' };
+    };
+
+    // 포스트 컨텍스트 전역 저장 (채팅용)
+    window._postContexts = posts.map((p, idx) => {
+      const sug = getSug(idx);
+      return {
+        title: p.title,
+        pubDate: p.pubDate,
+        keywords: p.keywords.map(k => k.keyword).join(', '),
+        type: sug?.type || '',
+        issue: sug?.issue || '',
+        betterTitle: sug?.betterTitle || '',
+        targetKeyword: sug?.keyword || ''
+      };
+    });
+
+    const postCards = posts.map((p, idx) => {
+      const sug = getSug(idx);
+      const ts = sug ? typeStyle(sug.type) : null;
+      return `
+      <div style="padding:16px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:flex-start;gap:10px">
+          <div style="flex:1;min-width:0">
+            <a href="${escHtml(p.link)}" target="_blank" style="font-weight:600;font-size:.9rem;color:var(--navy-mid);text-decoration:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(p.title)}">${escHtml(p.title)}</a>
+            <div style="font-size:.75rem;color:var(--text-light);margin-top:2px">${escHtml(p.pubDate)}</div>
+          </div>
+          ${ts ? `<span style="flex-shrink:0;font-size:.68rem;padding:2px 9px;border-radius:10px;font-weight:700;background:${ts.bg};color:${ts.color}">${ts.label}</span>` : ''}
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px">
+          ${p.keywords.length ? p.keywords.map(k => `
+            <span style="display:inline-flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:.78rem">
+              <span style="color:var(--text)">${escHtml(k.keyword)}</span>
+              ${volBadge(k.vol)}
+            </span>`).join('') : `<span style="font-size:.78rem;color:var(--text-light)">키워드 없음</span>`}
+        </div>
+        ${sug ? `
+        <div style="margin-top:10px;padding:11px 14px;background:linear-gradient(135deg,#ebf8ff,#f0f4ff);border-left:3px solid #4299e1;border-radius:0 10px 10px 0">
+          <div style="font-size:.7rem;font-weight:700;color:#2b6cb0;margin-bottom:5px;letter-spacing:.3px">💡 AI 코치 제안</div>
+          <div style="font-size:.78rem;color:#744210;margin-bottom:6px">⚠️ ${escHtml(sug.issue)}</div>
+          <div style="font-size:.8rem;color:#1a365d;font-weight:600;margin-bottom:4px">✏️ 더 나은 제목: "${escHtml(sug.betterTitle)}"</div>
+          <div style="font-size:.73rem;color:#4a5568;margin-bottom:10px">🎯 타깃 키워드: <b style="color:#2b6cb0">${escHtml(sug.keyword)}</b></div>
+          <button onclick="togglePostChat(${idx})"
+            style="font-size:.75rem;padding:5px 14px;border:1px solid #4299e1;border-radius:8px;background:#fff;color:#2b6cb0;cursor:pointer;font-weight:600;font-family:inherit">
+            💬 이 글 AI랑 상담하기
+          </button>
+        </div>` : ''}
+
+        <!-- 미니 채팅창 -->
+        <div id="post-chat-${idx}" style="display:none;margin-top:10px;border:1.5px solid #bee3f8;border-radius:12px;overflow:hidden">
+          <div style="background:#ebf8ff;padding:8px 14px;font-size:.75rem;color:#2b6cb0;font-weight:600;border-bottom:1px solid #bee3f8">
+            💬 "${escHtml(p.title.slice(0,30))}..." 에 대해 물어보세요
+          </div>
+          <!-- 빠른 질문 버튼 -->
+          <div style="padding:10px 14px;display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid #bee3f8;background:#f7fbff">
+            <button onclick="sendPostChatQuick(${idx},'이 글 주제로 검색에 오래 살아남는 제목 3가지 만들어줘')"
+              style="font-size:.72rem;padding:4px 10px;border:1px solid #90cdf4;border-radius:16px;background:#fff;color:#2b6cb0;cursor:pointer;font-family:inherit">제목 3개 추천</button>
+            <button onclick="sendPostChatQuick(${idx},'경쟁이 적고 검색되는 롱테일 키워드 5개 추천해줘')"
+              style="font-size:.72rem;padding:4px 10px;border:1px solid #90cdf4;border-radius:16px;background:#fff;color:#2b6cb0;cursor:pointer;font-family:inherit">롱테일 키워드 5개</button>
+            <button onclick="sendPostChatQuick(${idx},'이 글을 블로그에 올릴 때 해시태그 추천해줘')"
+              style="font-size:.72rem;padding:4px 10px;border:1px solid #90cdf4;border-radius:16px;background:#fff;color:#2b6cb0;cursor:pointer;font-family:inherit">해시태그 추천</button>
+            <button onclick="sendPostChatQuick(${idx},'비슷한 주제로 새로 쓸 수 있는 글 아이디어 3가지')"
+              style="font-size:.72rem;padding:4px 10px;border:1px solid #90cdf4;border-radius:16px;background:#fff;color:#2b6cb0;cursor:pointer;font-family:inherit">새 글 아이디어</button>
+          </div>
+          <!-- 대화 내역 -->
+          <div id="post-chat-history-${idx}" style="max-height:280px;overflow-y:auto;padding:10px 14px;background:#fff;display:flex;flex-direction:column;gap:8px"></div>
+          <!-- 입력창 -->
+          <div style="display:flex;gap:8px;padding:10px 14px;border-top:1px solid #bee3f8;background:#f7fbff">
+            <input id="post-chat-input-${idx}" type="text" placeholder="직접 물어보세요..."
+              style="flex:1;padding:8px 12px;border:1px solid #bee3f8;border-radius:8px;font-size:.82rem;font-family:inherit;outline:none"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopImmediatePropagation();sendPostChat(${idx})}">
+            <button onclick="sendPostChat(${idx})"
+              style="padding:8px 16px;background:#2b6cb0;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:.82rem;font-weight:600;font-family:inherit">전송</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    const bestRows = best.length ? best.map((k, i) => `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+        <span style="min-width:22px;font-weight:700;color:var(--navy-mid);font-size:.85rem">${i+1}</span>
+        <span style="flex:1;font-weight:600;font-size:.88rem">${escHtml(k.keyword)}</span>
+        <span style="font-size:.78rem;color:var(--text-mid)">월 <b>${(k.total||0).toLocaleString()}</b>회</span>
+        <span style="font-size:.75rem;color:var(--text-light)">경쟁 ${compLabel(k.compIdx)}</span>
+      </div>`).join('') : '<div style="font-size:.82rem;color:var(--text-light)">검색광고 API 키 설정 시 실제 검색량이 표시됩니다.</div>';
+
+    showResult('tracker', `
+      <div class="card" style="margin-top:0">
+        <div class="card-title">📊 내 블로그 키워드 TOP ${best.length || '-'}</div>
+        <div style="font-size:.8rem;color:var(--text-light);margin-bottom:10px">블로그 전체 포스트에서 가장 많이 쓰인 키워드 검색량 순위</div>
+        ${bestRows}
+      </div>
+      <div class="card" style="margin-top:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div class="card-title" style="margin:0">📌 최근 포스트 (${posts.length}개)</div>
+          <span style="font-size:.72rem;color:var(--text-light)">${escHtml(data.blogId)}</span>
+        </div>
+        <div style="font-size:.8rem;color:var(--text-light);margin-bottom:12px">🌿상록성 = 오래 검색됨 &nbsp;|&nbsp; 📰뉴스성 = 단기 트래픽 &nbsp;|&nbsp; 🔥10,000+ ⭐3,000+ = 월간 검색량</div>
+        ${postCards}
+      </div>`);
+  } catch(e) { showError('tracker', e.message); }
+}
+
+// 포스트별 미니 채팅
+function togglePostChat(idx) {
+  const el = document.getElementById(`post-chat-${idx}`);
+  if (!el) return;
+  const isOpen = el.style.display !== 'none';
+  el.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) {
+    // 처음 열 때 인사 메시지
+    const hist = document.getElementById(`post-chat-history-${idx}`);
+    if (hist && !hist.hasChildNodes()) {
+      const ctx = (window._postContexts || [])[idx];
+      addPostChatMsg(idx, 'ai', `안녕하세요! 👋<br><b>"${escHtml((ctx?.title||'').slice(0,35))}..."</b> 글에 대해 무엇이든 물어보세요.<br><br>💡 위 버튼을 누르거나 직접 질문하셔도 됩니다.`);
+    }
+    document.getElementById(`post-chat-input-${idx}`)?.focus();
+  }
+}
+
+function addPostChatMsg(idx, role, html) {
+  const hist = document.getElementById(`post-chat-history-${idx}`);
+  if (!hist) return;
+  const isAi = role === 'ai';
+  const div = document.createElement('div');
+  div.style.cssText = `display:flex;gap:8px;align-items:flex-start;${isAi ? '' : 'flex-direction:row-reverse'}`;
+  div.innerHTML = `
+    <div style="width:26px;height:26px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.8rem;${isAi ? 'background:#2b6cb0;color:#fff' : 'background:#e2e8f0;color:#4a5568'}">${isAi ? '🤖' : '나'}</div>
+    <div style="max-width:85%;padding:8px 12px;border-radius:12px;font-size:.8rem;line-height:1.6;${isAi ? 'background:#ebf8ff;color:#1a365d' : 'background:#f0fff4;color:#1a202c;text-align:right'}">${html}</div>`;
+  hist.appendChild(div);
+  hist.scrollTop = hist.scrollHeight;
+}
+
+async function sendPostChatQuick(idx, question) {
+  document.getElementById(`post-chat-input-${idx}`).value = question;
+  await sendPostChat(idx);
+}
+
+async function sendPostChat(idx) {
+  const input = document.getElementById(`post-chat-input-${idx}`);
+  const q = input?.value?.trim();
+  if (!q) return;
+  input.value = '';
+
+  addPostChatMsg(idx, 'user', escHtml(q));
+
+  // 로딩 표시
+  const loadId = `pc-load-${idx}-${Date.now()}`;
+  const hist = document.getElementById(`post-chat-history-${idx}`);
+  const loadDiv = document.createElement('div');
+  loadDiv.id = loadId;
+  loadDiv.style.cssText = 'display:flex;gap:8px;align-items:center;padding:4px 0';
+  loadDiv.innerHTML = `<div style="width:26px;height:26px;border-radius:50%;background:#2b6cb0;color:#fff;display:flex;align-items:center;justify-content:center;font-size:.8rem">🤖</div><div style="font-size:.78rem;color:#a0aec0">답변 작성 중...</div>`;
+  hist?.appendChild(loadDiv);
+  hist.scrollTop = hist.scrollHeight;
+
+  try {
+    const ctx = (window._postContexts || [])[idx];
+    const context = ctx ? `[분석 중인 포스트]\n제목: ${ctx.title}\n날짜: ${ctx.pubDate}\n키워드: ${ctx.keywords}\n유형: ${ctx.type}\n문제: ${ctx.issue}\nAI 추천 제목: ${ctx.betterTitle}\n타깃 키워드: ${ctx.targetKeyword}` : '';
+
+    const data = await callApi({ mode: 'cmp-chat', message: q, context, model: 'haiku' });
+    loadDiv.remove();
+    addPostChatMsg(idx, 'ai', escHtml(data.reply || '답변을 받지 못했습니다.').replace(/\n/g, '<br>'));
+  } catch(e) {
+    loadDiv.remove();
+    addPostChatMsg(idx, 'ai', '⚠️ 오류가 발생했습니다. 다시 시도해주세요.');
+  }
+}
+
+// ═══════════════════════════════════════════
+//  실시간 검색어
+// ═══════════════════════════════════════════
+
+async function analyzeRealtime() {
+  const category = document.getElementById('realtime-category').value;
+  showLoading('realtime');
+  try {
+    const data = await callApi({ mode: 'km-realtime', topic: category });
+    const keywords = data.keywords || [];
+    const trendIcon = t => t === '상승' ? '🔺' : t === '신규' ? '🆕' : '➡️';
+    const rows = keywords.map(k => `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+        <span style="min-width:28px;font-weight:700;color:var(--navy-mid);font-size:1rem">${k.rank}</span>
+        <span style="flex:1">
+          <span style="font-weight:600;font-size:.95rem">${escHtml(k.keyword)}</span>
+          <span style="margin-left:6px;font-size:.75rem;color:var(--text-light)">${trendIcon(k.trend)} ${escHtml(k.trend||'')}</span>
+          <div style="font-size:.8rem;color:var(--text-mid);margin-top:2px">${escHtml(k.desc||'')}</div>
+          ${k.headline ? `<div style="font-size:.75rem;color:var(--text-light);margin-top:2px">📰 ${escHtml(k.headline)}</div>` : ''}
+        </span>
+        <span style="font-size:.72rem;background:var(--bg);padding:2px 8px;border-radius:10px;color:var(--text-mid);white-space:nowrap">${escHtml(k.category||'')}</span>
+      </div>`).join('');
+    showResult('realtime', `
+      <div class="card" style="margin-top:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div class="card-title" style="margin:0">📡 실시간 인기 검색어 — ${escHtml(category)}</div>
+          <span style="font-size:.72rem;color:var(--text-light)">${data.updatedAt||''} ${data._hasRealNews ? '🔴 실시간' : '⚪ AI 추정'}</span>
+        </div>
+        ${data.summary ? `<div style="font-size:.82rem;color:var(--text-mid);margin-bottom:12px;padding:8px 12px;background:var(--bg);border-radius:8px">${escHtml(data.summary)}</div>` : ''}
+        ${rows}
+      </div>`);
+  } catch(e) { showError('realtime', e.message); }
+}
+
+// ═══════════════════════════════════════════
+//  유튜브 분석기
+// ═══════════════════════════════════════════
+
+async function analyzeYoutube() {
+  const keyword = document.getElementById('yt-keyword').value.trim();
+  const topic = document.getElementById('yt-topic').value.trim();
+  if (!keyword) { alert('채널명 또는 키워드를 입력해주세요.'); return; }
+  showLoading('yt');
+  try {
+    const data = await callApi({ mode: 'youtube-analyze', keyword, topic });
+    const ca = data.channelAnalysis || {};
+    const ka = data.keywordAnalysis || {};
+    const list = (arr, emoji) => (arr||[]).map(s => `<li>${emoji} ${escHtml(s)}</li>`).join('');
+    const tags = (data.recommendedTags||[]).map(t => `<span class="badge" style="background:var(--bg);color:var(--text-mid)">#${escHtml(t)}</span>`).join('');
+    showResult('yt', `
+      <div class="card" style="margin-top:0">
+        <div class="card-title">📺 유튜브 분석 — <span style="font-weight:400">${escHtml(keyword)}</span></div>
+        ${data.summary ? `<div style="font-size:.85rem;color:var(--text-mid);margin-bottom:16px;padding:10px 14px;background:var(--bg);border-radius:8px;line-height:1.7">${escHtml(data.summary)}</div>` : ''}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+          <div style="background:var(--bg);border-radius:10px;padding:12px">
+            <div style="font-size:.72rem;color:var(--text-light);margin-bottom:4px">채널 수준</div>
+            <div style="font-weight:700;font-size:1rem;color:var(--navy-mid)">${escHtml(ca.level||'-')}</div>
+            <div style="font-size:.78rem;color:var(--text-mid);margin-top:4px">${escHtml(ca.reason||'')}</div>
+          </div>
+          <div style="background:var(--bg);border-radius:10px;padding:12px">
+            <div style="font-size:.72rem;color:var(--text-light);margin-bottom:4px">키워드 분석</div>
+            <div style="font-size:.82rem">검색량 <b>${escHtml(ka.searchVolume||'-')}</b> · 경쟁 <b>${escHtml(ka.competition||'-')}</b> · 트렌드 <b>${escHtml(ka.trending||'-')}</b></div>
+          </div>
+        </div>
+        ${(data.titleSuggestions||[]).length ? `<div style="margin-bottom:14px"><div style="font-weight:600;font-size:.85rem;margin-bottom:8px">🎬 추천 제목</div><ul class="tips-list">${list(data.titleSuggestions,'▶️')}</ul></div>` : ''}
+        ${tags ? `<div style="margin-bottom:14px"><div style="font-weight:600;font-size:.85rem;margin-bottom:8px">🏷️ 추천 태그</div><div style="display:flex;flex-wrap:wrap;gap:6px">${tags}</div></div>` : ''}
+        ${(data.thumbnailTips||[]).length ? `<div style="margin-bottom:14px"><div style="font-weight:600;font-size:.85rem;margin-bottom:8px">🖼️ 썸네일 팁</div><ul class="tips-list">${list(data.thumbnailTips,'💡')}</ul></div>` : ''}
+        ${(data.growthStrategy||[]).length ? `<div><div style="font-weight:600;font-size:.85rem;margin-bottom:8px">📈 성장 전략</div><ul class="tips-list">${list(data.growthStrategy,'🚀')}</ul></div>` : ''}
+      </div>`);
+  } catch(e) { showError('yt', e.message); }
+}
+
+// ═══════════════════════════════════════════
+//  DRAFT HELPER
+// ═══════════════════════════════════════════
+
+function switchDraftTab(tab) {
+  const tabs = ['to-keyword','to-draft','golden'];
+  document.querySelectorAll('.draft-tab').forEach((t,i) => t.classList.toggle('active', tabs[i] === tab));
+  document.getElementById('draft-panel-to-keyword').classList.toggle('active', tab==='to-keyword');
+  document.getElementById('draft-panel-to-draft').classList.toggle('active', tab==='to-draft');
+  document.getElementById('draft-panel-golden').classList.toggle('active', tab==='golden');
+}
+
+function updateCharCount() {
+  const len = document.getElementById('draft-text-input').value.length;
+  document.getElementById('draft-char-count').textContent = len.toLocaleString();
+}
+
+// 플랫폼 버튼 (대본 탭용)
+document.querySelectorAll('#pg-draft-kw .platform-btn, #pg-draft-len .platform-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.platform-group').querySelectorAll('.platform-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+function getDraftPlatform() {
+  return document.querySelector('#pg-draft-kw .platform-btn.active')?.dataset.val || '둘 다';
+}
+function getDraftLen() {
+  return document.querySelector('#pg-draft-len .platform-btn.active')?.dataset.val || '중간 (800~1200자)';
+}
+
+async function runDraftToKeyword() {
+  const draft = document.getElementById('draft-text-input').value.trim();
+  if (!draft) { alert('대본을 입력해주세요.'); return; }
+  if (draft.length < 50) { alert('대본이 너무 짧습니다. 50자 이상 입력해주세요.'); return; }
+  showLoading('draft-kw');
+  hideResult('draft-kw');
+  try {
+    const data = await callApi({ mode: 'draft-to-keyword', draft, platform: getDraftPlatform() });
+    const kwCards = (data.keywords || []).map(k => `
+      <div class="draft-kw-card">
+        <div class="draft-kw-name">🥇 ${escHtml(k.keyword)}</div>
+        <div class="badge-row" style="margin-bottom:8px">
+          ${renderBadge('검색량 '+(k.searchVolume||''), k.searchVolume)}
+          ${renderBadge('경쟁도 '+(k.competition||''), k.competition)}
+          <span class="badge" style="background:var(--gold-bg);color:var(--gold-text)">황금도 ${escHtml(k.goldenScore||'')}</span>
+        </div>
+        <div class="draft-kw-why">${escHtml(k.why||'')}</div>
+      </div>`).join('');
+    showResult('draft-kw', `
+      <div class="card result-fade">
+        <div class="card-title">🥇 이 글에서 추출한 황금 키워드</div>
+        <div class="draft-result-kw">${kwCards}</div>
+      </div>
+      ${data.missingKeywords?.length ? `
+      <div class="card result-fade">
+        <div class="card-title">💡 추가하면 좋을 키워드</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          ${data.missingKeywords.map(k=>`<span class="tag">${escHtml(k)}</span>`).join('')}
+        </div>
+        <p style="font-size:.8rem;color:var(--text-light);margin-top:10px">클릭하면 키워드 → 대본 탭으로 이동합니다</p>
+      </div>` : ''}
+      ${data.seoTips?.length ? `
+      <div class="card result-fade">
+        <div class="card-title">📝 이 글의 SEO 개선 포인트</div>
+        <ul class="tips-list">${data.seoTips.map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul>
+      </div>` : ''}
+    `);
+    // 추가 키워드 태그 클릭 → 키워드→대본 탭으로 이동
+    document.querySelectorAll('#draft-kw-result .tag').forEach(tag => {
+      tag.onclick = () => {
+        document.getElementById('kw-to-draft-input').value = tag.textContent;
+        switchDraftTab('to-draft');
+      };
+    });
+  } catch(e) { showError('draft-kw', e.message); }
+}
+
+async function runKeywordToDraft() {
+  const keyword = document.getElementById('kw-to-draft-input').value.trim();
+  const topic   = document.getElementById('kw-to-draft-topic').value.trim();
+  if (!keyword) { alert('키워드를 입력해주세요.'); return; }
+  showLoading('kw-draft');
+  hideResult('kw-draft');
+  try {
+    // 대본 생성 + 황금 키워드 동시 조회
+    const [data, goldenData] = await Promise.all([
+      callApi({ mode: 'keyword-to-draft', keyword, topic, length: getDraftLen() }),
+      callApi({ mode: 'golden-keyword', topic: keyword })
+    ]);
+    const draft = data.draft || '';
+    const goldenCards = (goldenData.goldenKeywords || []).slice(0, 6).map(k => renderGoldenCard(k, keyword)).join('');
+    showResult('kw-draft', `
+      <div class="card result-fade">
+        <div class="card-title">✍️ 대본 초안 — <span style="font-weight:400;color:var(--text-mid)">${escHtml(keyword)}</span></div>
+        ${data.usedKeywords?.length ? `
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
+          ${data.usedKeywords.map(k=>`<span class="badge" style="background:var(--gold-bg);color:var(--gold-text)">🥇 ${escHtml(k)}</span>`).join('')}
+        </div>` : ''}
+        <div class="draft-script">${escHtml(draft)}</div>
+        <div class="draft-copy-row">
+          <button class="copy-btn" style="padding:8px 18px;font-size:.82rem" onclick="copyDraft()">📋 대본 복사</button>
+        </div>
+      </div>
+      <div class="card result-fade">
+        <div class="card-title">🥇 관련 황금 키워드 (네이버 실데이터)</div>
+        ${goldenCards
+          ? `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:4px">${goldenCards}</div>`
+          : `<div style="font-size:.82rem;color:var(--text-light);padding:8px 0">검색량 500회 이상 황금 키워드가 없습니다. 더 넓은 주제로 시도해보세요.<br><span style="font-size:.75rem">예) "전세자금대출" → "전세" 또는 "대출"로 입력</span></div>`}
+      </div>
+      ${data.seoTips?.length ? `
+      <div class="card result-fade">
+        <div class="card-title">💡 포스팅 전 체크리스트</div>
+        <ul class="tips-list">${data.seoTips.map(t=>`<li>${escHtml(t)}</li>`).join('')}</ul>
+      </div>` : ''}
+    `);
+  } catch(e) { showError('kw-draft', e.message); }
+}
+
+function copyDraft() {
+  const text = document.querySelector('.draft-script')?.textContent || '';
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.draft-copy-row .copy-btn');
+    btn.textContent = '✓ 복사됨';
+    setTimeout(() => btn.textContent = '📋 대본 복사', 1800);
+  });
+}
+
+function hideResult(id) { const el = document.getElementById(id+'-result'); if(el) el.innerHTML=''; }
+
+// ═══════════════════════════════════════════
+//  AI 데이터 채팅 (Tool Use — 네이버 실데이터)
+// ═══════════════════════════════════════════
+const scMessages = [];
+
+function scAppend(role, text) {
+  const box = document.getElementById('sc-messages');
+  const div = document.createElement('div');
+  div.className = 'sc-bubble ' + (role === 'user' ? 'sc-user' : role === 'thinking' ? 'sc-thinking' : 'sc-ai');
+  div.textContent = text;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+  return div;
+}
+
+async function sendSmartChat() {
+  const input = document.getElementById('sc-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  input.style.height = 'auto';
+
+  scAppend('user', text);
+  scMessages.push({ role: 'user', content: text });
+
+  const thinking = scAppend('thinking', '🔍 네이버 API 조회 중...');
+
+  try {
+    const data = await callApi({ mode: 'smart-chat', messages: scMessages });
+    thinking.remove();
+    const reply = data.reply || '답변을 받지 못했습니다.';
+    scAppend('ai', reply);
+    scMessages.push({ role: 'assistant', content: reply });
+  } catch(e) {
+    thinking.remove();
+    scAppend('ai', '오류가 발생했습니다: ' + e.message);
+  }
+}
+
+// ═══════════════════════════════════════════
+//  실거래가 조회 (국토교통부)
+// ═══════════════════════════════════════════
+let _reDealType = 'trade';
+let _reAreaMin = 0, _reAreaMax = 9999;
+let _reAreaExact = null; // 정확한 면적값 필터 (타입 구분용)
+let _reDealsCache = null; // 조회된 전체 데이터 저장
+let _reUniqueAreas = []; // 현재 데이터의 고유 면적값 목록
+let _reCurrentComplex = ''; // 현재 검색 중인 단지명
+
+// ── 단지별 타입 프리셋 (브로슈어 기준, 아파트만) ────────────
+// keys: 단지명에 포함될 키워드 목록
+// labels: { 전용면적(소수): '타입명' }
+const RE_TYPE_PRESETS = [
+  {
+    keys: ['성복역롯데캐슬골드타운', '성복역롯데캐슬', '롯데캐슬골드타운'],
+    labels: {
+      84.91: 'A타입',
+      84.99: 'B타입',
+      99.98: '40평(99㎡)'
+    }
+  },
+  {
+    keys: ['이편한세상수지', 'e편한세상수지', '용인수지e편한'],
+    labels: {
+      84.71: 'D타입',
+      84.88: 'C타입',
+      84.92: 'A·B·F타입',  // 세 타입이 동일 면적
+      84.93: 'G타입',
+      84.94: 'I타입',
+      84.96: 'E타입',
+      84.97: 'H타입',
+      98.89: '98㎡'
+    }
+  }
+];
+
+// 단지명 키워드로 프리셋 라벨 조회 (면적 소수점 ±0.005 허용)
+function _getPresetLabel(area, complexFilter) {
+  const f = (complexFilter || '').replace(/[\s\-]/g, '').toLowerCase();
+  if (!f) return null;
+  for (const preset of RE_TYPE_PRESETS) {
+    if (preset.keys.some(k => f.includes(k.replace(/[\s\-]/g, '').toLowerCase()))) {
+      for (const [pa, label] of Object.entries(preset.labels)) {
+        if (Math.abs(parseFloat(pa) - area) < 0.005) return label;
+      }
+    }
+  }
+  return null;
+}
+
+// ── 타입 라벨 관리 (localStorage — 사용자 직접 수정분) ──
+let _reTypeLabels = {};
+(function _loadTypeLabels() {
+  try { _reTypeLabels = JSON.parse(localStorage.getItem('re_type_labels') || '{}'); } catch(e) { _reTypeLabels = {}; }
+})();
+
+function _saveTypeLabels() {
+  localStorage.setItem('re_type_labels', JSON.stringify(_reTypeLabels));
+}
+
+// 자동 타입 라벨: 같은 정수 면적 그룹 내에서 오름차순 → A,B,C...
+function _getAutoTypeLabel(area) {
+  const base = Math.floor(area);
+  const group = _reUniqueAreas.filter(a => Math.floor(a) === base).sort((a,b) => a-b);
+  if (group.length < 2) return '';
+  const idx = group.indexOf(area);
+  return idx >= 0 ? String.fromCharCode(65 + idx) + '타입' : '';
+}
+
+// 우선순위: ① 사용자 직접 수정 ② 브로슈어 프리셋 ③ 자동 A,B,C...
+function _getTypeLabel(area) {
+  const key = String(area);
+  if (_reTypeLabels[key]) return _reTypeLabels[key];
+  const preset = _getPresetLabel(area, _reCurrentComplex);
+  if (preset) return preset;
+  return _getAutoTypeLabel(area);
+}
+
+function editTypeLabel(area) {
+  const current = _reTypeLabels[String(area)] || _getPresetLabel(area, _reCurrentComplex) || _getAutoTypeLabel(area);
+  const newLabel = prompt(
+    `${area}㎡ 의 타입명 수정\n예) A타입  B타입  C타입  40평\n\n비워두면 자동(브로슈어 프리셋 또는 면적 오름차순)으로 돌아갑니다`,
+    current
+  );
+  if (newLabel === null) return;
+  if (newLabel.trim() === '') {
+    delete _reTypeLabels[String(area)];
+  } else {
+    _reTypeLabels[String(area)] = newLabel.trim();
+  }
+  _saveTypeLabels();
+  if (_reDealsCache) _renderReDeals(_reDealsCache);
+}
+
+function setReAreaFilter(btn, min, max) {
+  _reAreaMin = min; _reAreaMax = max;
+  _reAreaExact = null; // 범위 필터 누르면 정확 필터 초기화
+  document.querySelectorAll('.re-area-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  // 타입 칩도 비활성화
+  document.querySelectorAll('.re-type-chip').forEach(b => b.classList.remove('active'));
+  if (_reDealsCache) _renderReDeals(_reDealsCache);
+}
+
+function setReAreaExact(btn, area) {
+  if (_reAreaExact === area) {
+    // 다시 누르면 해제
+    _reAreaExact = null;
+    btn.classList.remove('active');
+  } else {
+    _reAreaExact = area;
+    document.querySelectorAll('.re-type-chip').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    // 범위 필터는 전체로 초기화
+    _reAreaMin = 0; _reAreaMax = 9999;
+    document.querySelectorAll('.re-area-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.re-area-btn')?.classList.add('active');
+  }
+  if (_reDealsCache) _renderReDeals(_reDealsCache);
+}
+
+function setRealEstateType(btn) {
+  document.querySelectorAll('#re-deal-type .platform-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  _reDealType = btn.dataset.val;
+}
+
+const _rePresets = {
+  main: '롯데캐슬골드타운,태영데시앙,이편한세상수지',
+  seongbok: '성복역롯데캐슬,성복역KCC,성복역 서희,성복역 아이파크,성복역 금호,성복역 리버파크',
+  all: '롯데캐슬골드타운,태영데시앙,이편한세상수지,성복역롯데캐슬,성복역KCC,성복역 서희,성복역 아이파크,성복역 금호,성복역 리버파크',
+  clear: ''
+};
+
+function setRePreset(key) {
+  const v = _rePresets[key] || '';
+  document.getElementById('re-complex').value = v;
+  // 법정동 필터는 비우기 (전체 수지구에서 찾도록)
+  document.getElementById('re-umd').value = '';
+}
+
+async function runRealEstate() {
+  const region = document.getElementById('re-region').value;
+  const yearMonth = document.getElementById('re-yearmonth').value.trim();
+  const complexFilter = document.getElementById('re-complex').value.trim();
+  const umdFilter = document.getElementById('re-umd').value.trim();
+
+  if (!region) { alert('지역을 선택해주세요.'); return; }
+  if (!/^\d{4}$/.test(yearMonth) && !/^\d{6}$/.test(yearMonth)) { alert('거래기간은 YYYY (예: 2026) 또는 YYYYMM (예: 202602) 형식으로 입력해주세요.'); return; }
+
+  showLoading('re');
+  try {
+    const data = await callApi({
+      mode: 'realestate-deals',
+      region,
+      dealType: _reDealType,
+      yearMonth,
+      complexFilter,
+      umdFilter
+    });
+
+    if (!data.deals || !data.deals.length) {
+      // 필터 매칭 0건이면 비슷한 단지명 제안
+      let suggestionHtml = '';
+      if (complexFilter && data.totalRaw > 0) {
+        // 전체 데이터 다시 가져와서 비슷한 이름 추출
+        const dataAll = await callApi({ mode: 'realestate-deals', region: document.getElementById('re-region').value, dealType: _reDealType, yearMonth: document.getElementById('re-yearmonth').value.trim(), complexFilter: '' });
+        const uniqueNames = [...new Set((dataAll.deals||[]).map(d => d.단지명))];
+        const f = complexFilter.toLowerCase();
+        // 부분 일치 또는 비슷한 단어
+        const similar = uniqueNames.filter(n => {
+          const nl = (n||'').toLowerCase();
+          if (nl.includes(f) || f.includes(nl)) return true;
+          // 2글자 이상 공통 부분
+          for (let i = 0; i < f.length - 1; i++) {
+            if (nl.includes(f.substring(i, i+2))) return true;
+          }
+          return false;
+        }).slice(0, 15);
+        if (similar.length) {
+          suggestionHtml = `<div style="margin-top:20px;padding:15px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px">
+            <div style="font-weight:600;color:#92400e;margin-bottom:10px">💡 비슷한 단지명 (클릭하면 자동 검색)</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px">
+              ${similar.map(n => `<button onclick="document.getElementById('re-complex').value='${n.replace(/'/g,"\\'")}';runRealEstate()" style="background:#fff;border:1px solid #fbbf24;padding:5px 11px;border-radius:14px;font-size:.78rem;cursor:pointer;color:#92400e;font-weight:500">${n}</button>`).join('')}
+            </div>
+          </div>`;
+        }
+      }
+      showResult('re', `<div class="card"><div style="text-align:center;padding:30px;color:#718096">📭 해당 조건의 거래 데이터가 없습니다.<br><small>전체 ${data.totalRaw || 0}건 조회됨${complexFilter ? ` · "${complexFilter}" 필터 일치 0건` : ''}</small>${suggestionHtml}</div></div>`);
+      return;
+    }
+
+    const isRent = _reDealType === 'rent';
+
+    // 전체 데이터 캐시 (면적 필터용)
+    _reCurrentComplex = complexFilter; // 프리셋 매칭용 현재 단지명 저장
+    _reDealsCache = { deals: data.deals, isRent, yearMonth, region, complexFilter };
+    window._reLastResult = { deals: data.deals, isRent, yearMonth, region };
+    _renderReDeals(_reDealsCache);
+  } catch (e) { showError('re', e.message); }
+}
+
+function _renderReDeals({ deals, isRent, yearMonth, region, complexFilter }) {
+  // ── 면적 필터 적용 ──────────────────────────────
+  // 정확 면적 필터(타입 구분) 우선, 없으면 범위 필터
+  const filtered = deals.filter(d => {
+    const area = parseFloat(d.전용면적) || 0;
+    if (_reAreaExact !== null) return area === _reAreaExact;
+    return area >= _reAreaMin && area < _reAreaMax;
+  });
+
+  // ── 고유 면적값 추출 + 전역 변수 업데이트 (타입 라벨용) ──
+  const areaCountMap = {};
+  deals.forEach(d => {
+    const a = parseFloat(d.전용면적);
+    if (!isNaN(a)) areaCountMap[a] = (areaCountMap[a] || 0) + 1;
+  });
+  _reUniqueAreas = Object.keys(areaCountMap).map(Number).sort((a, b) => a - b);
+
+  // 타입 칩 HTML (고유 면적값이 2개 이상일 때만 표시)
+  const typeChipsHtml = _reUniqueAreas.length > 1 ? `
+    <div style="margin-bottom:12px">
+      <div style="font-size:.75rem;color:#718096;font-weight:600;margin-bottom:6px">🔍 면적(타입)별 필터 &nbsp;<span style="font-weight:400;color:#a0aec0">클릭→해당 타입만 보기 &nbsp;·&nbsp; ✏️클릭→타입명 수정</span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${_reUniqueAreas.map(a => {
+          const label = _getTypeLabel(a);
+          return `<button class="re-type-chip${_reAreaExact === a ? ' active' : ''}"
+            onclick="setReAreaExact(this, ${a})">
+            ${a}㎡${label ? ` <b style="color:${_reAreaExact===a?'rgba(255,255,255,.9)':'#3730a3'};font-size:.8rem">${label}</b>` : ''}
+            <span>${areaCountMap[a]}건</span>
+            <span class="re-type-edit" onclick="event.stopPropagation();editTypeLabel(${a})" title="타입명 수정">✏️</span>
+          </button>`;
+        }).join('')}
+      </div>
+    </div>` : '';
+
+  const currentLabel = _reAreaExact !== null ? (_getTypeLabel(_reAreaExact) || `${_reAreaExact}㎡`) : '';
+  const areaLabel = _reAreaExact !== null ? ` · ${currentLabel}`
+    : _reAreaMax === 9999 && _reAreaMin === 0 ? ''
+    : _reAreaMin === 0 ? ` · ~${_reAreaMax}㎡`
+    : _reAreaMax === 9999 ? ` · ${_reAreaMin}㎡+`
+    : ` · ${_reAreaMin}~${_reAreaMax}㎡`;
+
+  if (!filtered.length) {
+    showResult('re', `<div class="card">${typeChipsHtml}<div style="text-align:center;padding:30px;color:#718096">📭 해당 면적 조건의 데이터가 없습니다.<br><small>전체 ${deals.length}건 중 해당 없음${areaLabel}</small></div></div>`);
+    return;
+  }
+
+  const formatMoney = v => {
+    if (!v) return '-';
+    const n = parseInt(String(v).replace(/[^0-9]/g, ''));
+    if (isNaN(n)) return v;
+    if (n >= 10000) return (n/10000).toFixed(2).replace(/\.?0+$/,'') + '억';
+    return n.toLocaleString() + '만';
+  };
+
+  const headerCols = isRent
+    ? `<th>거래일</th><th>구분</th><th>단지명</th><th>동</th><th>법정동</th><th>면적</th><th>층</th><th>보증금</th><th>월세</th>`
+    : `<th>거래일</th><th>단지명</th><th>동</th><th>법정동</th><th>면적</th><th>층</th><th>거래금액</th><th>건축</th><th>해제</th>`;
+
+  const rows = filtered.map(d => {
+    const date = `${d.계약년}.${(d.계약월||'').padStart(2,'0')}.${(d.계약일||'').padStart(2,'0')}`;
+    const areaNum = parseFloat(d.전용면적);
+    const typeLabel = !isNaN(areaNum) ? _getTypeLabel(areaNum) : '';
+    const area = d.전용면적
+      ? `${d.전용면적}㎡${typeLabel ? `<br><span style="color:#6366f1;font-size:.72rem;font-weight:600">${typeLabel}</span>` : ''}`
+      : '-';
+    if (isRent) {
+      return `<tr>
+        <td>${date}</td>
+        <td><span style="background:${d.구분==='전세'?'#e6fffa':'#fffaf0'};color:${d.구분==='전세'?'#234e52':'#7b341e'};padding:2px 8px;border-radius:10px;font-size:.75rem;font-weight:600">${d.구분}</span></td>
+        <td><b>${d.단지명||'-'}</b></td>
+        <td style="text-align:center">${(d.동||'').trim()||'-'}</td>
+        <td>${d.법정동||'-'}</td>
+        <td>${area}</td>
+        <td>${d.층||'-'}</td>
+        <td><b style="color:#2b6cb0">${formatMoney(d.보증금)}</b></td>
+        <td>${d.월세&&d.월세!=='0'?formatMoney(d.월세)+'/월':'-'}</td>
+      </tr>`;
+    }
+    return `<tr style="${d.해제여부?'opacity:.5;text-decoration:line-through':''}">
+      <td>${date}</td>
+      <td><b>${d.단지명||'-'}</b></td>
+      <td style="text-align:center">${(d.동||'').trim()||'-'}</td>
+      <td>${d.법정동||'-'}</td>
+      <td>${area}</td>
+      <td>${d.층||'-'}</td>
+      <td><b style="color:#c53030;font-size:.95rem">${formatMoney(d.거래금액)}</b></td>
+      <td style="font-size:.78rem;color:#718096">${d.건축년도||'-'}</td>
+      <td style="font-size:.75rem;color:#c53030">${d.해제여부||''}</td>
+    </tr>`;
+  }).join('');
+
+  const summary = isRent
+    ? `전세 ${filtered.filter(d=>d.구분==='전세').length}건 · 월세 ${filtered.filter(d=>d.구분==='월세').length}건`
+    : `매매 ${filtered.filter(d=>!d.해제여부).length}건${filtered.filter(d=>d.해제여부).length?` · 해제 ${filtered.filter(d=>d.해제여부).length}건`:''}`;
+
+  window._reLastResult = { deals: filtered, isRent, yearMonth, region };
+  showResult('re', `
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div class="card-title" style="margin:0">📊 실거래가 ${deals.length}건 조회됨${areaLabel}${complexFilter ? ` · "${complexFilter}"` : ''}</div>
+          <button onclick="downloadRealEstateExcel()" style="background:#16a34a;color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:.82rem;font-weight:600;display:flex;align-items:center;gap:5px">📥 엑셀 다운로드</button>
+        </div>
+        <div style="color:#718096;font-size:.85rem;margin-bottom:10px">${summary}${_reAreaExact!==null?` · <b style="color:#2b6cb0">${_reAreaExact}㎡ 타입 ${filtered.length}건 표시중</b>`:''} · 거래기간: ${yearMonth.length===4?yearMonth+'년 전체':yearMonth.slice(0,4)+'년 '+parseInt(yearMonth.slice(4,6))+'월'}</div>
+        ${typeChipsHtml}
+        <div style="overflow-x:auto;max-height:600px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:8px">
+          <table style="width:100%;border-collapse:collapse;font-size:.82rem">
+            <thead style="background:#f7fafc;position:sticky;top:0;z-index:1">
+              <tr>${headerCols}</tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        <div style="margin-top:12px;font-size:.7rem;color:#a0aec0;text-align:right">출처: 국토교통부 실거래가 공개시스템</div>
+      </div>
+    `);
+}
+
+// 거래월 기본값 자동 설정 (이번 달 또는 지난달)
+document.addEventListener('DOMContentLoaded', () => {
+  const ym = document.getElementById('re-yearmonth');
+  if (ym && !ym.value) {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1); // 지난달 (이번달은 데이터 없을 수 있음)
+    ym.value = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}`;
+  }
+});
+
+// ═══════════════════════════════════════════
+//  Naver부동산 한큐노트 (Vercel KV)
+// ═══════════════════════════════════════════
+let _allListings = [];
+
+async function loadListings() {
+  const container = document.getElementById('lst-list-container');
+  container.innerHTML = `<div style="text-align:center;padding:30px;color:#718096"><div class="spinner" style="margin:0 auto 8px"></div>로딩 중...</div>`;
+  try {
+    const data = await callApi({ mode: 'listing-list' });
+    _allListings = data.listings || [];
+    renderListings();
+  } catch (e) {
+    container.innerHTML = `<div style="text-align:center;padding:30px;color:#c53030">오류: ${e.message}<br><small style="color:#718096">Vercel KV 설정이 필요할 수 있어요</small></div>`;
+  }
+}
+
+function renderListings() {
+  const container = document.getElementById('lst-list-container');
+  const search = (document.getElementById('lst-search').value || '').toLowerCase().trim();
+  const filtered = search
+    ? _allListings.filter(l => JSON.stringify(l).toLowerCase().includes(search))
+    : _allListings;
+
+  if (!filtered.length) {
+    container.innerHTML = `<div style="text-align:center;padding:30px;color:#a0aec0">${search ? '검색 결과가 없습니다.' : '저장된 매물이 없습니다. 위에서 추가해보세요!'}</div>`;
+    return;
+  }
+
+  const formatPrice = (v) => {
+    if (!v) return '-';
+    const n = parseInt(String(v).replace(/[^0-9]/g, ''));
+    if (isNaN(n)) return v;
+    if (n >= 10000) return (n/10000).toFixed(2).replace(/\.?0+$/,'') + '억';
+    return n.toLocaleString() + '만';
+  };
+
+  container.innerHTML = `
+    <div style="overflow-x:auto;border:1px solid #e2e8f0;border-radius:8px">
+      <table style="width:100%;border-collapse:collapse;font-size:.83rem">
+        <thead style="background:#f7fafc">
+          <tr>
+            <th style="padding:9px 10px;text-align:left">유형</th>
+            <th style="padding:9px 10px;text-align:left">단지명</th>
+            <th style="padding:9px 10px;text-align:center">동</th>
+            <th style="padding:9px 10px;text-align:center">호수</th>
+            <th style="padding:9px 10px">평형</th>
+            <th style="padding:9px 10px;text-align:center">층</th>
+            <th style="padding:9px 10px;text-align:right">가격</th>
+            <th style="padding:9px 10px;text-align:right">월세</th>
+            <th style="padding:9px 10px">메모</th>
+            <th style="padding:9px 10px">등록일</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filtered.map(l => {
+            const date = l.createdAt ? new Date(l.createdAt).toLocaleDateString('ko-KR') : '';
+            const typeColor = l.거래유형==='매매'?'#fee2e2':l.거래유형==='전세'?'#e6fffa':'#fffaf0';
+            const typeText = l.거래유형==='매매'?'#7f1d1d':l.거래유형==='전세'?'#234e52':'#7b341e';
+            return `<tr style="border-top:1px solid #edf2f7">
+              <td style="padding:9px 10px"><span style="background:${typeColor};color:${typeText};padding:2px 8px;border-radius:10px;font-size:.74rem;font-weight:700">${l.거래유형||'-'}</span></td>
+              <td style="padding:9px 10px"><b>${l.단지명||'-'}</b></td>
+              <td style="padding:9px 10px;text-align:center;color:#3b82f6;font-weight:700">${l.동||'-'}</td>
+              <td style="padding:9px 10px;text-align:center;color:#dc2626;font-weight:700">${l.호수||'-'}</td>
+              <td style="padding:9px 10px">${l.평형||'-'}</td>
+              <td style="padding:9px 10px;text-align:center">${l.층||'-'}</td>
+              <td style="padding:9px 10px;text-align:right;color:#c53030;font-weight:700">${formatPrice(l.가격)}</td>
+              <td style="padding:9px 10px;text-align:right">${l.월세 ? l.월세+'만' : '-'}</td>
+              <td style="padding:9px 10px;font-size:.78rem;color:#4a5568;max-width:240px">${l.메모||'-'}</td>
+              <td style="padding:9px 10px;font-size:.72rem;color:#a0aec0">${date}</td>
+              <td style="padding:9px 10px"><button onclick="deleteListing('${l.id}')" style="background:none;border:none;cursor:pointer;color:#c53030;font-size:1rem" title="삭제">✕</button></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:8px;font-size:.75rem;color:#a0aec0;text-align:right">총 ${filtered.length}건${search ? ` (전체 ${_allListings.length}건 중)` : ''}</div>
+  `;
+}
+
+// AI로 카톡 메시지 파싱 후 자동 저장
+async function quickAddListing() {
+  const text = document.getElementById('lst-quick').value.trim();
+  if (!text) { alert('이실장 메시지를 붙여넣으세요!'); return; }
+
+  const btn = event.target;
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '🤖 AI 분석 중...';
+  btn.disabled = true;
+
+  try {
+    const data = await callApi({ mode: 'listing-parse', text });
+    const listings = data.listings || (data.listing ? [data.listing] : []);
+    if (!listings.length || !listings[0].단지명) {
+      alert('단지명을 찾을 수 없어요. 메시지를 다시 확인하세요.');
+      return;
+    }
+    // 미리보기 확인
+    const preview = `📋 분석 결과 (${listings.length}건):\n\n` +
+      listings.map((l, i) =>
+        `[${i+1}] ${l.단지명} ${l.동||'-'}동 ${l.호수||'-'}호\n` +
+        `    ${l.거래유형||'-'} / ${l.평형||'-'} / ${l.층||'-'}층 / ${l.가격||'-'}만원` +
+        (l.월세 ? ` / 월세 ${l.월세}만` : '') +
+        (l.메모 ? `\n    메모: ${l.메모}` : '')
+      ).join('\n\n') +
+      `\n\n저장하시겠습니까?`;
+    if (!confirm(preview)) return;
+
+    for (const listing of listings) {
+      await callApi({ mode: 'listing-add', listing });
+    }
+    document.getElementById('lst-quick').value = '';
+    await loadListings();
+    alert(`✅ ${listings.length}건 저장 완료!`);
+  } catch (e) {
+    alert('오류: ' + e.message);
+  } finally {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  }
+}
+
+async function addListing() {
+  const apt = document.getElementById('lst-apt').value.trim();
+  if (!apt) { alert('단지명은 필수입니다.'); return; }
+  const listing = {
+    단지명: apt,
+    동: document.getElementById('lst-dong').value.trim(),
+    호수: document.getElementById('lst-ho').value.trim(),
+    거래유형: document.getElementById('lst-type').value,
+    평형: document.getElementById('lst-area').value.trim(),
+    층: document.getElementById('lst-floor').value.trim(),
+    가격: document.getElementById('lst-price').value.trim(),
+    월세: document.getElementById('lst-rent').value.trim(),
+    메모: document.getElementById('lst-memo').value.trim()
+  };
+  try {
+    await callApi({ mode: 'listing-add', listing });
+    // 폼 초기화 (단지명만 유지)
+    document.getElementById('lst-dong').value = '';
+    document.getElementById('lst-ho').value = '';
+    document.getElementById('lst-area').value = '';
+    document.getElementById('lst-floor').value = '';
+    document.getElementById('lst-price').value = '';
+    document.getElementById('lst-rent').value = '';
+    document.getElementById('lst-memo').value = '';
+    await loadListings();
+  } catch (e) {
+    alert('저장 실패: ' + e.message);
+  }
+}
+
+async function deleteListing(id) {
+  if (!confirm('정말 삭제할까요?')) return;
+  try {
+    await callApi({ mode: 'listing-delete', id });
+    await loadListings();
+  } catch (e) {
+    alert('삭제 실패: ' + e.message);
+  }
+}
+
+function downloadListingsExcel() {
+  const list = _allListings;
+  if (!list.length) { alert('저장된 매물이 없습니다.'); return; }
+  const headers = ['거래유형','단지명','동','호수','평형','층','가격(만원)','월세(만원)','메모','등록일'];
+  const rows = list.map(l => [
+    l.거래유형 || '',
+    l.단지명 || '',
+    l.동 || '',
+    l.호수 || '',
+    l.평형 || '',
+    l.층 || '',
+    l.가격 || '',
+    l.월세 || '',
+    l.메모 || '',
+    l.createdAt ? new Date(l.createdAt).toLocaleDateString('ko-KR') : ''
+  ]);
+  const csv = '﻿' + [headers, ...rows]
+    .map(row => row.map(c => {
+      const s = String(c == null ? '' : c);
+      if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+      return s;
+    }).join(','))
+    .join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date();
+  a.href = url;
+  a.download = `이실장매물_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// 사이드바에서 매물 노트 메뉴 클릭 시 자동 로드
+document.addEventListener('DOMContentLoaded', () => {
+  const item = document.querySelector('[data-page="listings"]');
+  if (item) item.addEventListener('click', loadListings);
+});
+
+// 부동산 뉴스 페이지
+const _renPresets = {
+  main: '롯데캐슬골드타운|태영데시앙|이편한세상수지',
+  seongbok: '성복역롯데캐슬|성복역KCC|성복역 서희|성복역 아이파크|성복역 금호',
+  all: '롯데캐슬골드타운|태영데시앙|이편한세상수지|성복역롯데캐슬|성복역KCC|성복역 서희'
+};
+function setRenPreset(key) {
+  document.getElementById('ren-complexes').value = _renPresets[key] || '';
+}
+
+async function runRealEstateNews() {
+  const complexesStr = document.getElementById('ren-complexes').value.trim();
+  const region = document.getElementById('ren-region').value.trim();
+  const complexes = complexesStr ? complexesStr.split(',').map(s => s.trim()).filter(Boolean).slice(0, 5) : [];
+
+  showLoading('ren');
+  try {
+    const data = await callApi({
+      mode: 'realestate-news',
+      complexes,
+      region: region || '성복역 수지'
+    });
+
+    const sectionHtml = (title, color, icon, sections) => {
+      const items = (sections || []).flatMap(s => s.news);
+      const unique = [];
+      const seen = new Set();
+      for (const it of items) {
+        if (!seen.has(it.link)) { seen.add(it.link); unique.push(it); }
+      }
+      const list = unique.slice(0, 10);
+      if (!list.length) return `<div style="margin-bottom:18px"><div style="font-weight:700;color:${color};margin-bottom:10px;font-size:.95rem">${icon} ${title}</div><div style="color:#a0aec0;font-size:.85rem">관련 뉴스가 없습니다.</div></div>`;
+      return `<div style="margin-bottom:18px">
+        <div style="font-weight:700;color:${color};margin-bottom:10px;font-size:.95rem">${icon} ${title} <span style="background:${color};color:#fff;font-size:.7rem;padding:1px 7px;border-radius:10px;font-weight:600">${list.length}</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${list.map(n => `<a href="${n.link}" target="_blank" style="display:block;padding:11px 14px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;text-decoration:none;color:inherit;transition:all .15s" onmouseover="this.style.borderColor='${color}';this.style.background='#f9fafb'" onmouseout="this.style.borderColor='#e2e8f0';this.style.background='#fff'">
+            <div style="font-weight:600;color:#1a365d;font-size:.88rem;margin-bottom:4px">${n.title}</div>
+            <div style="color:#718096;font-size:.78rem;line-height:1.5">${n.desc}</div>
+            <div style="color:#a0aec0;font-size:.7rem;margin-top:4px">${n.pubDate} · 🔍 ${n.query}</div>
+          </a>`).join('')}
+        </div>
+      </div>`;
+    };
+
+    showResult('ren', `<div class="card">
+      <div class="card-title">📰 부동산 관련 뉴스</div>
+      ${sectionHtml('주요 단지 뉴스', '#3b82f6', '🏢', data.complexes)}
+      ${sectionHtml(`지역 뉴스 (${region})`, '#8b5cf6', '📍', data.region)}
+      ${sectionHtml('정책 / 규제', '#dc2626', '⚖️', data.policy)}
+      ${sectionHtml('시세 / 시장 동향', '#16a34a', '📊', data.market)}
+    </div>`);
+  } catch (e) {
+    showError('ren', e.message);
+  }
+}
+
+// 엑셀 다운로드
+function downloadRealEstateExcel() {
+  const r = window._reLastResult;
+  if (!r || !r.deals || !r.deals.length) { alert('다운로드할 데이터가 없습니다.'); return; }
+
+  let headers, rows;
+  if (r.isRent) {
+    headers = ['거래일','구분','단지명','동','법정동','지번','면적(㎡)','층','건축년도','보증금(만원)','월세(만원)','계약기간','계약구분','종전보증금','종전월세','갱신요구권','등기일자'];
+    rows = r.deals.map(d => [
+      `${d.계약년}-${(d.계약월||'').padStart(2,'0')}-${(d.계약일||'').padStart(2,'0')}`,
+      d.구분 || '',
+      d.단지명 || '',
+      (d.동||'').trim(),
+      d.법정동 || '',
+      d.지번 || '',
+      d.전용면적 || '',
+      d.층 || '',
+      d.건축년도 || '',
+      (d.보증금||'').replace(/,/g,''),
+      d.월세 || '',
+      d.계약기간 || '',
+      d.계약구분 || '',
+      d.종전보증금 || '',
+      d.종전월세 || '',
+      d.갱신요구권사용 || '',
+      d.등기일자 || ''
+    ]);
+  } else {
+    headers = ['거래일','단지명','동','법정동','지번','도로명','면적(㎡)','층','건축년도','거래금액(만원)','거래유형','매수자','매도자','중개사소재','등기일자','해제여부','해제사유발생일','토지임대부'];
+    rows = r.deals.map(d => [
+      `${d.계약년}-${(d.계약월||'').padStart(2,'0')}-${(d.계약일||'').padStart(2,'0')}`,
+      d.단지명 || '',
+      (d.동||'').trim(),
+      d.법정동 || '',
+      d.지번 || '',
+      d.도로명 || '',
+      d.전용면적 || '',
+      d.층 || '',
+      d.건축년도 || '',
+      d.거래금액 || '',
+      d.거래유형 || '',
+      d.매수자 || '',
+      d.매도자 || '',
+      d.중개사소재 || '',
+      d.등기일자 || '',
+      d.해제여부 || '',
+      d.해제사유발생일 || '',
+      d.토지임대부 || ''
+    ]);
+  }
+
+  // CSV 생성 (한글 깨짐 방지를 위해 BOM 추가)
+  const csv = '﻿' + [headers, ...rows]
+    .map(row => row.map(cell => {
+      const s = String(cell == null ? '' : cell);
+      // 콤마, 줄바꿈, 따옴표 있으면 따옴표로 감싸기
+      if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+      return s;
+    }).join(','))
+    .join('\n');
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date();
+  const ts = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  a.href = url;
+  a.download = `실거래가_${r.isRent?'전월세':'매매'}_${r.yearMonth}_${ts}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// 결과 테이블 CSS
+const _reStyle = document.createElement('style');
+_reStyle.textContent = `
+  #re-result table th, #re-result table td { padding: 9px 10px; border-bottom: 1px solid #edf2f7; text-align: left; }
+  #re-result table th { font-weight: 600; color: #4a5568; font-size: .78rem; }
+  #re-result table tr:hover { background: #f7fafc; }
+`;
+document.head.appendChild(_reStyle);
+
+// ═══════════════════════════════════════════
+//  키워드 실데이터 조회 (AI 없음)
+// ═══════════════════════════════════════════
+async function runKwChecker() {
+  const raw = document.getElementById('kwc-input').value;
+  const keywords = raw.split('\n').map(k => k.trim()).filter(k => k.length > 0).slice(0, 10);
+  if (!keywords.length) { alert('키워드를 입력해주세요.'); return; }
+  showLoading('kwc');
+  try {
+    // API로 검색량 및 블로그 경쟁 수 조회
+    const data = await callApi({ mode: 'kw-checker', keywords });
+    const rows = (data.rows || []);
+
+    const scoreColor = { 'A+':'#22543d','A':'#276749','B+':'#2b6cb0','B':'#4a5568','C':'#9b2c2c' };
+    const scoreBg    = { 'A+':'#c6f6d5','A':'#c6f6d5','B+':'#bee3f8','B':'#e2e8f0','C':'#fed7d7' };
+
+    const tableRows = rows.map(r => {
+      const sc = r.score || 'C';
+      const volColor  = (r.total||0) >= 10000 ? '#22543d' : (r.total||0) >= 2000 ? '#744210' : '#4a5568';
+      const compColor = (r.blogCount||999999) <= 5000 ? '#22543d' : (r.blogCount||999999) <= 30000 ? '#744210' : '#9b2c2c';
+      const volCell = r.total !== null && r.total > 0
+          ? `<td style="padding:12px 8px;text-align:right;color:${volColor};font-weight:700">${r.total.toLocaleString()}</td>`
+          : r.trendScore != null
+            ? `<td style="padding:12px 8px;text-align:right;color:#805ad5;font-weight:700">📈${r.trendScore}<span style="font-size:.65rem;background:#e9d8fd;color:#553c9a;padding:1px 5px;border-radius:6px;margin-left:3px">트렌드</span></td>`
+            : `<td style="padding:12px 8px;text-align:right;color:#a0aec0">-</td>`;
+      return `
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:12px 8px;font-weight:600">${escHtml(r.keyword)}</td>
+          ${volCell}
+          <td style="padding:12px 8px;text-align:right;font-size:.78rem;color:var(--text-mid)">${r.pc !== null && r.pc > 0 ? r.pc.toLocaleString() : '-'}</td>
+          <td style="padding:12px 8px;text-align:right;font-size:.78rem;color:var(--text-mid)">${r.mobile !== null && r.mobile > 0 ? r.mobile.toLocaleString() : '-'}</td>
+          <td style="padding:12px 8px;text-align:right;color:${compColor};font-weight:700">${r.blogCount !== null ? r.blogCount.toLocaleString() : '-'}</td>
+          <td style="padding:12px 8px;text-align:center">
+            <span style="background:${scoreBg[sc]||'#e2e8f0'};color:${scoreColor[sc]||'#4a5568'};font-weight:700;font-size:.85rem;padding:3px 12px;border-radius:20px">${sc}</span>
+          </td>
+        </tr>`;
+    }).join('');
+
+    showResult('kwc', `
+      <div class="card result-fade" style="margin-top:0;padding:0;overflow:hidden">
+        <div style="padding:14px 18px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div class="card-title" style="margin:0">🔬 실데이터 조회 결과</div>
+          <span style="font-size:.72rem;color:var(--naver);font-weight:600">🟢 네이버 API · AI 추측 없음</span>
+        </div>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:.85rem">
+            <thead>
+              <tr style="background:var(--bg);border-bottom:2px solid var(--border)">
+                <th style="padding:10px 8px;text-align:left;font-weight:600;color:var(--text-mid)">키워드</th>
+                <th style="padding:10px 8px;text-align:right;font-weight:600;color:var(--text-mid)">월검색(합)</th>
+                <th style="padding:10px 8px;text-align:right;font-weight:600;color:var(--text-mid)">PC</th>
+                <th style="padding:10px 8px;text-align:right;font-weight:600;color:var(--text-mid)">모바일</th>
+                <th style="padding:10px 8px;text-align:right;font-weight:600;color:var(--text-mid)">블로그 경쟁</th>
+                <th style="padding:10px 8px;text-align:center;font-weight:600;color:var(--text-mid)">황금도</th>
+              </tr>
+            </thead>
+            <tbody>${tableRows}</tbody>
+          </table>
+        </div>
+        <div style="padding:10px 18px;font-size:.75rem;color:var(--text-light)">
+          황금도 = 월검색량 ÷ 블로그 경쟁수 비율 · A+가 가장 좋음
+        </div>
+      </div>`);
+  } catch(e) { showError('kwc', e.message); }
+}
+
+// pg-golden 플랫폼 버튼
+document.querySelectorAll('#pg-golden .platform-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.platform-group').querySelectorAll('.platform-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+async function runGoldenKeyword() {
+  const topic = document.getElementById('golden-topic-input').value.trim();
+  if (!topic) { alert('블로그 주제를 입력해주세요.'); return; }
+  const platform = document.querySelector('#pg-golden .platform-btn.active')?.dataset.val || '둘 다';
+  showLoading('golden-kw');
+  hideResult('golden-kw');
+  try {
+    const data = await callApi({ mode: 'golden-keyword', topic, platform });
+    const kwCards = (data.goldenKeywords||[]).map(k => renderGoldenCard(k, topic)).join('');
+    showResult('golden-kw', kwCards ? `
+      <div class="card result-fade" style="margin-top:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div class="card-title" style="margin:0">💡 황금 키워드 추천</div>
+          <span style="font-size:.72rem;color:var(--naver);font-weight:600">🟢 네이버 실데이터</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">${kwCards}</div>
+      </div>` : '<div class="card">결과가 없습니다.</div>');
+  } catch(e) { showError('golden-kw', e.message); }
+}
+
+// ═══════════════════════════════════════════
+//  플로팅 채팅
+// ═══════════════════════════════════════════
+let _floatModel = 'haiku';
+let _floatOpen  = false;
+
+function toggleFloatChat() {
+  _floatOpen = !_floatOpen;
+  document.getElementById('float-chat-panel').style.display = _floatOpen ? 'flex' : 'none';
+  document.getElementById('float-chat-btn').style.display = _floatOpen ? 'none' : 'flex';
+  if (_floatOpen) document.getElementById('float-chat-input').focus();
+}
+
+function setFloatModel(model) {
+  _floatModel = model;
+  document.querySelectorAll('.float-model-btn').forEach(b => {
+    const active = b.dataset.model === model;
+    b.style.background = active ? 'rgba(255,255,255,.25)' : 'transparent';
+    b.style.color = active ? '#fff' : 'rgba(255,255,255,.5)';
+    b.style.borderColor = active ? 'rgba(255,255,255,.5)' : 'transparent';
+  });
+}
+
+async function sendFloatChat() {
+  const input = document.getElementById('float-chat-input');
+  const q = input.value.trim();
+  if (!q) return;
+
+  const history = document.getElementById('float-chat-history');
+  input.value = '';
+  input.style.height = 'auto';
+
+  // 내 말풍선
+  history.insertAdjacentHTML('beforeend', `
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+      <div style="background:linear-gradient(135deg,#2b6cb0,#63b3ed);color:#fff;padding:9px 14px;border-radius:18px 18px 4px 18px;font-size:.83rem;max-width:80%;line-height:1.6;white-space:pre-wrap">${escHtml(q)}</div>
+    </div>`);
+  history.scrollTop = history.scrollHeight;
+
+  // 로딩
+  const lid = 'float-load-' + Date.now();
+  history.insertAdjacentHTML('beforeend', `
+    <div id="${lid}" style="display:flex;align-items:flex-end;gap:6px;margin-bottom:10px">
+      <div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#2b6cb0,#63b3ed);display:flex;align-items:center;justify-content:center;font-size:.65rem;color:#fff;flex-shrink:0">AI</div>
+      <div style="background:#fff;border:1px solid #e2e8f0;padding:9px 13px;border-radius:18px 18px 18px 4px;font-size:.83rem;color:#718096;line-height:1.6">입력 중...</div>
+    </div>`);
+  history.scrollTop = history.scrollHeight;
+
+  try {
+    const context = _cmpData ? `내 블로그(${_cmpData.myId}) vs 경쟁블로그(${_cmpData.compId}). 내 키워드: ${(_cmpData.myKws||[]).slice(0,8).map(k=>k.kw).join(',')}. 경쟁 키워드: ${(_cmpData.compKws||[]).slice(0,8).map(k=>k.kw).join(',')}. 갭: ${(_cmpData.gapKws||[]).slice(0,5).map(k=>k.kw).join(',')}` : '';
+    const data = await callApi({ mode: 'cmp-chat', message: q, context, model: _floatModel });
+    const answer = data.reply || '답변을 받지 못했습니다.';
+    document.getElementById(lid).innerHTML = `
+      <div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#2b6cb0,#63b3ed);display:flex;align-items:center;justify-content:center;font-size:.65rem;color:#fff;flex-shrink:0">AI</div>
+      <div style="background:#fff;border:1px solid #e2e8f0;padding:9px 13px;border-radius:18px 18px 18px 4px;font-size:.83rem;color:#2d3748;line-height:1.65;max-width:82%">${answer.replace(/\n/g,'<br>')}</div>`;
+  } catch(e) {
+    document.getElementById(lid).querySelector('div:last-child').textContent = '오류: ' + e.message;
+  }
+  history.scrollTop = history.scrollHeight;
+}
+</script>
+
+<!-- ═══ 플로팅 채팅 버튼 (영구 숨김) ═══ -->
+<button id="float-chat-btn" onclick="toggleFloatChat()"
+  style="display:none">AI 채팅</button>
+
+<!-- ═══ 플로팅 채팅 패널 ═══ -->
+<div id="float-chat-panel" style="display:none;position:fixed;bottom:80px;left:220px;width:360px;height:500px;border-radius:18px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.2);flex-direction:column;z-index:9999;background:#fff">
+
+  <!-- 헤더 -->
+  <div style="background:linear-gradient(135deg,#0d1f3c,#2b6cb0);padding:12px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0">
+    <div style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:.9rem">🤖</div>
+    <div style="flex:1">
+      <div style="font-weight:700;color:#fff;font-size:.85rem">블로그 전략 AI</div>
+      <div style="font-size:.65rem;color:rgba(255,255,255,.5);display:flex;align-items:center;gap:3px">
+        <span style="width:5px;height:5px;border-radius:50%;background:#68d391;display:inline-block"></span> 온라인
+      </div>
+    </div>
+    <!-- 모델 선택 -->
+    <div style="display:flex;gap:4px">
+      <button class="float-model-btn" data-model="haiku" onclick="setFloatModel('haiku')"
+        style="font-size:.63rem;padding:3px 7px;border-radius:12px;border:1.5px solid rgba(255,255,255,.5);background:rgba(255,255,255,.25);color:#fff;cursor:pointer;font-family:inherit;font-weight:600">⚡ 빠름</button>
+      <button class="float-model-btn" data-model="sonnet" onclick="setFloatModel('sonnet')"
+        style="font-size:.63rem;padding:3px 7px;border-radius:12px;border:1.5px solid transparent;background:transparent;color:rgba(255,255,255,.5);cursor:pointer;font-family:inherit;font-weight:600">🧠 깊이</button>
+    </div>
+    <button onclick="toggleFloatChat()" style="background:none;border:none;cursor:pointer;color:rgba(255,255,255,.6);font-size:1.1rem;line-height:1;padding:0 2px">✕</button>
+  </div>
+
+  <!-- 메시지 -->
+  <div id="float-chat-history" style="flex:1;overflow-y:auto;padding:14px 12px;background:#f7f9fc;scroll-behavior:smooth">
+    <div style="display:flex;align-items:flex-end;gap:6px;margin-bottom:10px">
+      <div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#2b6cb0,#63b3ed);display:flex;align-items:center;justify-content:center;font-size:.65rem;color:#fff;flex-shrink:0">AI</div>
+      <div style="background:#fff;border:1px solid #e2e8f0;padding:9px 13px;border-radius:18px 18px 18px 4px;font-size:.82rem;color:#2d3748;line-height:1.65;max-width:85%;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+        안녕하세요! 블로그 전략, 키워드, 글쓰기 방향 뭐든 물어보세요 😊
+      </div>
+    </div>
+  </div>
+
+  <!-- 입력 -->
+  <div style="background:#fff;border-top:1px solid #e2e8f0;padding:10px 12px;display:flex;align-items:flex-end;gap:8px;flex-shrink:0">
+    <textarea id="float-chat-input" rows="1"
+      placeholder="메시지 입력... (Enter 전송)"
+      style="flex:1;resize:none;border:1.5px solid #e2e8f0;border-radius:18px;padding:8px 14px;font-size:.82rem;font-family:inherit;outline:none;line-height:1.5;max-height:100px;background:#f7f9fc;transition:border .2s"
+      onfocus="this.style.borderColor='#63b3ed';this.style.background='#fff'"
+      onblur="this.style.borderColor='#e2e8f0';this.style.background='#f7f9fc'"
+      oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendFloatChat()}"></textarea>
+    <button onclick="sendFloatChat()"
+      style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#2b6cb0,#63b3ed);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 6px rgba(43,108,176,.3)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+</div>
+
+</body>
+</html>
