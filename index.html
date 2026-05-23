@@ -352,7 +352,51 @@ textarea.form-control{resize:vertical;min-height:100px}
 .draft-kw-why{font-size:.8rem;color:var(--text-mid);line-height:1.5}
 .draft-script{background:#f7fafc;border:1.5px solid var(--border);border-radius:var(--radius);padding:18px 20px;font-size:.88rem;line-height:1.85;white-space:pre-wrap;color:var(--text)}
 .draft-script h3{color:var(--navy);font-size:.95rem;margin:14px 0 6px}
-.draft-copy-row{display:flex;justify-content:flex-end;margin-top:10px}
+/* Laser Border Animation */
+.laser-wrap {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  padding: 2.5px; /* Border thickness */
+  z-index: 1;
+  background: #cbd5e1; /* Default border color */
+  transition: transform 0.2s ease;
+}
+.laser-wrap::before {
+  content: '';
+  position: absolute;
+  top: -150%; left: -150%; width: 400%; height: 400%;
+  background: conic-gradient(transparent, transparent, transparent, #3b82f6, #8b5cf6, #ec4899, transparent 20%);
+  animation: laser-spin 3s linear infinite;
+  z-index: -2;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.laser-wrap:hover {
+  transform: translateY(-2px);
+}
+.laser-wrap:hover::before,
+.laser-wrap:focus-within::before {
+  opacity: 1;
+}
+.laser-inner {
+  position: relative;
+  background: rgba(255, 255, 255, 0.98);
+  border-radius: 10px;
+  z-index: -1;
+  height: 100%;
+  display: flex;
+}
+.laser-inner input {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  width: 100%;
+}
+@keyframes laser-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
 </style>
 <!-- 엑셀 파일 파싱 라이브러리 -->
 <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
@@ -1104,6 +1148,25 @@ textarea.form-control{resize:vertical;min-height:100px}
       <div class="form-group">
         <label>단지명 필터 <span style="font-weight:400;color:var(--text-light)">(여러 개는 | 로 구분)</span></label>
         <input class="form-control" id="re-complex" type="text" placeholder="예: 롯데캐슬,태영데시앙,이편한세상" value="이편한세상수지">
+      </div>
+    </div>
+    <!-- 프리미엄 레이저 보더 UI가 적용된 동/층 필터 섹션 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px;margin-bottom:12px;padding:20px;background:linear-gradient(145deg, #ffffff, #f8fafc);border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 4px 15px -3px rgba(0,0,0,0.05), inset 0 2px 4px rgba(255,255,255,0.5);">
+      <div class="form-group" style="margin:0">
+        <label style="color:#1e293b;font-weight:800;font-size:0.92rem;margin-bottom:8px;display:block">✨ 동(Building) 필터 <span style="font-weight:400;color:#94a3b8;font-size:0.8rem">(선택)</span></label>
+        <div class="laser-wrap">
+          <div class="laser-inner">
+            <input class="form-control" id="re-dong" type="text" placeholder="예: 109동 (숫자만 입력 무방)" style="padding:12px 14px;font-size:0.9rem">
+          </div>
+        </div>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label style="color:#1e293b;font-weight:800;font-size:0.92rem;margin-bottom:8px;display:block">✨ 층(Floor) 필터 <span style="font-weight:400;color:#94a3b8;font-size:0.8rem">(범위 검색 지원)</span></label>
+        <div class="laser-wrap">
+          <div class="laser-inner">
+            <input class="form-control" id="re-floor" type="text" placeholder="예: 34 또는 범위(20~34)" style="padding:12px 14px;font-size:0.9rem">
+          </div>
+        </div>
       </div>
     </div>
     <div class="form-group">
@@ -2903,6 +2966,8 @@ async function runRealEstate() {
   const yearMonth = document.getElementById('re-yearmonth').value.trim();
   const complexFilter = document.getElementById('re-complex').value.trim();
   const umdFilter = document.getElementById('re-umd').value.trim();
+  const dongFilter = document.getElementById('re-dong') ? document.getElementById('re-dong').value.trim() : '';
+  const floorFilter = document.getElementById('re-floor') ? document.getElementById('re-floor').value.trim() : '';
 
   if (!region) { alert('지역을 선택해주세요.'); return; }
   if (!/^\d{4}$/.test(yearMonth) && !/^\d{6}$/.test(yearMonth)) { alert('거래기간은 YYYY (예: 2026) 또는 YYYYMM (예: 202602) 형식으로 입력해주세요.'); return; }
@@ -2915,7 +2980,9 @@ async function runRealEstate() {
       dealType: _reDealType,
       yearMonth,
       complexFilter,
-      umdFilter
+      umdFilter,
+      dongFilter,
+      floorFilter
     });
 
     if (!data.deals || !data.deals.length) {

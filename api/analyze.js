@@ -1505,7 +1505,7 @@ ${postTitles}` }]
 
     // 실거래가 조회 (국토교통부 API)
     else if (mode === 'realestate-deals') {
-      const { region, dealType, yearMonth, complexFilter, umdFilter } = req.body;
+      const { region, dealType, yearMonth, complexFilter, umdFilter, dongFilter, floorFilter } = req.body;
       const MOLIT_KEY = process.env.MOLIT_API_KEY;
 
       if (!MOLIT_KEY) return res.status(500).json({ error: '국토부 API 키가 설정되지 않았습니다. (MOLIT_API_KEY)' });
@@ -1628,6 +1628,33 @@ ${postTitles}` }]
         if (umdFilter && umdFilter.trim()) {
           const u = umdFilter.trim();
           filtered = filtered.filter(i => (i.법정동 || '').includes(u));
+        }
+
+        // 동(Building) 필터
+        if (dongFilter && dongFilter.trim()) {
+          const d = dongFilter.trim().replace(/동$/, ''); // '109동' -> '109'
+          filtered = filtered.filter(i => {
+            const dongVal = (i.동 || '').replace(/동$/, '');
+            return dongVal === d || dongVal.includes(d);
+          });
+        }
+
+        // 층(Floor) 필터 (단일 층 및 범위 조회 처리)
+        if (floorFilter && floorFilter.trim()) {
+          const fStr = floorFilter.trim().replace(/층$/, '');
+          if (fStr.includes('~')) {
+            const [minF, maxF] = fStr.split('~').map(x => parseInt(x, 10));
+            filtered = filtered.filter(i => {
+              const floorVal = parseInt(i.층, 10);
+              if (isNaN(floorVal)) return false;
+              return floorVal >= minF && floorVal <= maxF;
+            });
+          } else {
+            filtered = filtered.filter(i => {
+               const floorVal = (i.층 || '').replace(/층$/, '');
+               return floorVal === fStr;
+            });
+          }
         }
 
         // 거래일 최신순 정렬
